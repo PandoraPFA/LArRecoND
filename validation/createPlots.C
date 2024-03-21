@@ -229,7 +229,10 @@ void createPlots(const std::string& validFileName = "Validation.root",
     Parameters p;
     p.m_histogramOutput = true;
     p.m_histFileName = histFileName;
+    // Set x vertex offset to 0
     p.m_vertexXCorrection = 0.0;
+    // Specify map file
+    p.m_mapFileName = "Map.txt";
     // Reduce verbosity
     p.m_displayMatchedEvents = false;
     if (runValidation) {

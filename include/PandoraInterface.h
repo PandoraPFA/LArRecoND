@@ -1,5 +1,5 @@
 /**
- *  @file   LArReco/include/PandoraInterface.h
+ *  @file   LArRecoND/include/PandoraInterface.h
  *
  *  @brief  Header file for PandoraInterface.
  *
@@ -17,6 +17,8 @@
 #include "LArHitInfo.h"
 #include "LArNDGeomSimple.h"
 #include "LArSED.h"
+#include "LArSP.h"
+#include "LArSPMC.h"
 #include "LArVoxel.h"
 
 namespace pandora
@@ -47,10 +49,11 @@ public:
     {
         EDepSim = 0,
         SED = 1,
-        SP = 2
+        SP = 2,
+        SPMC = 3
     };
 
-    LArNDFormat m_dataFormat; ///< The expected input data format (EDepSim rooTracker or SED ROOT)
+    LArNDFormat m_dataFormat; ///< The expected input data format (EDepSim rooTracker or SED and SP/SPMC ROOT)
 
     std::string m_settingsFile;  ///< The path to the pandora settings file
                                  ///< (mandatory parameter)
@@ -193,7 +196,7 @@ void ProcessEDepSimEvents(const Parameters &parameters, const pandora::Pandora *
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 /**
- *  @brief  Process events using the supplied pandora instance, assuming SED format
+ *  @brief  Process events using the supplied pandora instance, assuming SimEnergyDeposit (SED) format
  *
  *  @param  parameters The application parameters
  *  @param  pPrimaryPandora The address of the primary pandora instance
@@ -204,7 +207,7 @@ void ProcessSEDEvents(const Parameters &parameters, const pandora::Pandora *cons
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 /**
- *  @brief  Process events using the supplied pandora instance, assuming SP format
+ *  @brief  Process events using the supplied pandora instance, assuming SpacePoint (SP) format
  *
  *  @param  parameters The application parameters
  *  @param  pPrimaryPandora The address of the primary pandora instance
@@ -227,13 +230,24 @@ MCParticleEnergyMap CreateEDepSimMCParticles(const TG4Event &event, const pandor
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 /**
- *  @brief  Create MC particles from the Geant4 trajectories, assuming SED format
+ *  @brief  Create MC particles from the Geant4 trajectories, assuming SimEnergyDeposit (SED) format
  *
  *  @param  larsed The LArSED data object
  *  @param  pPrimaryPandora The address of the primary pandora instance
  *  @param  parameters The application parameters
  */
 void CreateSEDMCParticles(const LArSED &larsed, const pandora::Pandora *const pPrimaryPandora, const Parameters &parameters);
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ *  @brief  Create MC particles from the Geant4 trajectories, assuming SpacePoint (SP) format
+ *
+ *  @param  larsp The LArSP data object
+ *  @param  pPrimaryPandora The address of the primary pandora instance
+ *  @param  parameters The application parameters
+ */
+void CreateSPMCParticles(const LArSPMC &larspmc, const pandora::Pandora *const pPrimaryPandora, const Parameters &parameters);
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 

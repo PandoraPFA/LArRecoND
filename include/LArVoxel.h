@@ -1,5 +1,5 @@
 /**
- *  @file   LArReco/include/LArVoxel.h
+ *  @file   LArRecoND/include/LArVoxel.h
  *
  *  @brief  Header file for LArVoxel and LArVoxelProjection
  *
@@ -64,11 +64,7 @@ typedef std::vector<LArVoxel> LArVoxelList;
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 inline LArVoxel::LArVoxel(const long voxelID, const float energyInVoxel, const pandora::CartesianVector &voxelPosVect, const int trackID) :
-    m_voxelID(voxelID),
-    m_energyInVoxel(energyInVoxel),
-    m_voxelPosVect(voxelPosVect),
-    m_trackID(trackID),
-    m_tpcID(0)
+    m_voxelID(voxelID), m_energyInVoxel(energyInVoxel), m_voxelPosVect(voxelPosVect), m_trackID(trackID), m_tpcID(0)
 {
 }
 
@@ -76,11 +72,7 @@ inline LArVoxel::LArVoxel(const long voxelID, const float energyInVoxel, const p
 
 inline LArVoxel::LArVoxel(const long voxelID, const float energyInVoxel, const pandora::CartesianVector &voxelPosVect, const int trackID,
     const unsigned int tpcID) :
-    m_voxelID(voxelID),
-    m_energyInVoxel(energyInVoxel),
-    m_voxelPosVect(voxelPosVect),
-    m_trackID(trackID),
-    m_tpcID(tpcID)
+    m_voxelID(voxelID), m_energyInVoxel(energyInVoxel), m_voxelPosVect(voxelPosVect), m_trackID(trackID), m_tpcID(tpcID)
 {
 }
 
@@ -110,9 +102,10 @@ public:
      *  @param  w the coordinate in the wire direction after projection
      *  @param  x the drift coordinate
      *  @param  view the readout view - typically U, V, or W
+     *  @param  parentid the id of the parent voxel
      *  @param  trackid id of the true particle that produced the energy in the voxel before projection
      */
-    LArVoxelProjection(const float energy, const float w, const float x, const pandora::HitType &view, const int trackid);
+    LArVoxelProjection(const float energy, const float w, const float x, const pandora::HitType &view, const int parentid, const int trackid);
 
     /**
      *  @brief  Constructor
@@ -121,15 +114,18 @@ public:
      *  @param  w the coordinate in the wire direction after projection
      *  @param  x the drift coordinate
      *  @param  view the readout view - typically U, V, or W
+     *  @param  parentid the id of the parent voxel
      *  @param  trackid id of the true particle that produced the energy in the voxel before projection
      *  @param  tpcid id of the TPC containing the voxel
      */
-    LArVoxelProjection(const float energy, const float w, const float x, const pandora::HitType &view, const int trackid, const unsigned int tpcid);
+    LArVoxelProjection(const float energy, const float w, const float x, const pandora::HitType &view, const int parentid,
+        const int trackid, const unsigned int tpcid);
 
     float m_energy;          ///< energy deposited in the voxel
     float m_wire;            ///< projected wire coordinate of the voxel
     float m_drift;           ///< drift coordinate (x coordinate of the voxel)
     pandora::HitType m_view; ///< hit type to label the U, V and W views
+    int m_parentVoxelID;     ///< id of the parent voxel
     int m_trackID;           ///< true particle responsible for the majority of the energy
     int m_tpcID;             ///< id of the TPC containing the voxel
 };
@@ -138,30 +134,20 @@ typedef std::vector<LArVoxelProjection> LArVoxelProjectionList;
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline LArVoxelProjection::LArVoxelProjection(const float energy, const float w, const float x, const pandora::HitType &view, const int trackid) :
-    m_energy(energy),
-    m_wire(w),
-    m_drift(x),
-    m_view(view),
-    m_trackID(trackid),
-    m_tpcID(0)
+inline LArVoxelProjection::LArVoxelProjection(
+    const float energy, const float w, const float x, const pandora::HitType &view, const int parentid, const int trackid) :
+    m_energy(energy), m_wire(w), m_drift(x), m_view(view), m_parentVoxelID(parentid), m_trackID(trackid), m_tpcID(0)
 {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline LArVoxelProjection::LArVoxelProjection(
-    const float energy, const float w, const float x, const pandora::HitType &view, const int trackid, const unsigned int tpcid) :
-    m_energy(energy),
-    m_wire(w),
-    m_drift(x),
-    m_view(view),
-    m_trackID(trackid),
-    m_tpcID(tpcid)
+inline LArVoxelProjection::LArVoxelProjection(const float energy, const float w, const float x, const pandora::HitType &view,
+    const int parentid, const int trackid, const unsigned int tpcid) :
+    m_energy(energy), m_wire(w), m_drift(x), m_view(view), m_parentVoxelID(parentid), m_trackID(trackid), m_tpcID(tpcid)
 {
 }
 
-// namespace lar_nd_reco
 } // namespace lar_nd_reco
 
 #endif

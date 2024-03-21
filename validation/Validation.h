@@ -498,13 +498,13 @@ public:
      */
     TargetHistogramCollection();
 
-    TH1F *m_hVtxDeltaX; ///< The vtx delta x histogram
-    TH1F *m_hVtxDeltaY; ///< The vtx delta y histogram
-    TH1F *m_hVtxDeltaZ; ///< The vtx delta z histogram
-    TH1F *m_hVtxDeltaR; ///< The vtx delta r histogram
-    TH2F *m_hVtxDeltaXY; ///< The vtx delta x-y 2D histogram
-    TH2F *m_hVtxDeltaZY; ///< The vtx delta z-y 2D histogram
-    TH2F *m_hVtxDeltaZX; ///< The vtx delta z-x 2D histogram
+    TH1F *m_hVtxDeltaX = nullptr; ///< The vtx delta x histogram
+    TH1F *m_hVtxDeltaY = nullptr; ///< The vtx delta y histogram
+    TH1F *m_hVtxDeltaZ = nullptr; ///< The vtx delta z histogram
+    TH1F *m_hVtxDeltaR = nullptr; ///< The vtx delta r histogram
+    TH2F *m_hVtxDeltaXY = nullptr; ///< The vtx delta x-y 2D histogram
+    TH2F *m_hVtxDeltaZY = nullptr; ///< The vtx delta z-y 2D histogram
+    TH2F *m_hVtxDeltaZX = nullptr; ///< The vtx delta z-x 2D histogram
 };
 
 typedef std::map<InteractionType, TargetHistogramCollection> InteractionTargetHistogramMap;
@@ -522,12 +522,12 @@ public:
      */
     PrimaryHistogramCollection();
 
-    TH1F *m_hHitsAll;            ///< The number of primaries vs number of hits histogram
-    TH1F *m_hHitsEfficiency;     ///< The primary efficiency vs number of hits histogram
-    TH1F *m_hMomentumAll;        ///< The number of primaries vs momentum histogram
-    TH1F *m_hMomentumEfficiency; ///< The primary efficiency vs momentum histogram
-    TH1F *m_hCompleteness;       ///< The primary (best match) completeness histogram
-    TH1F *m_hPurity;             ///< The primary (best match) purity histogram
+    TH1F *m_hHitsAll = nullptr;            ///< The number of primaries vs number of hits histogram
+    TH1F *m_hHitsEfficiency = nullptr;     ///< The primary efficiency vs number of hits histogram
+    TH1F *m_hMomentumAll = nullptr;        ///< The number of primaries vs momentum histogram
+    TH1F *m_hMomentumEfficiency = nullptr; ///< The primary efficiency vs momentum histogram
+    TH1F *m_hCompleteness = nullptr;       ///< The primary (best match) completeness histogram
+    TH1F *m_hPurity = nullptr;             ///< The primary (best match) purity histogram
 };
 
 typedef std::map<ExpectedPrimary, PrimaryHistogramCollection> PrimaryHistogramMap;
