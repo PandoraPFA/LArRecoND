@@ -47,16 +47,15 @@
     </algorithm>
 
     <algorithm type = "LArHierarchyAnalysis">
-        <!-- Enable the following to store event, run and timing information
-        <EventFileName>EventFile.root</EventFileName>
+        <EventFileName>LArRecoNDInput.root</EventFileName>
 	<EventTreeName>events</EventTreeName>
 	<EventLeafName>event</EventLeafName>
 	<RunLeafName>run</RunLeafName>
 	<SubRunLeafName>subrun</SubRunLeafName>
-	<StartTimeName>event_start_t</StartTimeName>
-	<EndTimeName>event_end_t</EndTimeName>
+	<UnixTimeLeafName>unix_ts</UnixTimeLeafName>
+	<StartTimeLeafName>event_start_t</StartTimeLeafName>
+	<EndTimeLeafName>event_end_t</EndTimeLeafName>
 	<EventsToSkip>0</EventsToSkip>
-        -->
 	<CaloHitListName>CaloHitList2D</CaloHitListName>
 	<PfoListName>RecreatedPfos</PfoListName>
         <AnalysisFileName>LArRecoND.root</AnalysisFileName>

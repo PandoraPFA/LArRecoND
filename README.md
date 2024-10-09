@@ -185,7 +185,14 @@ the input data ROOT file containing the hits and the geometry ROOT file, respect
 number of events (in this case 10) while `-N` prints out event information.
 
 The input hit data ROOT file uses the default [SpacePoint](include/LArSP.h) format, which needs to be previously
-converted from the original HDF5 format by the [ndlarflow/h5_to_root_ndlarflow.py](ndlarflow/h5_to_root_ndlarflow.py) script.
+converted from the original HDF5 format by the [ndlarflow/h5_to_root_ndlarflow.py](ndlarflow/h5_to_root_ndlarflow.py) script:
+
+```Shell
+python ndlarflow/h5_to_root_ndlarflow.py inputHDF5File 1 outputDir
+```
+
+where the first argument is the input HDF5 file, the second integer specifies data (1) and the final argument
+is the location of the output directory which will store the equivalent ROOT file.
 
 To use deep learning vertexing (DLVtx), make sure LArRecoND and LArContent is first built with LibTorch enabled, then use
 the [PandoraSettings_LArRecoND_ThreeD_DLVtx.xml](settings/PandoraSettings_LArRecoND_ThreeD_DLVtx.xml) settings file.
@@ -210,7 +217,14 @@ this is not done by the default `-f SP` format option (the ROOT data structures 
 The `-n` option sets the number of events (in this case 10) while `-N` prints out event information.
 
 The input MC ROOT file needs to be previously converted from the original HDF5 format by the
-[ndlarflow/h5_to_root_ndlarflow.py](ndlarflow/h5_to_root_ndlarflow.py) script.
+[ndlarflow/h5_to_root_ndlarflow.py](ndlarflow/h5_to_root_ndlarflow.py) script:
+
+```Shell
+python ndlarflow/h5_to_root_ndlarflow.py inputHDF5File 0 outputDir
+```
+
+where the first argument is the input HDF5 file, the second integer specifies MC (0) and the final argument
+is the location of the output directory which will store the equivalent ROOT file.
 
 To use deep learning vertexing (DLVtx), make sure LArRecoND and LArContent is first built with LibTorch enabled, then use
 the [PandoraSettings_LArRecoND_ThreeD_DLVtx.xml](settings/PandoraSettings_LArRecoND_ThreeD_DLVtx.xml) settings file.
@@ -293,8 +307,9 @@ parameter settings (which must be added to the previous ones) need to be include
         <EventLeafName>event</EventLeafName>
 	<RunLeafName>run</RunLeafName>
 	<SubRunLeafName>subrun</SubRunLeafName>
-	<StartTimeName>event_start_t</StartTimeName>
-	<EndTimeName>event_end_t</EndTimeName>
+	<UnixTimeLeafName>unix_ts</UnixTimeLeafName>
+	<StartTimeLeafName>event_start_t</StartTimeLeafName>
+	<EndTimeLeafName>event_end_t</EndTimeLeafName>
         <EventsToSkip>0</EventsToSkip>
     </algorithm>
 ```
@@ -304,8 +319,9 @@ contains the event numbers (which defaults to `events`) and `EventLeafName` defi
 (which defaults to `event`). This workaround is needed since it is currently not possible to pass event (and run) information
 between Pandora algorithms. By default, no events are skipped, but if the `-s` run option is used, then `EventsToSkip` must be equal
 to this integer to ensure that the correct event numbers are found. The additional parameters `RunLeafName` and `SubRunLeafName`
-define the run and sub-run numbers, while `StartTimeName` and `EndTimeName` define the start and end trigger timing variables.
-If these are not provided, then they will all be set to zero.
+define the run and sub-run numbers, `UnixTimeLeafName` defines the trigger unix time variable name (units in seconds), while
+`StartTimeLeafName` and `EndTimeLeafName` define the decimal start and end time variable names (units in ticks = 0.1 microseconds),
+respectively. If these are not provided, then they will all be set to zero.
 
 The xml settings files [PandoraSettings_LArRecoND_ThreeD.xml](settings/PandoraSettings_LArRecoND_ThreeD.xml) and
 [PandoraSettings_LArRecoND_ThreeD_DLVtx.xml](settings/PandoraSettings_LArRecoND_ThreeD_DLVtx.xml) contain

@@ -26,15 +26,19 @@ HierarchyAnalysisAlgorithm::HierarchyAnalysisAlgorithm() :
     m_event{-1},
     m_run{0},
     m_subRun{0},
+    m_unixTime{0},
     m_startTime{0},
     m_endTime{0},
+    m_vertexIds{nullptr},
     m_eventFileName{""},
     m_eventTreeName{"events"},
     m_eventLeafName{"event"},
     m_runLeafName{"run"},
     m_subRunLeafName{"subrun"},
+    m_unixTimeLeafName{"unix_ts"},
     m_startTimeLeafName{"event_start_t"},
     m_endTimeLeafName{"event_end_t"},
+    m_vertexIdLeafName{"vertex_id"},
     m_eventsToSkip{0},
     m_eventFile{nullptr},
     m_eventTree{nullptr},
@@ -104,9 +108,7 @@ StatusCode HierarchyAnalysisAlgorithm::Run()
     LArHierarchyHelper::RecoHierarchy recoHierarchy;
     LArHierarchyHelper::FillRecoHierarchy(*pPfoList, foldParameters, recoHierarchy);
 
-    // Enable selection of reco hits once this feature is available in a released version of LArContent
-    //const LArHierarchyHelper::QualityCuts quality(m_minPurity, m_minCompleteness, m_selectRecoHits);
-    const LArHierarchyHelper::QualityCuts quality(m_minPurity, m_minCompleteness);
+    const LArHierarchyHelper::QualityCuts quality(m_minPurity, m_minCompleteness, m_selectRecoHits);
     LArHierarchyHelper::MatchInfo matchInfo(mcHierarchy, recoHierarchy, quality);
     LArHierarchyHelper::MatchHierarchies(matchInfo);
     matchInfo.Print(mcHierarchy);
@@ -142,8 +144,8 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
 {
     // For storing various reconstructed PFO quantities in the given event
     int sliceId{-1};
-    // Slice and hits
-    IntVector sliceIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect;
+    // Slice, hits and isShower
+    IntVector sliceIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect, isShowerVect;
     // Reco neutrino vertex
     FloatVector nuVtxXVect, nuVtxYVect, nuVtxZVect;
     // Cluster start, end, direction, PCA axis lengths and total hit energy
@@ -160,6 +162,8 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     IntVector mcNuPDGVect, mcNuIdVect, mcNuCodeVect;
     FloatVector mcNuVtxXVect, mcNuVtxYVect, mcNuVtxZVect;
     FloatVector mcNuEVect, mcNuPxVect, mcNuPyVect, mcNuPzVect;
+    // For the MC vertex_ids
+    std::vector<long> mcVertexIdVect;
 
     // Get the list of root MCParticles for the MC truth matching
     MCParticleList rootMCParticles;
@@ -205,29 +209,36 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 if (n3DHits == 0)
                     continue;
 
-                // Cluster starting point vertex.
-                // Find first and last cluster hit points in case we can't find the vertex position
+                // Find first and last cluster hit points
                 CartesianVector first(max, max, max), last(max, max, max);
                 LArClusterHelper::GetExtremalCoordinates(pCluster3D, first, last);
-                // Get the first vertex if it exists, otherwise use the first hit position
+                // Get the (first) vertex if it exists, otherwise use the first hit position
                 const VertexList &vertices{pPfo->GetVertexList()};
-                const CartesianVector start = (vertices.size() > 0) ? (*vertices.begin())->GetPosition() : first;
+                const CartesianVector vertex = (vertices.size() > 0) ? (*vertices.begin())->GetPosition() : first;
 
                 // Principal component analysis of the cluster
                 CartesianPointVector pointVector;
                 LArClusterHelper::GetCoordinateVector(pCluster3D, pointVector);
                 // Use cluster local vertex for relative axis directions
-                const LArShowerPCA pca = LArPfoHelper::GetPrincipalComponents(pointVector, start);
+                const LArShowerPCA pca = LArPfoHelper::GetPrincipalComponents(pointVector, vertex);
 
-                // Centroid, axis directions and lengths
+                // Centroid, primary axis direction and lengths
                 const CartesianVector centroid{pca.GetCentroid()};
-                const CartesianVector direction{pca.GetPrimaryAxis()};
+                const CartesianVector primaryAxis{pca.GetPrimaryAxis()};
                 const float primaryLength{pca.GetPrimaryLength()};
                 const float secondaryLength{pca.GetSecondaryLength()};
                 const float tertiaryLength{pca.GetTertiaryLength()};
 
-                // Estimate end-point using starting vertex and length along primary axis
-                const CartesianVector endPoint = start + direction * primaryLength;
+                // Cluster start is assumed to be the vertex. Set the end point as either the
+                // first or last hit point that has the largest squared distance from the vertex
+                const float firstDistSq = first.GetDistanceSquared(vertex);
+                const float lastDistSq = last.GetDistanceSquared(vertex);
+                const CartesianVector endPoint = (lastDistSq > firstDistSq) ? last : first;
+
+                // Use the primary axis to set the direction.
+                // Reverse this if (endPoint - vertex) dot primaryAxis < 0
+                const CartesianVector displacement{endPoint - vertex};
+                const CartesianVector direction = (displacement.GetDotProduct(primaryAxis) < 0.0) ? primaryAxis * (-1.0) : primaryAxis;
 
                 // Cluster deposited energy (all hits assume EM energy = hadronic energy)
                 const float clusterEnergy{pCluster3D->GetElectromagneticEnergy()};
@@ -249,15 +260,20 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 nuVtxXVect.emplace_back(rootRecoVtx.GetX());
                 nuVtxYVect.emplace_back(rootRecoVtx.GetY());
                 nuVtxZVect.emplace_back(rootRecoVtx.GetZ());
+
                 // Number of hits in the cluster (by views)
                 n3DHitsVect.emplace_back(n3DHits);
                 nUHitsVect.emplace_back(nUHits);
                 nVHitsVect.emplace_back(nVHits);
                 nWHitsVect.emplace_back(nWHits);
-                // Cluster start, end and direction (from PCA)
-                startXVect.emplace_back(start.GetX());
-                startYVect.emplace_back(start.GetY());
-                startZVect.emplace_back(start.GetZ());
+                // Assume all PFOs are tracks for now
+                const int isShower{0};
+                isShowerVect.emplace_back(isShower);
+
+                // Cluster vertex, end and direction (from PCA)
+                startXVect.emplace_back(vertex.GetX());
+                startYVect.emplace_back(vertex.GetY());
+                startZVect.emplace_back(vertex.GetZ());
                 endXVect.emplace_back(endPoint.GetX());
                 endYVect.emplace_back(endPoint.GetY());
                 endZVect.emplace_back(endPoint.GetZ());
@@ -271,6 +287,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 primaryLVect.emplace_back(primaryLength);
                 secondaryLVect.emplace_back(secondaryLength);
                 tertiaryLVect.emplace_back(tertiaryLength);
+
                 // Cluster energy (sum over all hits)
                 energyVect.emplace_back(clusterEnergy);
 
@@ -294,6 +311,9 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 const float mcNuEnergy = (pNuRoot != nullptr) ? pNuRoot->GetEnergy() : 0.f;
                 const CartesianVector mcNuMomentum = (pNuRoot != nullptr) ? pNuRoot->GetMomentum() : CartesianVector(0.f, 0.f, 0.f);
 
+                // Use the input event file to get the corresponding vertex_id for the given mcNuId
+                const long vertexId = this->GetVertexId(mcNuId);
+
                 matchVect.emplace_back(gotMatch);
                 mcPDGVect.emplace_back(mcPDG);
                 mcIdVect.emplace_back(mcId);
@@ -313,6 +333,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 mcEndZVect.emplace_back(mcEndPoint.GetZ());
                 mcNuPDGVect.emplace_back(mcNuPDG);
                 mcNuIdVect.emplace_back(mcNuId);
+                mcVertexIdVect.emplace_back(vertexId);
                 mcNuCodeVect.emplace_back(mcNuCode);
                 mcNuVtxXVect.emplace_back(mcNuVertex.GetX());
                 mcNuVtxYVect.emplace_back(mcNuVertex.GetY());
@@ -330,6 +351,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "event", m_event));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "run", m_run));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "subRun", m_subRun));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "unixTime", m_unixTime));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startTime", m_startTime));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "endTime", m_endTime));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "sliceId", &sliceIdVect));
@@ -340,6 +362,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nUHits", &nUHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nVHits", &nVHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nWHits", &nWHitsVect));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isShower", &isShowerVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startX", &startXVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startY", &startYVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startZ", &startZVect));
@@ -375,6 +398,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcEndZ", &mcEndZVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcNuPDG", &mcNuPDGVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcNuId", &mcNuIdVect));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcVertexId", &mcVertexIdVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcNuCode", &mcNuCodeVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcNuVtxX", &mcNuVtxXVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcNuVtxY", &mcNuVtxYVect));
@@ -466,6 +490,45 @@ HierarchyAnalysisAlgorithm::RecoMCMatch::RecoMCMatch(const pandora::MCParticle *
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+long HierarchyAnalysisAlgorithm::GetVertexId(const int mcNuId) const
+{
+    // Get the associated vertex_id value for the given truncated neutrino parent id.
+    // This loops over the vertex_id long values, truncates and compares them to mcNuId,
+    // and returns the corresponding matched vertex_id. The neutrino id values are truncated
+    // in the H5-to-ROOT flow script (converting them from long integers to integers), but
+    // we need the original long vertex_id values for making CAFs
+
+    // Neutrino id 10^8 offset
+    const int nuIdOffset(100000000);
+
+    long vertexId(mcNuId);
+    for (const long &vtxId : *m_vertexIds)
+    {
+        const std::string vtxIdStr = std::to_string(vtxId);
+        const size_t nDigits = vtxIdStr.size();
+        if (nDigits > 5)
+        {
+            // truncated number: first digit + last 5 digits
+            const std::string truncStr = vtxIdStr.at(0) + vtxIdStr.substr(nDigits - 5);
+
+            // Convert truncated number string to an integer and add nuIdOffset
+            const int truncId = std::stoi(truncStr) + nuIdOffset;
+
+            // Compare with mcNuId
+            if (truncId == mcNuId)
+            {
+                // We have found the corresponding vertex_id
+                vertexId = vtxId;
+                break;
+            }
+        }
+    }
+
+    return vertexId;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
 {
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EventFileName", m_eventFileName));
@@ -474,8 +537,13 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "RunLeafName", m_runLeafName));
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "SubRunLeafName", m_subRunLeafName));
     PANDORA_RETURN_RESULT_IF_AND_IF(
+        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "UnixTimeLeafName", m_unixTimeLeafName));
+    PANDORA_RETURN_RESULT_IF_AND_IF(
         STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "StartTimeLeafName", m_startTimeLeafName));
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EndTimeLeafName", m_endTimeLeafName));
+    PANDORA_RETURN_RESULT_IF_AND_IF(
+        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "VertexIdLeafName", m_vertexIdLeafName));
+
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EventsToSkip", m_eventsToSkip));
 
     // Setup the event ROOT file
@@ -487,18 +555,23 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
             m_eventTree = dynamic_cast<TTree *>(m_eventFile->Get(m_eventTreeName.c_str()));
             if (m_eventTree)
             {
-                // Only enable the event and run number leaves as well as the trigger timing
+                // Only enable the event and run number leaves as well as the trigger timing.
+                // Also enable the vertex_id leaf
                 m_eventTree->SetBranchStatus("*", 0);
                 m_eventTree->SetBranchStatus(m_eventLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_runLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_subRunLeafName.c_str(), 1);
+                m_eventTree->SetBranchStatus(m_unixTimeLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_startTimeLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_endTimeLeafName.c_str(), 1);
+                m_eventTree->SetBranchStatus(m_vertexIdLeafName.c_str(), 1);
                 m_eventTree->SetBranchAddress(m_eventLeafName.c_str(), &m_event);
                 m_eventTree->SetBranchAddress(m_runLeafName.c_str(), &m_run);
                 m_eventTree->SetBranchAddress(m_subRunLeafName.c_str(), &m_subRun);
+                m_eventTree->SetBranchAddress(m_unixTimeLeafName.c_str(), &m_unixTime);
                 m_eventTree->SetBranchAddress(m_startTimeLeafName.c_str(), &m_startTime);
                 m_eventTree->SetBranchAddress(m_endTimeLeafName.c_str(), &m_endTime);
+                m_eventTree->SetBranchAddress(m_vertexIdLeafName.c_str(), &m_vertexIds);
             }
         }
     }

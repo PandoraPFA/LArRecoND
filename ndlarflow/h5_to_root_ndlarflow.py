@@ -1,7 +1,7 @@
 # Adapted for 2x2 conversion for Pandora by Richard Diurba
 # Code based on Bern Module data root file conversion by Salvatore Davide Porzio and Saba Parsa
-# python h5_to_root_ndlarflow.py filename  data outputdir
-# Example to run on data: python h5_to_rooot.py data.h5 /my/dir/ 1
+# python h5_to_root_ndlarflow.py filename isData outputdir
+# Example to run on data: python h5_to_root_ndlarflow.py data.h5 1 /my/dir/
 # filename is an argument of the filename (does not need quotations)
 # data is to toggle the MC information for simulation (0) and data (1), default is simulation
 # Requires standard ROOT, h5py, and numpy 
@@ -70,7 +70,7 @@ def main(argv=None):
         eventID              = array('i',[0])           # event ID [-]
         event_start_t        = array('i',[0])           # event timestamp start [UNITS?]
         event_end_t          = array('i',[0])           # event timestamp end [UNITS?]       
-        event_unix_ts = array("l",[0])
+        event_unix_ts = array("i",[0])
         subrun=array("i",[0])
         run= array("i",[0])
         
@@ -106,7 +106,7 @@ def main(argv=None):
         mcp_pz=ROOT.std.vector("float")();
         mcp_id=ROOT.std.vector("int")();
         mcp_nuid=ROOT.std.vector("int")();
-        mcp_vertexID=ROOT.std.vector("int")();
+        mcp_vertex_id=ROOT.std.vector("long")();
         mcp_pdg=ROOT.std.vector("int")();
         mcp_mother=ROOT.std.vector("int")();
         mcp_energy=ROOT.std.vector("float")();
@@ -124,14 +124,15 @@ def main(argv=None):
         nupz=ROOT.std.vector("float")();
         nue=ROOT.std.vector("float")();
         nuID=ROOT.std.vector("int")();
+        vertex_id=ROOT.std.vector("long")();
         nuPDG=ROOT.std.vector("int")();
         mode=ROOT.std.vector("int")();
         ccnc=ROOT.std.vector("int")(); 
         
-        # stetup tree for output       
+        # setup tree for output
         output_tree.Branch("event"           ,eventID           ,"eventID/I")
         output_tree.Branch("subrun"           ,subrun           ,"subrun/I")
-        output_tree.Branch("unix_ts",event_unix_ts,"unix_ts/L");
+        output_tree.Branch("unix_ts",event_unix_ts,"unix_ts/I");
         output_tree.Branch("run"           ,run           ,"run/I")
         output_tree.Branch("event_start_t"     ,event_start_t     ,"event_start_t/I")     # 32 bit timestamp (2^32-1 = 2.147483647e9)
         output_tree.Branch("event_end_t"       ,event_end_t       ,"event_end_t/I")       # 32 bit timestamp (2^32-1 = 2.147483647e9)
@@ -140,7 +141,7 @@ def main(argv=None):
         output_tree.Branch("y",y)
         output_tree.Branch("z",z)
         output_tree.Branch("ts",ts)
-        output_tree.Branch("charge"      ,charge)
+        output_tree.Branch("charge",charge)
         output_tree.Branch("E",E)
         output_tree.Branch("hit_segmentID",hit_segmentID)
         output_tree.Branch("hit_segmentIndex",hit_segmentIndex)
@@ -167,7 +168,8 @@ def main(argv=None):
         output_tree.Branch("mcp_energy",mcp_energy)
         output_tree.Branch("mcp_pdg",mcp_pdg)
         output_tree.Branch("mcp_nuid",mcp_nuid)
-       
+        output_tree.Branch("mcp_vertex_id",mcp_vertex_id)
+
         output_tree.Branch("mcp_id",mcp_id)
         output_tree.Branch("mcp_px",mcp_px)
         output_tree.Branch("mcp_py",mcp_py)
@@ -180,6 +182,7 @@ def main(argv=None):
         output_tree.Branch("mcp_endy",mcp_endy)
         output_tree.Branch("mcp_endz",mcp_endz) 
         output_tree.Branch("nuID",nuID)
+        output_tree.Branch("vertex_id",vertex_id)
         output_tree.Branch("nue",nue)
         output_tree.Branch("nuPDG",nuPDG)
         output_tree.Branch("nupx",nupx)
@@ -190,8 +193,6 @@ def main(argv=None):
         output_tree.Branch("nuvtxz",nuvtxz)
         output_tree.Branch("mode",mode)
         output_tree.Branch("ccnc",ccnc)
-
-
 
         run[0]=int(0)
         subrun[0]=int(0)
@@ -232,6 +233,7 @@ def main(argv=None):
             mcp_id.clear()
             mcp_mother.clear()
             mcp_nuid.clear()
+            mcp_vertex_id.clear()
             mcp_pdg.clear()
             mcp_energy.clear()
             mcp_startx.clear()    
@@ -242,6 +244,7 @@ def main(argv=None):
             mcp_endz.clear()
             nue.clear()
             nuID.clear()
+            vertex_id.clear()
             nuPDG.clear()
             nuvtxx.clear()
             nuvtxy.clear()
@@ -277,8 +280,9 @@ def main(argv=None):
                 # find spillID to use for truth info
                 spillArray=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_id[0]]["event_id"][0][0][0]
                 # find all truth info and fill it using a complicated vector 
-                allTrajectories,allVertices=find_all_truth_in_spill(spillArray, flow_out)
+                allTrajectories,allVertices,nuVertexArray,trajVertexID = find_all_truth_in_spill(spillArray, flow_out)
                 [nuID.push_back(int(i)) for i in allVertices[0]]
+                [vertex_id.push_back(int(i)) for i in nuVertexArray]
                 [nue.push_back(i) for i in allVertices[1]]
                 [nuPDG.push_back(int(i)) for i in allVertices[2]]
                 [nuvtxx.push_back(i+trueXOffset) for i in allVertices[3]]
@@ -302,7 +306,8 @@ def main(argv=None):
                 [mcp_nuid.push_back(int(i)) for i in allTrajectories[-2]]
                 [mcp_pdg.push_back(int(i)) for i in allTrajectories[-3]]
                 [mcp_id.push_back(int(i)) for i in allTrajectories[-4]]
-                [mcp_energy.push_back(i) for i in allTrajectories[-5]] 
+                [mcp_energy.push_back(i) for i in allTrajectories[-5]]
+                [mcp_vertex_id.push_back(int(i)) for i in trajVertexID]
             # fill event info
             eventID[0]           = event['id'] 
             event_start_t[0] =int(event["ts_start"])
@@ -627,7 +632,6 @@ def find_all_truth_in_spill(spillID, flow_out):
         nuCC.append(cc)
 
 
-
     for i in nuVertexArray:
         if i<1000000:
             nuVertexID.append(int(i))
@@ -636,7 +640,8 @@ def find_all_truth_in_spill(spillID, flow_out):
             a=int(a[0]+a[-5:])
             nuVertexID.append(a)
     vertices=[nuVertexID,nuVertexE,nuPDG,nuVertexX,nuVertexY,nuVertexZ,nuPx,nuPy,nuPz,nuCode,nuCC]
-    return trajectories, vertices
+    return trajectories, vertices, nuVertexArray, trajVertexID
+
 def get_nuance_code(vertex_num,flow_out):
     # convert the neutrino information to nuance code from PandoraInterface code
     vtx  = flow_out["mc_truth/interactions/data"][vertex_num]
