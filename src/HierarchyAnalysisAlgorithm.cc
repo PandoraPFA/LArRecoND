@@ -155,8 +155,10 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
 {
     // For storing various reconstructed PFO quantities in the given event
     int sliceId{-1};
-    // Slice, hits and isShower
-    IntVector sliceIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect, isShowerVect;
+    // Slice & hits
+    IntVector sliceIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect;
+    // isShower, isRecoPrimary & reco PDG hypothesis
+    IntVector isShowerVect, isRecoPrimaryVect, recoPDGVect;
     // Reco neutrino vertex
     FloatVector nuVtxXVect, nuVtxYVect, nuVtxZVect;
     // Cluster start, end, direction, PCA axis lengths and total hit energy
@@ -197,6 +199,9 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
         const float max{std::numeric_limits<float>::max()};
         const CartesianVector rootRecoVtx = (pRootVertex != nullptr) ? pRootVertex->GetPosition() : CartesianVector(max, max, max);
 
+        // Get the interaction nodes
+        const LArHierarchyHelper::RecoHierarchy::NodeVector &interactions = recoHierarchy.GetInteractions(pRoot);
+
         // Get reco nodes for each root PFO
         LArHierarchyHelper::RecoHierarchy::NodeVector recoNodes;
         recoHierarchy.GetFlattenedNodes(pRoot, recoNodes);
@@ -206,6 +211,9 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
         {
             // Get the list of PFOs for each node
             const PfoList recoParticles = pRecoNode->GetRecoParticles();
+
+            // Is this an interaction node?
+            const int isRecoPrimary = (interactions.end() != std::find(interactions.begin(), interactions.end(), pRecoNode)) ? 1 : 0;
 
             // Get individual PFOs
             for (const ParticleFlowObject *pPfo : recoParticles)
@@ -280,6 +288,14 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 // Assume all PFOs are tracks for now
                 const int isShower{0};
                 isShowerVect.emplace_back(isShower);
+
+                // Set reco PDG hypothesis, e.g track = muon, shower = electron.
+                // Since all PFOs are tracks for now, this will always be muon
+                const int recoPDG = (isShower == 0) ? MU_MINUS : E_MINUS;
+                recoPDGVect.emplace_back(recoPDG);
+
+                // Is this a reconstructed primary PFO?
+                isRecoPrimaryVect.emplace_back(isRecoPrimary);
 
                 // Cluster vertex, end and direction (from PCA)
                 startXVect.emplace_back(vertex.GetX());
@@ -374,6 +390,8 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nVHits", &nVHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nWHits", &nWHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isShower", &isShowerVect));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoPDG", &recoPDGVect));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isRecoPrimary", &isRecoPrimaryVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startX", &startXVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startY", &startYVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startZ", &startZVect));
