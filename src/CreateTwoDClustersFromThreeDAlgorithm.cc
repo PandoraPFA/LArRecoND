@@ -23,10 +23,13 @@ CreateTwoDClustersFromThreeDAlgorithm::CreateTwoDClustersFromThreeDAlgorithm()
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline std::pair<int, int> QuanitizePosition(const float x, const float wirePos)
+inline std::pair<int, int> QuantizePosition(const float x, const float wirePos)
 {
-    constexpr float scale{1e-5};
-    return std::make_pair(static_cast<int>(x / scale), static_cast<int>(wirePos / scale));
+    // INFO: Quantize the position, to avoid floating point precision issues.
+    //       Scale value was chosen after testing, and values of 1e5 and above
+    //       were found to be sufficient.
+    constexpr float scale{1e5};
+    return std::make_pair(static_cast<int>(x * scale), static_cast<int>(wirePos * scale));
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
