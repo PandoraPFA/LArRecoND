@@ -159,6 +159,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     IntVector sliceIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect;
     // isShower, isRecoPrimary & reco PDG hypothesis
     IntVector isShowerVect, isRecoPrimaryVect, recoPDGVect;
+    FloatVector trackScoreVect;
     // Reco neutrino vertex
     FloatVector nuVtxXVect, nuVtxYVect, nuVtxZVect;
     // Cluster start, end, direction, PCA axis lengths and total hit energy
@@ -286,6 +287,15 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 // Assume all PFOs are tracks for now
                 const int isShower{0};
                 isShowerVect.emplace_back(isShower);
+                // but still save the track score, getting the appropriate metadata
+                // see e.g. https://github.com/PandoraPFA/larpandora/blob/develop/larpandora/LArPandoraInterface/LArPandoraOutput.cxx#L325 for similar
+                const auto& properties = pPfo->GetPropertiesMap();
+                float trackScore = -1.;
+                const auto iterTrackScore(properties.find("TrackScore"));
+                if ( iterTrackScore != properties.end() ) {
+                    trackScore = iterTrackScore->second;
+                }
+                trackScoreVect.emplace_back( trackScore );
 
                 // Set reco PDG hypothesis, e.g track = muon, shower = electron.
                 // Since all PFOs are tracks for now, this will always be muon
@@ -388,6 +398,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nVHits", &nVHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nWHits", &nWHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isShower", &isShowerVect));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "trackScore", &trackScoreVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoPDG", &recoPDGVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isRecoPrimary", &isRecoPrimaryVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "startX", &startXVect));
