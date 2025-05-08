@@ -86,45 +86,72 @@ def main(argv=None):
 
         eventsToRun=len(events)
 
+        # Get the array of the trigger type for every event in the file
+        if useData==True:
+            triggerIDsData=flow_out["charge/events","charge/ext_trigs",events["id"][:]]
+            triggerIDsAll=np.array(np.ma.getdata(triggerIDsData["iogroup"]),dtype='int32')
+
+            triggerIDs = np.array( np.broadcast_to( (1 << 31) - 1, shape=eventsToRun ) )
+            for i in range(len(triggerIDsAll)):
+                if np.sum(triggerIDsAll[i])==0:
+                    continue
+                if 5 in triggerIDsAll[i]:
+                    triggerIDs[i] = 5
+                else:
+                    triggerIDs[i] = triggerIDsAll[i][0]
+        else:
+            triggerIDs = np.zeros( eventsToRun, dtype='int32' )
+
         for ievt in range(eventsToRun):
+            badEvt=False
+
             if ievt%10==0:
                 print('Currently on',ievt,'of',eventsToRun)
             event = events[ievt]
             event_calib_prompt_hits=flow_out["charge/events/","charge/calib_"+promptKey+"_hits", events["id"][ievt]]
 
             if len(event_calib_prompt_hits[0])==0:
-                print('This event seems empty in the hits array, skipping')
-                continue
+                print('This event seems empty in the hits array, setting as bad event. Trigger type (',triggerIDs[ievt],')')
+                badEvt=True
 
             # Removing duplicate hits_id instantiation and getting rid of hits_id_raw which is unused
             #######################################
-            hits_z = (np.ma.getdata(event_calib_prompt_hits["z"][0])+trueZOffset).astype('float32')
-            hits_y = ( np.ma.getdata(event_calib_prompt_hits["y"][0])+trueYOffset ).astype('float32')
-            hits_x = ( np.ma.getdata(event_calib_prompt_hits["x"][0])+trueXOffset ).astype('float32')
-            hits_Q = ( np.ma.getdata(event_calib_prompt_hits["Q"][0]) ).astype('float32')
-            hits_E = ( np.ma.getdata(event_calib_prompt_hits["E"][0]) ).astype('float32')
-            hits_ts = ( np.ma.getdata(event_calib_prompt_hits["ts_pps"][0]) ).astype('float32')
-            hits_ids = np.ma.getdata(event_calib_prompt_hits["id"][0])
+            if badEvt==False:
+                hits_z = (np.ma.getdata(event_calib_prompt_hits["z"][0])+trueZOffset).astype('float32')
+                hits_y = ( np.ma.getdata(event_calib_prompt_hits["y"][0])+trueYOffset ).astype('float32')
+                hits_x = ( np.ma.getdata(event_calib_prompt_hits["x"][0])+trueXOffset ).astype('float32')
+                hits_Q = ( np.ma.getdata(event_calib_prompt_hits["Q"][0]) ).astype('float32')
+                hits_E = ( np.ma.getdata(event_calib_prompt_hits["E"][0]) ).astype('float32')
+                hits_ts = ( np.ma.getdata(event_calib_prompt_hits["ts_pps"][0]) ).astype('float32')
+                hits_ids = np.ma.getdata(event_calib_prompt_hits["id"][0])
+            else:
+                hits_z = np.array([]).astype('float32')
+                hits_y = np.array([]).astype('float32')
+                hits_x = np.array([]).astype('float32')
+                hits_Q = np.array([]).astype('float32')
+                hits_E = np.array([]).astype('float32')
+                hits_ts = np.array([]).astype('float32')
+                hits_ids = np.array([])
 
             if len(hits_ids)<2:
-                print('This event has < 2 hit IDs, skipping')
-                continue
+                print('This event has < 2 hit IDs, setting as bad event. Trigger type (',triggerIDs[ievt],')')
+                badEvt=True
 
             # Start with the non-spill info, this is all ~like the current form
             #   but not repeating
             runID = np.array( [0], dtype='int32' )
             subrunID = np.array( [0], dtype='int32' )
             eventID = np.array( [event['id']], dtype='int32' )
-            event_start_t = np.array( [event['ts_start']], dtype='int32' )
-            event_end_t = np.array( [event['ts_end']], dtype='int32' )
-            event_unix_ts = np.array( [event['unix_ts']], dtype='int32' )
+            triggerID = np.array( [triggerIDs[ievt]], dtype='int32')
 
-            triggers = flow_out["charge/events","charge/ext_trigs",events["id"][ievt]]
-            
-            triggerArray=triggers["iogroup"]
-            
-            triggerID = np.array( np.ma.getdata(triggerArray),dtype='int32')
-
+            if triggerID!=((1 << 31)-1):
+                event_start_t = np.array( [event['ts_start']], dtype='int32' )
+                event_end_t = np.array( [event['ts_end']], dtype='int32' )
+                event_unix_ts = np.array( [event['unix_ts']], dtype='int32' )
+            else:
+                event_start_t = np.array( [-5], dtype='int32' )
+                event_end_t = np.array( [-5], dtype='int32' )
+                event_unix_ts = np.array( [-5], dtype='int32' )
 
             # "uncalib" -- this alternative is not currently used in LArPandora that I can tell, so no need to save. Making optional to use the prompt or final hits to be saved.
             #######################################
@@ -132,42 +159,68 @@ def main(argv=None):
             if useData==False:
                 # Truth-level info for hits
                 #######################################
-                trajFromHits=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids[:]][:,0]
-                fracFromHits=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/packet_fraction",hits_ids[:]][:,0]
+                if badEvt==False:
+                    trajFromHits=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids[:]][:,0]
+                    fracFromHits=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/packet_fraction",hits_ids[:]][:,0]
 
-                matches = trajFromHits['segment_id'].count(axis=1).astype('uint16')
+                    matches = trajFromHits['segment_id'].count(axis=1).astype('uint16')
 
-                packetFrac = np.array( awk.flatten( awk.flatten( awk.Array( fracFromHits['fraction'].astype('float32') ) ) ) )
-                packetFrac = packetFrac[np.where(packetFrac!=0)]
+                    packetFrac = np.array( awk.flatten( awk.flatten( awk.Array( fracFromHits['fraction'].astype('float32') ) ) ) )
+                    packetFrac = packetFrac[np.where(packetFrac!=0)]
 
-                trajFromHits=trajFromHits.data[~trajFromHits['segment_id'].mask]
-                pdgHit = trajFromHits['pdg_id'].astype('int32')
-                trackID = trajFromHits['segment_id'].astype('int32')
-                particleID = trajFromHits['file_traj_id'].astype('int64')
-                particleIDLocal = trajFromHits['traj_id'].astype('int64')
-                interactionIndex = trajFromHits['vertex_id'].astype('int64')
+                    trajFromHits=trajFromHits.data[~trajFromHits['segment_id'].mask]
+                    pdgHit = trajFromHits['pdg_id'].astype('int32')
+                    trackID = trajFromHits['segment_id'].astype('int32')
+                    particleID = trajFromHits['file_traj_id'].astype('int64')
+                    particleIDLocal = trajFromHits['traj_id'].astype('int64')
+                    interactionIndex = trajFromHits['vertex_id'].astype('int64')
+                else:
+                    packetFrac = np.array( [] ).astype('float32')
+                    pdgHit = np.array( [] ).astype('int32')
+                    trackID = np.array( [] ).astype('int32')
+                    particleID = np.array( [] ).astype('int64')
+                    particleIDLocal = np.array( [] ).astype('int64')
+                    interactionIndex = np.array( [] ).astype('int64')
 
                 # Truth-level info for the spill
                 #######################################
-                spillID=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"][0][0][0]
-                # Trajectories
-                traj_indicesArray = np.where(flow_out['mc_truth/trajectories/data']["event_id"] == spillID)[0]
-                traj = flow_out["mc_truth/trajectories/data"][traj_indicesArray]
-                trajStartX = (traj['xyz_start'][:,0]).astype('float32')
-                trajStartY = (traj['xyz_start'][:,1]).astype('float32')
-                trajStartZ = (traj['xyz_start'][:,2]).astype('float32')
-                trajEndX = (traj['xyz_end'][:,0]).astype('float32')
-                trajEndY = (traj['xyz_end'][:,1]).astype('float32')
-                trajEndZ = (traj['xyz_end'][:,2]).astype('float32')
-                trajID = (traj['file_traj_id']).astype('int64')
-                trajIDLocal = (traj['traj_id']).astype('int64')
-                trajPDG = (traj['pdg_id']).astype('int32')
-                trajE = (traj['E_start']*MeV2GeV).astype('float32')
-                trajPx = (traj['pxyz_start'][:,0]*MeV2GeV).astype('float32')
-                trajPy = (traj['pxyz_start'][:,1]*MeV2GeV).astype('float32')
-                trajPz = (traj['pxyz_start'][:,2]*MeV2GeV).astype('float32')
-                trajVertexID = (traj['vertex_id']).astype('int64')
-                trajParentID = (traj['parent_id']).astype('int64')
+                if badEvt==False:
+                    spillID=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"][0][0][0]
+                    # Trajectories
+                    traj_indicesArray = np.where(flow_out['mc_truth/trajectories/data']["event_id"] == spillID)[0]
+                    traj = flow_out["mc_truth/trajectories/data"][traj_indicesArray]
+                    trajStartX = (traj['xyz_start'][:,0]).astype('float32')
+                    trajStartY = (traj['xyz_start'][:,1]).astype('float32')
+                    trajStartZ = (traj['xyz_start'][:,2]).astype('float32')
+                    trajEndX = (traj['xyz_end'][:,0]).astype('float32')
+                    trajEndY = (traj['xyz_end'][:,1]).astype('float32')
+                    trajEndZ = (traj['xyz_end'][:,2]).astype('float32')
+                    trajID = (traj['file_traj_id']).astype('int64')
+                    trajIDLocal = (traj['traj_id']).astype('int64')
+                    trajPDG = (traj['pdg_id']).astype('int32')
+                    trajE = (traj['E_start']*MeV2GeV).astype('float32')
+                    trajPx = (traj['pxyz_start'][:,0]*MeV2GeV).astype('float32')
+                    trajPy = (traj['pxyz_start'][:,1]*MeV2GeV).astype('float32')
+                    trajPz = (traj['pxyz_start'][:,2]*MeV2GeV).astype('float32')
+                    trajVertexID = (traj['vertex_id']).astype('int64')
+                    trajParentID = (traj['parent_id']).astype('int64')
+                else:
+                    trajStartX = np.array( [] ).astype('float32')
+                    trajStartY = np.array( [] ).astype('float32')
+                    trajStartZ = np.array( [] ).astype('float32')
+                    trajEndX = np.array( [] ).astype('float32')
+                    trajEndY = np.array( [] ).astype('float32')
+                    trajEndZ = np.array( [] ).astype('float32')
+                    trajID = np.array( [] ).astype('int64')
+                    trajIDLocal = np.array( [] ).astype('int64')
+                    trajPDG = np.array( [] ).astype('int32')
+                    trajE = np.array( [] ).astype('float32')
+                    trajPx = np.array( [] ).astype('float32')
+                    trajPy = np.array( [] ).astype('float32')
+                    trajPz = np.array( [] ).astype('float32')
+                    trajVertexID = np.array( [] ).astype('int64')
+                    trajParentID = np.array( [] ).astype('int64')
+
                 # Vertices
                 vertex_indicesArray = np.where(flow_out["/mc_truth/interactions/data"]["event_id"] == spillID)[0]
                 vtx = flow_out["/mc_truth/interactions/data"][vertex_indicesArray]
