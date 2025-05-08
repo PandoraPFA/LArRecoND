@@ -348,6 +348,13 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
 	    std::cout << "SKIPPING EVENT: number of space points " << nSP << " > " << parameters.m_maxMergedVoxels << std::endl;
 	    continue;
 	}
+	// Also stop processing the event if it has less than 2 hits (to match the H5-to-ROOT script logic).
+	// It has a single trigger ntuple entry but the event is empty, so we can't make CaloHits
+	if (nSP < 2)
+	{
+	    std::cout << "SKIPPING EVENT: number of space points " << nSP << " < 2" << std::endl;
+	    continue;
+	}
 
         // Some truth information first
         if (parameters.m_dataFormat == Parameters::LArNDFormat::SPMC)

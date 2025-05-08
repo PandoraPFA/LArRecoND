@@ -61,6 +61,8 @@ HierarchyAnalysisAlgorithm::HierarchyAnalysisAlgorithm() :
     m_minRecoGoodViews{2},
     m_removeRecoNeutrons{true},
     m_selectRecoHits{true},
+    m_storeClusterRecoHits{true},
+    m_gotMCEventInput{false},
     m_mcIdMap{}
 {
 }
@@ -144,8 +146,11 @@ void HierarchyAnalysisAlgorithm::SetEventRunMCIdInfo()
         m_eventTree->GetEntry(iEntry);
 
         // Fill the Id map
-        for (size_t i = 0; i < m_mcIDs->size(); i++)
-            m_mcIdMap[(*m_mcIDs)[i]] = (*m_mcLocalIDs)[i];
+        if (m_gotMCEventInput)
+        {
+            for (size_t i = 0; i < m_mcIDs->size(); i++)
+                m_mcIdMap[(*m_mcIDs)[i]] = (*m_mcLocalIDs)[i];
+        }
     }
     else
         // Use the algorithm run count number
@@ -347,25 +352,28 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 // Cluster energy (sum over all hits)
                 energyVect.emplace_back(clusterEnergy);
 
-                // Store 3D reco hit information for this cluster/PFO. Vector sizes = nPFOs*n3DHits not nPFOs.
-                // The hit vector entries follow the order PFO1[n3DHits1], PFO2[n3DHits2], PFO3[n3DHits3] etc.
-                pandora::CaloHitList calo3DHitList;
-                LArClusterHelper::GetAllHits(pCluster3D, calo3DHitList);
-                // Sort hits using their positions
-                calo3DHitList.sort(LArClusterHelper::SortHitsByPosition);
-
-                for (const auto *pCalo3DHit : calo3DHitList)
+                if (m_storeClusterRecoHits)
                 {
-                    const int hitId = reinterpret_cast<intptr_t>(pCalo3DHit->GetParentAddress());
-                    const CartesianVector hitPos = pCalo3DHit->GetPositionVector();
-                    const float hitE = pCalo3DHit->GetInputEnergy();
-                    recoHitIdVect.emplace_back(hitId);
-                    recoHitSliceIdVect.emplace_back(sliceId);
-                    recoHitClusterIdVect.emplace_back(clusterId);
-                    recoHitXVect.emplace_back(hitPos.GetX());
-                    recoHitYVect.emplace_back(hitPos.GetY());
-                    recoHitZVect.emplace_back(hitPos.GetZ());
-                    recoHitEVect.emplace_back(hitE);
+                    // Store 3D reco hit information for this cluster/PFO. Vector sizes = nPFOs*n3DHits not nPFOs.
+                    // The hit vector entries follow the order PFO1[n3DHits1], PFO2[n3DHits2], PFO3[n3DHits3] etc.
+                    pandora::CaloHitList calo3DHitList;
+                    LArClusterHelper::GetAllHits(pCluster3D, calo3DHitList);
+                    // Sort hits using their positions
+                    calo3DHitList.sort(LArClusterHelper::SortHitsByPosition);
+
+                    for (const auto *pCalo3DHit : calo3DHitList)
+                    {
+                        const int hitId = reinterpret_cast<intptr_t>(pCalo3DHit->GetParentAddress());
+                        const CartesianVector hitPos = pCalo3DHit->GetPositionVector();
+                        const float hitE = pCalo3DHit->GetInputEnergy();
+                        recoHitIdVect.emplace_back(hitId);
+                        recoHitSliceIdVect.emplace_back(sliceId);
+                        recoHitClusterIdVect.emplace_back(clusterId);
+                        recoHitXVect.emplace_back(hitPos.GetX());
+                        recoHitYVect.emplace_back(hitPos.GetY());
+                        recoHitZVect.emplace_back(hitPos.GetZ());
+                        recoHitEVect.emplace_back(hitE);
+                    }
                 }
 
                 // Best matched MC particle
@@ -461,13 +469,16 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "length2", &secondaryLVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "length3", &tertiaryLVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "energy", &energyVect));
-    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitId", &recoHitIdVect));
-    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitSliceId", &recoHitSliceIdVect));
-    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitClusterId", &recoHitClusterIdVect));
-    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitX", &recoHitXVect));
-    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitY", &recoHitYVect));
-    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitZ", &recoHitZVect));
-    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitE", &recoHitEVect));
+    if (m_storeClusterRecoHits)
+    {
+        PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitId", &recoHitIdVect));
+        PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitSliceId", &recoHitSliceIdVect));
+        PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitClusterId", &recoHitClusterIdVect));
+        PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitX", &recoHitXVect));
+        PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitY", &recoHitYVect));
+        PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitZ", &recoHitZVect));
+        PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoHitE", &recoHitEVect));
+    }
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "gotMatch", &matchVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcPDG", &mcPDGVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "mcId", &mcIdVect));
@@ -625,8 +636,6 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
                 m_eventTree->SetBranchStatus(m_startTimeLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_endTimeLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_triggersLeafName.c_str(), 1);
-                m_eventTree->SetBranchStatus(m_mcIdLeafName.c_str(), 1);
-                m_eventTree->SetBranchStatus(m_mcLocalIdLeafName.c_str(), 1);
                 m_eventTree->SetBranchAddress(m_eventLeafName.c_str(), &m_event);
                 m_eventTree->SetBranchAddress(m_runLeafName.c_str(), &m_run);
                 m_eventTree->SetBranchAddress(m_subRunLeafName.c_str(), &m_subRun);
@@ -634,8 +643,16 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
                 m_eventTree->SetBranchAddress(m_startTimeLeafName.c_str(), &m_startTime);
                 m_eventTree->SetBranchAddress(m_endTimeLeafName.c_str(), &m_endTime);
                 m_eventTree->SetBranchAddress(m_triggersLeafName.c_str(), &m_triggers);
-                m_eventTree->SetBranchAddress(m_mcIdLeafName.c_str(), &m_mcIDs);
-                m_eventTree->SetBranchAddress(m_mcLocalIdLeafName.c_str(), &m_mcLocalIDs);
+
+                // Check if we have MC branches
+                if (m_eventTree->GetBranch(m_mcIdLeafName.c_str()) && m_eventTree->GetBranch(m_mcLocalIdLeafName.c_str()))
+                {
+                    m_gotMCEventInput = true;
+                    m_eventTree->SetBranchStatus(m_mcIdLeafName.c_str(), 1);
+                    m_eventTree->SetBranchStatus(m_mcLocalIdLeafName.c_str(), 1);
+                    m_eventTree->SetBranchAddress(m_mcIdLeafName.c_str(), &m_mcIDs);
+                    m_eventTree->SetBranchAddress(m_mcLocalIdLeafName.c_str(), &m_mcLocalIDs);
+                }
             }
         }
     }
@@ -665,6 +682,8 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
     PANDORA_RETURN_RESULT_IF_AND_IF(
         STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "RemoveRecoNeutrons", m_removeRecoNeutrons));
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "SelectRecoHits", m_selectRecoHits));
+    PANDORA_RETURN_RESULT_IF_AND_IF(
+        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "StoreClusterRecoHits", m_storeClusterRecoHits));
 
     return STATUS_CODE_SUCCESS;
 }

@@ -139,6 +139,8 @@ private:
     unsigned int m_minRecoGoodViews;   ///< Minimum number of reconstructed primary good views
     bool m_removeRecoNeutrons;         ///< Whether to remove reconstructed neutrons and their downstream particles
     bool m_selectRecoHits;             ///< Whether to select reco hits that overlap with the MC particle hits
+    bool m_storeClusterRecoHits;       ///< Whether to store all of the hits for each reconstructed PFO cluster
+    bool m_gotMCEventInput;            ///< Boolean to specify if the input event file corresponds to MC
     MCIdUniqueLocalMap m_mcIdMap;      ///< The map of unique-local MCParticle Ids for the given event
 };
 
