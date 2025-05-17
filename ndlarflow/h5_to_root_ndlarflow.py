@@ -141,7 +141,12 @@ def main(argv=None):
             eventID = np.array( [event['id']], dtype='int32' )
             triggerID = np.array( [triggerIDs[ievt]], dtype='int32')
 
-            if triggerID!=((1 << 31)-1):
+            maxTimeFromTrigger = np.max( np.array( [event['ts_start']], dtype='float64' ) )
+            useTimeFromTrigger = True
+            if maxTimeFromTrigger > ((1 << 31)-1):
+                useTimeFromTrigger = False
+
+            if (triggerID!=((1 << 31)-1)) | (useTimeFromTrigger==True):
                 event_start_t = np.array( [event['ts_start']], dtype='int32' )
                 event_end_t = np.array( [event['ts_end']], dtype='int32' )
                 event_unix_ts = np.array( [event['unix_ts']], dtype='int32' )
