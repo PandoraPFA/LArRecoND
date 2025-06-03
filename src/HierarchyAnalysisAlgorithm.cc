@@ -30,6 +30,7 @@ HierarchyAnalysisAlgorithm::HierarchyAnalysisAlgorithm() :
     m_startTime{0},
     m_endTime{0},
     m_triggers{0},
+    m_nhits{0},
     m_mcIDs{nullptr},
     m_mcLocalIDs{nullptr},
     m_eventFileName{""},
@@ -41,6 +42,7 @@ HierarchyAnalysisAlgorithm::HierarchyAnalysisAlgorithm() :
     m_startTimeLeafName{"event_start_t"},
     m_endTimeLeafName{"event_end_t"},
     m_triggersLeafName{"triggers"},
+    m_nhitsLeafName{"nhits"},
     m_mcIdLeafName{"mcp_id"},
     m_mcLocalIdLeafName{"mcp_idLocal"},
     m_eventsToSkip{0},
@@ -91,6 +93,13 @@ StatusCode HierarchyAnalysisAlgorithm::Run()
     // Increment the algorithm run count
     ++m_count;
 
+    std::cout << "I think I'm on event " << m_count+m_eventsToSkip << std::endl;
+
+    // Set the event run number and trigger timing info, as well as the unique-local MCParticle Id map
+    this->SetEventRunMCIdInfo();
+
+    std::cout << "I'm actually on event " << m_count+m_eventsToSkip << std::endl;
+
     // Need to use 2D calo hit list for now since LArHierarchyHelper::MCHierarchy::IsReconstructable()
     // checks for minimum number of hits in the U, V & W views only, which will fail for 3D
     const CaloHitList *pCaloHitList(nullptr);
@@ -121,9 +130,6 @@ StatusCode HierarchyAnalysisAlgorithm::Run()
     LArHierarchyHelper::MatchHierarchies(matchInfo);
     matchInfo.Print(mcHierarchy);
 
-    // Set the event run number and trigger timing info, as well as the unique-local MCParticle Id map
-    this->SetEventRunMCIdInfo();
-
     // Analysis PFO & matched reco-MC output
     this->EventAnalysisOutput(matchInfo);
 
@@ -144,6 +150,18 @@ void HierarchyAnalysisAlgorithm::SetEventRunMCIdInfo()
         // Sets m_event, m_run, m_subRun, m_unixTime, m_startTime, m_endTime & m_triggers
         const int iEntry = m_count + m_eventsToSkip;
         m_eventTree->GetEntry(iEntry);
+
+	// Check if we should actually be pointing to a higher event number due to skipping some events in Pandora
+	if ( m_nhits < m_minhitsToSkip ) {
+	  // Skip ahead as many events as we need to
+	  int thisHits = m_nhits;
+	  while ( thisHits < m_minhitsToSkip ) {
+	    m_count+=1;
+	    const int newEntry = m_count + m_eventsToSkip;
+	    m_eventTree->GetEntry(newEntry);
+	    thisHits = m_nhits;
+	  }
+	}
 
         // Fill the Id map
         if (m_gotMCEventInput)
@@ -610,12 +628,16 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EndTimeLeafName", m_endTimeLeafName));
     PANDORA_RETURN_RESULT_IF_AND_IF(
         STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "TriggersLeafName", m_triggersLeafName));
+    PANDORA_RETURN_RESULT_IF_AND_IF(
+	STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "NHitsLeafName", m_nhitsLeafName));
 
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "MCIdLeafName", m_mcIdLeafName));
     PANDORA_RETURN_RESULT_IF_AND_IF(
         STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "MCLocalIdLeafName", m_mcLocalIdLeafName));
 
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EventsToSkip", m_eventsToSkip));
+
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "MinHitsToSkip", m_minhitsToSkip));
 
     // Setup the event ROOT file
     if (m_eventFileName.size() > 0)
@@ -636,6 +658,7 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
                 m_eventTree->SetBranchStatus(m_startTimeLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_endTimeLeafName.c_str(), 1);
                 m_eventTree->SetBranchStatus(m_triggersLeafName.c_str(), 1);
+		m_eventTree->SetBranchStatus(m_nhitsLeafName.c_str(), 1);
                 m_eventTree->SetBranchAddress(m_eventLeafName.c_str(), &m_event);
                 m_eventTree->SetBranchAddress(m_runLeafName.c_str(), &m_run);
                 m_eventTree->SetBranchAddress(m_subRunLeafName.c_str(), &m_subRun);
@@ -643,6 +666,7 @@ StatusCode HierarchyAnalysisAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
                 m_eventTree->SetBranchAddress(m_startTimeLeafName.c_str(), &m_startTime);
                 m_eventTree->SetBranchAddress(m_endTimeLeafName.c_str(), &m_endTime);
                 m_eventTree->SetBranchAddress(m_triggersLeafName.c_str(), &m_triggers);
+		m_eventTree->SetBranchAddress(m_nhitsLeafName.c_str(), &m_nhits);
 
                 // Check if we have MC branches
                 if (m_eventTree->GetBranch(m_mcIdLeafName.c_str()) && m_eventTree->GetBranch(m_mcLocalIdLeafName.c_str()))

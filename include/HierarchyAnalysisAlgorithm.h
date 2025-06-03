@@ -108,6 +108,7 @@ private:
     int m_startTime;                   ///< The event trigger start time (ticks = 0.1 usec)
     int m_endTime;                     ///< The event trigger end time (ticks = 0.1 usec)
     int m_triggers;                    ///< The event trigger flag
+    int m_nhits;                       ///< The event number of hits.
     std::vector<long> *m_mcIDs;        ///< The vector of unique MC particle IDs for the event
     std::vector<long> *m_mcLocalIDs;   ///< The vector of local MC particle IDs for the event
     std::string m_eventFileName;       ///< Name of the ROOT TFile containing the event numbers
@@ -119,9 +120,11 @@ private:
     std::string m_startTimeLeafName;   ///< Name of the event start time leaf/variable
     std::string m_endTimeLeafName;     ///< Name of the event end time leaf/variable
     std::string m_triggersLeafName;    ///< Name of the event triggers leaf/variable
+    std::string m_nhitsLeafName;       ///< Name of the event nhits leaf/variable
     std::string m_mcIdLeafName;        ///< Name of the uniqne MC particle ID leaf/variable
     std::string m_mcLocalIdLeafName;   ///< Name of the local MC particle ID leaf/variable
     int m_eventsToSkip;                ///< The number of events to skip (from the start of the event file)
+    int m_minhitsToSkip;               ///< The number of events where PandoraInterface is being told to skip the event
     TFile *m_eventFile;                ///< The ROOT event file pointer
     TTree *m_eventTree;                ///< The ROOT event tree pointer
     std::string m_caloHitListName;     ///< Name of input calo hit list
