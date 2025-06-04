@@ -307,6 +307,27 @@ void rootToRootConversion(
                         this_hit_particleIDLocal.clear();
                         this_hit_vertexID.clear();
                         this_hit_packetFrac.clear();
+			// break if we have run out of hits to fill matches for match
+			// We have to check for unmatched hits first because if there
+			//   is one as the last hit, we'd miss it if we checked idxMatch
+			//   first (since we would be at the end of the loop already)
+			if ( matchIndex >= all_matches.size() ) break;
+			bool extraReset=false;
+			while ( all_matches[matchIndex]==0 ) {
+			  hit_pdg.push_back( this_hit_pdg );
+			  hit_segmentID.push_back( this_hit_segmentID );
+			  hit_particleID.push_back( this_hit_particleID );
+			  hit_particleIDLocal.push_back( this_hit_particleIDLocal );
+			  hit_vertexID.push_back( this_hit_vertexID );
+			  hit_packetFrac.push_back( this_hit_packetFrac );
+			  // mini-reset
+			  matchIndex+=1;
+			  if ( matchIndex >= all_matches.size() ) {
+			    extraReset=true;
+			    break;
+			  }
+			}
+			if ( extraReset ) break;
                         // break if == end
                         if ( idxMatch == all_hit_packetFrac.size() ) break;
                     }
