@@ -150,7 +150,7 @@ void rootToRootConversion(
     std::cout << "Loaded in tree with " << NEvents << " entries." << std::endl;
 
     // OUTPUT TREE
-    int run, subrun, event, event_start_t, event_end_t, unix_ts;
+    int run, subrun, event, event_start_t, event_end_t, unix_ts, nhits;
     int triggers;
     std::vector<float> x;
     std::vector<float> y;
@@ -207,6 +207,7 @@ void rootToRootConversion(
     outgoingTree->Branch("event_end_t", &event_end_t);
     outgoingTree->Branch("triggers",&triggers);
     outgoingTree->Branch("unix_ts", &unix_ts);
+    outgoingTree->Branch("nhits",&nhits);
     outgoingTree->Branch("x", &x);
     outgoingTree->Branch("y", &y);
     outgoingTree->Branch("z", &z);
@@ -319,6 +320,7 @@ void rootToRootConversion(
                 }
             }
             // Fill
+	    nhits = (int)x.size();
             outgoingTree->Fill();
             // Clear
             triggers=-999;
