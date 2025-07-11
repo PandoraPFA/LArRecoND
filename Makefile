@@ -22,6 +22,7 @@ ifdef PANDORA_LIBTORCH
 endif
 
 PROJECT_BINARY = $(PROJECT_DIR)/bin/PandoraInterface
+PROJECT_BINARY2 = $(PROJECT_DIR)/bin/PandoraOuterface
 
 INCLUDES  = -I $(PROJECT_DIR)/include/
 INCLUDES += -I $(PANDORA_DIR)/PandoraSDK/include/
@@ -42,10 +43,13 @@ SOURCES =  $(wildcard $(PROJECT_DIR)/test/*.cxx)
 OBJECTS = $(SOURCES:.cxx=.o)
 DEPENDS = $(OBJECTS:.o=.d)
 
-all: binary
+all: binary outerface
 
 binary: $(OBJECTS) 
 	$(CC) $(OBJECTS) $(LIBS) -o $(PROJECT_BINARY)
+
+outerface: $(OBJECTS)
+           $(CC) $(OBJECTS) $(LIBS) -o $(PROJECT_BINARY2)
 
 -include $(DEPENDS)
 
@@ -56,3 +60,4 @@ clean:
 	rm -f $(OBJECTS)
 	rm -f $(DEPENDS)
 	rm -f $(PROJECT_BINARY)
+	rm -f $(PROJECT_BINARY2)

@@ -82,8 +82,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_VERSI
 
 # - Executable
 add_executable(PandoraInterface ${PROJECT_SOURCE_DIR}/test/PandoraInterface.cxx)
+add_executable(PandoraOuterface ${PROJECT_SOURCE_DIR}/test/PandoraOuterface.cxx)
 if(PANDORA_MONITORING)
     include_directories(${ROOT_INCLUDE_DIRS})
+    target_link_libraries(PandoraOuterface ${ROOT_LIBRARIES})
     if(USE_EDEPSIM)
         target_link_libraries(PandoraInterface ${ROOT_LIBRARIES} EDepSim::edepsim_io)
     else()
@@ -91,6 +93,7 @@ if(PANDORA_MONITORING)
     endif()
 endif()
 target_link_libraries(PandoraInterface ${PROJECT_NAME})
+target_link_libraries(PandoraOuterface ${PROJECT_NAME})
 
 # - Optional documents
 option(LArRecoND_BUILD_DOCS "Build documentation for ${PROJECT_NAME}" OFF)
@@ -109,6 +112,7 @@ install(DIRECTORY include/ DESTINATION include COMPONENT Development FILES_MATCH
 
 # - executable
 install(TARGETS PandoraInterface DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+install(TARGETS PandoraOuterface DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------
 # display some variables and write them to cache
