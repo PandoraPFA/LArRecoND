@@ -190,7 +190,8 @@ def main(argv=None):
                 # Truth-level info for the spill
                 #######################################
                 if badEvt==False:
-                    spillID=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"][0][0][0]
+                    allSpillIDs=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"]
+                    spillID = allSpillIDs.data[ ~allSpillIDs.mask ][0]
                     # Trajectories
                     traj_indicesArray = np.where(flow_out['mc_truth/trajectories/data']["event_id"] == spillID)[0]
                     traj = flow_out["mc_truth/trajectories/data"][traj_indicesArray]
