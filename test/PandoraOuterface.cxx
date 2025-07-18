@@ -204,8 +204,6 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	  }
 	  trkLen.push_back(trklength);
 	}
-
-	fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen);
       } // TRACK FIT
 
       if ( parameters.runShowerFit && (parameters.trackScoreCut < 0. || trackScore < parameters.trackScoreCut) ) {
@@ -213,6 +211,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
       } // SHOWER FIT
 
     } // loop particles
+
+    if ( parameters.runTrackFit )
+      fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen);
 
     // Write our branches to the output tree
     fOut.WriteToFile();
