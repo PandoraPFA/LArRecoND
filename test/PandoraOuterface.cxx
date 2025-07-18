@@ -109,32 +109,45 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
   long nEntries = recoTree->GetEntries();
 
-  std::cout << "Runninng ProcessEvents on " << nEntries << " entries with pixel pitch " << parameters.pixelPitch << " and track/shower separation score of " << parameters.trackScoreCut << std::endl;
+  std::cout << "Runninng ProcessEvents on " << nEntries << " entries with pixel pitch " 
+	    << parameters.pixelPitch << " and track/shower separation score of " << parameters.trackScoreCut << std::endl;
+
+  // Create the class where we'll store the output info
+  NDRecoOutputData fOut( "LArRecoND_test.root", parameters.runTrackFit );
 
   // Loop events
   for ( long entryIdx = 0; entryIdx < nEntries; ++entryIdx ) {
     pandoraIn->GetEntry(entryIdx);
+
+    // Fill up the branches of basic output
+    fOut.FillBasicBranches(pandoraIn);
+
+    // Track fit vectors of importance
+    std::vector<float> trkStartX, trkStartY, trkStartZ, trkEndX, trkEndY, trkEndZ;
+    std::vector<float> trkStartDirX, trkStartDirY, trkStartDirZ, trkEndDirX, trkEndDirY, trkEndDirZ;
+    std::vector<float> trkLen;
 
     // Loop particles in the event
     unsigned int nParticles = pandoraIn->m_clusterID->size();
     for ( unsigned int particleIdx=0; particleIdx < nParticles; ++particleIdx ) {
       float trackScore = pandoraIn->m_trackScore->at(particleIdx);
 
-      // Fitting it as a track
-      if ( parameters.trackScoreCut < 0. || trackScore >= parameters.trackScoreCut ) {
-	int sliceID = pandoraIn->m_sliceID->at(particleIdx);
-	int clusterID = pandoraIn->m_clusterID->at(particleIdx);
-	// Vertex
-	CartesianVector vertexVector(pandoraIn->m_nuVtxX->at(particleIdx), pandoraIn->m_nuVtxY->at(particleIdx), pandoraIn->m_nuVtxZ->at(particleIdx));
-	// Make the Cartesian Points
-	CartesianPointVector pointVector;
-	for ( unsigned int idxHits = 0; idxHits < pandoraIn->m_recoHitId->size(); ++idxHits ) {
-	  if ( pandoraIn->m_recoHitSliceId->at(idxHits)==sliceID && pandoraIn->m_recoHitClusterId->at(idxHits)==clusterID ) {
-	    CartesianVector thisHit(pandoraIn->m_recoHitX->at(idxHits), pandoraIn->m_recoHitY->at(idxHits), pandoraIn->m_recoHitZ->at(idxHits));
-	    pointVector.push_back(thisHit);
-	  }
-	} // loop hits
+      if ( !parameters.runTrackFit && !parameters.runShowerFit ) continue;
 
+      // Read in the vertex and point vector that will be the input to the track and shower fits
+      int sliceID = pandoraIn->m_sliceID->at(particleIdx);
+      int clusterID = pandoraIn->m_clusterID->at(particleIdx);
+      CartesianVector vertexVector(pandoraIn->m_nuVtxX->at(particleIdx), pandoraIn->m_nuVtxY->at(particleIdx), pandoraIn->m_nuVtxZ->at(particleIdx));
+      CartesianPointVector pointVector;
+      for ( unsigned int idxHits = 0; idxHits < pandoraIn->m_recoHitId->size(); ++idxHits ) {
+	if ( pandoraIn->m_recoHitSliceId->at(idxHits)==sliceID && pandoraIn->m_recoHitClusterId->at(idxHits)==clusterID ) {
+	  CartesianVector thisHit(pandoraIn->m_recoHitX->at(idxHits), pandoraIn->m_recoHitY->at(idxHits), pandoraIn->m_recoHitZ->at(idxHits));
+	  pointVector.push_back(thisHit);
+	}
+      } // loop hits
+
+      // Fit it as a track?
+      if ( parameters.runTrackFit && (parameters.trackScoreCut < 0. || trackScore >= parameters.trackScoreCut) ) {
 	// Run the track fit info:
 	// TODO: Make the MinTrajectoryPoints(default=2) and SlidingFitHalfWindow(20) configurable
 	int minTrajectoryPoints = 2;
@@ -148,20 +161,40 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	}
 	catch (const pandora::StatusCodeException&) {
 	  trackStateSuccess=false;
-	  std::cout << "Unable to extract sliding fit trajectory" << std::endl;
+	  //std::cout << "Unable to extract sliding fit trajectory" << std::endl;
 	}
 
 	// Extract the track fit info
 	if (!trackStateSuccess || trackStateVector.size() < minTrajectoryPoints) {
-	  std::cout << " ------> TRACK FIT FAILURE" << std::endl;
+	  trkStartX.push_back(-9999.);
+	  trkStartY.push_back(-9999.);
+	  trkStartZ.push_back(-9999.);
+	  trkStartDirX.push_back(1.);
+	  trkStartDirY.push_back(0.);
+	  trkStartDirZ.push_back(0.);
+	  trkEndX.push_back(-9999.);
+          trkEndY.push_back(-9999.);
+          trkEndZ.push_back(-9999.);
+          trkEndDirX.push_back(1.);
+          trkEndDirY.push_back(0.);
+          trkEndDirZ.push_back(0.);
+	  trkLen.push_back(0.);
 	}
 	else {
 	  const lar_content::LArTrackState& trackStateStart = trackStateVector.front();
-	  std::cout << "Track start point (" << trackStateStart.GetPosition().GetX() << ", " << trackStateStart.GetPosition().GetY() << ", " << trackStateStart.GetPosition().GetZ() << ")"
-		    << ", and direction (" << trackStateStart.GetDirection().GetX() << ", " << trackStateStart.GetDirection().GetY() << ", " << trackStateStart.GetDirection().GetZ() << ")." << std::endl;
+	  trkStartX.push_back(trackStateStart.GetPosition().GetX());
+	  trkStartY.push_back(trackStateStart.GetPosition().GetY());
+	  trkStartZ.push_back(trackStateStart.GetPosition().GetZ());
+	  trkStartDirX.push_back(trackStateStart.GetDirection().GetX());
+          trkStartDirY.push_back(trackStateStart.GetDirection().GetY());
+          trkStartDirZ.push_back(trackStateStart.GetDirection().GetZ());
 	  const lar_content::LArTrackState& trackStateEnd = trackStateVector.back();
-	  std::cout << "Track end point (" << trackStateEnd.GetPosition().GetX() << ", " << trackStateEnd.GetPosition().GetY() << ", " << trackStateEnd.GetPosition().GetZ() << ")"
-                    << ", and direction (" << trackStateEnd.GetDirection().GetX() << ", " << trackStateEnd.GetDirection().GetY() << ", " << trackStateEnd.GetDirection().GetZ() << ")." << std::endl;
+	  trkEndX.push_back(trackStateEnd.GetPosition().GetX());
+          trkEndY.push_back(trackStateEnd.GetPosition().GetY());
+          trkEndZ.push_back(trackStateEnd.GetPosition().GetZ());
+          trkEndDirX.push_back(trackStateEnd.GetDirection().GetX());
+          trkEndDirY.push_back(trackStateEnd.GetDirection().GetY());
+          trkEndDirZ.push_back(trackStateEnd.GetDirection().GetZ());
 	  float trklength = 0.;
 	  // TODO: factor in invalid points. Maybe make use of TrackTrajectoryPoints?
 	  for (unsigned int idxPt=0; idxPt < trackStateVector.size()-1; ++idxPt) {
@@ -169,18 +202,24 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	    const lar_content::LArTrackState& trackStateNext = trackStateVector.at(idxPt+1);
 	    trklength+=std::sqrt( trackState.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) );
 	  }
-	  std::cout << "The track length is: " << trklength << std::endl;
+	  trkLen.push_back(trklength);
 	}
+
+	fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen);
       } // TRACK FIT
 
-      if ( parameters.trackScoreCut < 0. || trackScore < parameters.trackScoreCut ) {
+      if ( parameters.runShowerFit && (parameters.trackScoreCut < 0. || trackScore < parameters.trackScoreCut) ) {
 	std::cout << "I would have fit this as a shower..." << std::endl;
       } // SHOWER FIT
 
-      // ADD SHOWER FIT HERE
-
     } // loop particles
-  }
+
+    // Write our branches to the output tree
+    fOut.WriteToFile();
+  } // loop entries
+
+  // Close our output file
+  fOut.CloseFile();
 
   return;
 }
@@ -194,9 +233,11 @@ bool ParseCommandLine(int argc, char *argv[], ParameterStruct &parameters)
 
     int cOpt(0);
 
+    parameters.runTrackFit = false;
+    parameters.runShowerFit = false;
     parameters.pixelPitch = 4.0;
 
-    while ((cOpt = getopt(argc, argv, "p:t:f:h")) != -1)
+    while ((cOpt = getopt(argc, argv, "p:c:f:tsh")) != -1)
     {
       switch (cOpt)
       {
@@ -204,6 +245,12 @@ bool ParseCommandLine(int argc, char *argv[], ParameterStruct &parameters)
 	  parameters.pixelPitch = atof(optarg);
 	  break;
         case 't':
+	  parameters.runTrackFit = true;
+	  break;
+        case 's':
+	  parameters.runShowerFit = true;
+	  break;
+        case 'c':
 	  parameters.trackScoreCut = atof(optarg);
 	  break;
         case 'f':
@@ -228,7 +275,9 @@ bool ParseCommandLine(int argc, char *argv[], ParameterStruct &parameters)
 bool PrintOptions()
 {
     std::cout << std::endl
-              << "./bin/PandoraOuterface -f [file name] -p [pixel pitch] -t [track score cut]" << std::endl
+              << "./bin/PandoraOuterface -f [file name] -p [pixel pitch] -c [track score cut] -t -s" << std::endl
+	      << "    -t = run track fit" << std::endl
+	      << "    -s = run shower fit"
               << std::endl;
 
     return false;
