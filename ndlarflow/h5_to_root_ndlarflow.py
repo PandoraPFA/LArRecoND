@@ -134,6 +134,18 @@ def main(argv=None):
                 print('This event has < 2 hit IDs, setting as bad event. Trigger type (',triggerIDs[ievt],')')
                 badEvt=True
 
+            # Note: in a few places below, we will want to have handy the spillID
+            spillID = 0
+            if useData==False:
+                if promptKey=='prompt':
+                    allSpillIDs=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"]
+                    spillID=allSpillIDs.data[ ~allSpillIDs.mask ][0]
+                else:
+                    event_hits_prompt=flow_out["charge/events/","charge/calib_prompt_hits", events["id"][ievt]]
+                    hits_ids_prompt = np.ma.getdata(event_hits_prompt["id"][0])
+                    allSpillIDs=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids_prompt]["event_id"]
+                    spillID=allSpillIDs.data[ ~allSpillIDs.mask ][0]
+
             # Start with the non-spill info, this is all ~like the current form
             #   but not repeating
             runID = np.array( [0], dtype='int32' )
@@ -164,22 +176,27 @@ def main(argv=None):
                 # Truth-level info for hits
                 #######################################
                 if badEvt==False:
-                    trajFromHits=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids[:]][:,0]
-                    fracFromHits=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/packet_fraction",hits_ids[:]][:,0]
-
-                    matches = trajFromHits['segment_id'].count(axis=1).astype('uint16')
-
-                    packetFrac = np.array( awk.flatten( awk.flatten( awk.Array( fracFromHits['fraction'].astype('float32') ) ) ) )
-                    packetFrac = packetFrac[np.where(packetFrac!=0)]
-
-                    trajFromHits=trajFromHits.data[~trajFromHits['segment_id'].mask]
-                    pdgHit = trajFromHits['pdg_id'].astype('int32')
-                    trackID = trajFromHits['segment_id'].astype('int32')
-                    particleID = trajFromHits['file_traj_id'].astype('int64')
-                    particleIDLocal = trajFromHits['traj_id'].astype('int64')
-                    interactionIndex = trajFromHits['vertex_id'].astype('int64')
+                    backtrackHits=flow_out['charge/calib_'+promptKey+'_hits',\
+                                        'mc_truth/calib_'+promptKey+'_hit_backtrack',hits_ids[:]][:,0]
+                    # Matches
+                    backtrackMasked = np.ma.masked_equal( backtrackHits['fraction'].data, 0. )
+                    backtrackMaskArr = np.ma.getmask(backtrackMasked)
+                    matches = backtrackMasked.count(axis=1).astype('uint16')
+                    # Fractions - note that "packet" is not always right terminology, e.g. with merged hits. Keeping nomenclature.
+                    packetFrac = backtrackHits['fraction'].data[~backtrackMaskArr]
+                    # Get the segment IDs then get the segments themselves
+                    segmentIDs = backtrackHits['segment_ids'].data[~backtrackMaskArr]
+                    all_segments = f['mc_truth/segments/data']
+                    all_segments = all_segments[ np.where(all_segments['event_id']==spillID) ]
+                    all_segmentIDs = all_segments['segment_id']
+                    segments_where = np.array([np.where(all_segmentIDs==segmentIDs[i])[0][0] for i in range(len(segmentIDs))])
+                    pdgHit = all_segments['pdg_id'][segments_where].astype('int32')
+                    trackID = all_segments['segment_id'][segments_where].astype('int32')
+                    particleID = all_segments['file_traj_id'][segments_where].astype('int64')
+                    particleIDLocal = all_segments['traj_id'][segments_where].astype('int64')
+                    interactionIndex = all_segments['vertex_id'][segments_where].astype('int64')
                 else:
-                    matches = np.array( [0] ).astype('float32')
+                    matches = np.array( [0] ).astype('uint16')
                     packetFrac = np.array( [] ).astype('float32')
                     pdgHit = np.array( [] ).astype('int32')
                     trackID = np.array( [] ).astype('int32')
@@ -190,7 +207,6 @@ def main(argv=None):
                 # Truth-level info for the spill
                 #######################################
                 if badEvt==False:
-                    spillID=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"][0][0][0]
                     # Trajectories
                     traj_indicesArray = np.where(flow_out['mc_truth/trajectories/data']["event_id"] == spillID)[0]
                     traj = flow_out["mc_truth/trajectories/data"][traj_indicesArray]
