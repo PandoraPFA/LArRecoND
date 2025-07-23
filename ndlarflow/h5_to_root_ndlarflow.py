@@ -136,7 +136,7 @@ def main(argv=None):
 
             # Note: in a few places below, we will want to have handy the spillID
             spillID = 0
-            if useData==False:
+            if useData==False and badEvt==False:
                 if promptKey=='prompt':
                     allSpillIDs=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"]
                     spillID=allSpillIDs.data[ ~allSpillIDs.mask ][0]
@@ -183,7 +183,7 @@ def main(argv=None):
                     backtrackMaskArr = np.ma.getmask(backtrackMasked)
                     matches = backtrackMasked.count(axis=1).astype('uint16')
                     # Fractions - note that "packet" is not always right terminology, e.g. with merged hits. Keeping nomenclature.
-                    packetFrac = backtrackHits['fraction'].data[~backtrackMaskArr]
+                    packetFrac = backtrackHits['fraction'].data[~backtrackMaskArr].astype('float32')
                     # Get the segment IDs then get the segments themselves
                     segmentIDs = backtrackHits['segment_ids'].data[~backtrackMaskArr]
                     all_segments = f['mc_truth/segments/data']
