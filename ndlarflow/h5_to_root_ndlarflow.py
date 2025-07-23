@@ -17,11 +17,12 @@ import sys
 
 # Main function with command line settable params
 def printUsage():
-    print('python h5_to_root_ndlarflow.py FileList IsData IsFinalHits OutName')
+    print('python h5_to_root_ndlarflow.py FileList IsData IsFinalHits LegacyMode OutName')
     print('-- Parameters')
     print('FileList    [REQUIRED]:                                         comma separated set of files to convert - note it will be one output')
     print('IsData      [OPTIONAL, DEFAULT = 0, is MC]:                     1 = Data, otherwise = MC')
     print('IsFinalHits [OPTIONAL, DEFAULT = 0, prompt hits]:               1 = use "final" hits, otherwise = "prompt"')
+    print('LegacyMode  [OPTIONAL, DEFAULT = 0, no legacy]:                 0 = no legacy mode, 1 = samples < MiniRun6, 2 = > MiniRun6 but no usec time')
     print('OutName     [OPTIONAL, DEFAULT = input[0]+"_hits_uproot.root"]: string for an output file name if you want to override. Note that default writes to current directory.')
     print('')
     print('NOTE: The output of this file should then be processed with the rootToRootConversion macro to get the format expected by LArRecoND.')
@@ -31,6 +32,7 @@ def main(argv=None):
     fileNames=[]
     useData=False
     useFinalHits=False
+    legacyMode=0
     overrideOutname=1
     outname=''
 
@@ -62,7 +64,9 @@ def main(argv=None):
             if int(sys.argv[3])==1:
                 useFinalHits=True
         if len(sys.argv)>4 and sys.argv[4]!=None:
-            outname=str(sys.argv[4])
+            legacyMode=int(sys.argv[4])
+        if len(sys.argv)>5 and sys.argv[5]!=None:
+            outname=str(sys.argv[5])
             overrideOutname=0
 
     MaxArrayDepth=int(10000)
@@ -162,12 +166,14 @@ def main(argv=None):
                 event_start_t = np.array( [event['ts_start']], dtype='int32' )
                 event_end_t = np.array( [event['ts_end']], dtype='int32' )
                 event_unix_ts = np.array( [event['unix_ts']], dtype='int32' )
-                event_unix_ts_usec = np.array( [event['unix_ts_usec']], dtype='int32' )
+                if legacyMode!=1 and legacyMode!=2:
+                    event_unix_ts_usec = np.array( [event['unix_ts_usec']], dtype='int32' )
             else:
                 event_start_t = np.array( [-5], dtype='int32' )
                 event_end_t = np.array( [-5], dtype='int32' )
                 event_unix_ts = np.array( [-5], dtype='int32' )
-                event_unix_ts_usec = np.array( [-5], dtype='int32' )
+                if legacyMode!=1 and legacyMode!=2:
+                    event_unix_ts_usec = np.array( [-5], dtype='int32' )
 
             # "uncalib" -- this alternative is not currently used in LArPandora that I can tell, so no need to save. Making optional to use the prompt or final hits to be saved.
             #######################################
@@ -246,9 +252,14 @@ def main(argv=None):
                 vertex_indicesArray = np.where(flow_out["/mc_truth/interactions/data"]["event_id"] == spillID)[0]
                 vtx = flow_out["/mc_truth/interactions/data"][vertex_indicesArray]
                 nu_vtx_id = (vtx['vertex_id']).astype('int64')
-                nu_vtx_x = (vtx['x_vert']).astype('float32')
-                nu_vtx_y = (vtx['y_vert']).astype('float32')
-                nu_vtx_z = (vtx['z_vert']).astype('float32')
+                if legacyMode!=1:
+                    nu_vtx_x = (vtx['x_vert']).astype('float32')
+                    nu_vtx_y = (vtx['y_vert']).astype('float32')
+                    nu_vtx_z = (vtx['z_vert']).astype('float32')
+                else:
+                    nu_vtx_x = (vtx['vertex'][:,0]).astype('float32')
+                    nu_vtx_y = (vtx['vertex'][:,1]).astype('float32')
+                    nu_vtx_z = (vtx['vertex'][:,2]).astype('float32')
                 nu_vtx_E = (vtx['Enu']*MeV2GeV).astype('float32')
                 nu_pdg = (vtx['nu_pdg']).astype('int32')
                 nu_px = (vtx['nu_4mom'][:,0]*MeV2GeV).astype('float32')
@@ -274,8 +285,10 @@ def main(argv=None):
                 nu_code = codes
 
             ## Rebuild now with all the individual types
-            event_dict = { 'run':runID, 'subrun':subrunID, 'event':eventID, "triggers":triggerID, 'unix_ts':event_unix_ts, 'unix_ts_usec':event_unix_ts_usec,
+            event_dict = { 'run':runID, 'subrun':subrunID, 'event':eventID, "triggers":triggerID, 'unix_ts':event_unix_ts,
                            'event_start_t':event_start_t, 'event_end_t':event_end_t }
+            if legacyMode!=1 and legacyMode!=2:
+                event_dict['unix_ts_usec'] = event_unix_ts_usec
 
             if useData==False:
                 other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'charge':hits_Q, 'E':hits_E, 'matches':matches,\
