@@ -127,6 +127,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
     std::vector<float> trkStartDirX, trkStartDirY, trkStartDirZ, trkEndDirX, trkEndDirY, trkEndDirZ;
     std::vector<float> trkLen;
 
+    std::vector<int> trackFitSliceId, trackFitPfoId;
+    std::vector<float> trackFitQ, trackFitRR, trackFitdx, trackFitdQdx;
+
     // Loop particles in the event
     unsigned int nParticles = pandoraIn->m_clusterID->size();
     for ( unsigned int particleIdx=0; particleIdx < nParticles; ++particleIdx ) {
@@ -134,15 +137,42 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
       if ( !parameters.runTrackFit && !parameters.runShowerFit ) continue;
 
+      int hitCounter(0);
+
       // Read in the vertex and point vector that will be the input to the track and shower fits
       int sliceID = pandoraIn->m_sliceID->at(particleIdx);
       int clusterID = pandoraIn->m_clusterID->at(particleIdx);
       CartesianVector vertexVector(pandoraIn->m_nuVtxX->at(particleIdx), pandoraIn->m_nuVtxY->at(particleIdx), pandoraIn->m_nuVtxZ->at(particleIdx));
-      CartesianPointVector pointVector;
+      CaloHitList caloHitList;
       for ( unsigned int idxHits = 0; idxHits < pandoraIn->m_recoHitId->size(); ++idxHits ) {
 	if ( pandoraIn->m_recoHitSliceId->at(idxHits)==sliceID && pandoraIn->m_recoHitClusterId->at(idxHits)==clusterID ) {
 	  CartesianVector thisHit(pandoraIn->m_recoHitX->at(idxHits), pandoraIn->m_recoHitY->at(idxHits), pandoraIn->m_recoHitZ->at(idxHits));
-	  pointVector.push_back(thisHit);
+	  lar_content::LArCaloHitParameters chParams;
+	  chParams.m_positionVector = thisHit;
+	  chParams.m_expectedDirection = pandora::CartesianVector(0.f, 0.f, 1.f);
+	  chParams.m_cellNormalVector = pandora::CartesianVector(0.f, 0.f, 1.f);
+	  chParams.m_cellGeometry = pandora::RECTANGULAR;
+	  chParams.m_cellSize0 = parameters.pixelPitch;
+	  chParams.m_cellSize1 = parameters.pixelPitch;
+	  chParams.m_cellThickness = parameters.pixelPitch;
+	  chParams.m_nCellRadiationLengths = 1.f;
+	  chParams.m_nCellInteractionLengths = 1.f;
+	  chParams.m_time = 0.f;
+	  chParams.m_inputEnergy = pandoraIn->m_recoHitE->at(idxHits);
+	  chParams.m_mipEquivalentEnergy = pandoraIn->m_recoHitE->at(idxHits);
+	  chParams.m_electromagneticEnergy = pandoraIn->m_recoHitE->at(idxHits);
+	  chParams.m_hadronicEnergy = pandoraIn->m_recoHitE->at(idxHits);
+	  chParams.m_isDigital = false;
+	  chParams.m_hitType = pandora::TPC_3D;
+	  chParams.m_hitRegion = pandora::SINGLE_REGION;
+	  chParams.m_layer = 0;
+	  chParams.m_isInOuterSamplingLayer = false;
+	  chParams.m_pParentAddress = (void*)(static_cast<uintptr_t>(++hitCounter));
+	  chParams.m_larTPCVolumeId = 0;
+	  chParams.m_daughterVolumeId = 0;
+	  // push back the calo hit
+	  lar_content::LArCaloHit *ch = new lar_content::LArCaloHit(chParams);
+	  caloHitList.push_back( ch );
 	}
       } // loop hits
 
@@ -154,14 +184,14 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	float slidingFitHalfWindow = 20;
 
 	lar_content::LArTrackStateVector trackStateVector;
+	std::vector<int> indexVector;
 	bool trackStateSuccess=false;
 	try {
-	  lar_content::LArPfoHelper::GetSlidingFitTrajectory( pointVector, vertexVector, slidingFitHalfWindow, parameters.pixelPitch, trackStateVector );
+	  lar_content::LArPfoHelper::GetSlidingFitTrajectory( &caloHitList, vertexVector, slidingFitHalfWindow, parameters.pixelPitch, trackStateVector, &indexVector, true );
 	  trackStateSuccess=true;
 	}
 	catch (const pandora::StatusCodeException&) {
 	  trackStateSuccess=false;
-	  //std::cout << "Unable to extract sliding fit trajectory" << std::endl;
 	}
 
 	// Extract the track fit info
@@ -196,13 +226,35 @@ void ProcessPostReco(const ParameterStruct &parameters)
           trkEndDirY.push_back(trackStateEnd.GetDirection().GetY());
           trkEndDirZ.push_back(trackStateEnd.GetDirection().GetZ());
 	  float trklength = 0.;
-	  // TODO: factor in invalid points. Maybe make use of TrackTrajectoryPoints?
+	  // TODO: may need to factor in invalid points? Maybe make use of TrackTrajectoryPoints?
 	  for (unsigned int idxPt=0; idxPt < trackStateVector.size()-1; ++idxPt) {
 	    const lar_content::LArTrackState& trackState = trackStateVector.at(idxPt);
 	    const lar_content::LArTrackState& trackStateNext = trackStateVector.at(idxPt+1);
 	    trklength+=std::sqrt( trackState.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) );
 	  }
 	  trkLen.push_back(trklength);
+
+	  // Track calorimetry --> very rough first pass basically reimplemented from other test branch:
+	  float lengthSoFar = 0.;
+	  for (unsigned int idxPt=0; idxPt < trackStateVector.size()-1; ++idxPt ) {
+	    const lar_content::LArTrackState& trackState = trackStateVector.at(idxPt);
+	    const lar_content::LArTrackState& trackStateNext = trackStateVector.at(idxPt+1);
+	    lengthSoFar+=std::sqrt( trackState.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) );
+	    // Does not do any lifetime, spacecharge, diffusion, etc. corrections at least yet
+	    if ( idxPt > 0 ){
+	      const lar_content::LArTrackState& trackStatePrev = trackStateVector.at(idxPt-1);
+	      float hitQ = trackState.GetCharge();
+	      float hitRR = trklength - lengthSoFar;
+	      float hitdx = std::sqrt( trackStatePrev.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) );
+	      trackFitSliceId.push_back(sliceID);
+	      trackFitPfoId.push_back(clusterID);
+	      trackFitQ.push_back(hitQ);
+	      trackFitRR.push_back(hitRR);
+	      trackFitdx.push_back(hitdx);
+	      float hitdQdx = hitdx > 0. ? hitQ/hitdx : -5.f;
+	      trackFitdQdx.push_back(hitdQdx);
+	    }
+	  }
 	}
       } // TRACK FIT
 
@@ -212,8 +264,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
     } // loop particles
 
-    if ( parameters.runTrackFit )
+    if ( parameters.runTrackFit ) {
       fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen);
+      fOut.FillTrackCaloBranches(trackFitSliceId,trackFitPfoId,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx);
+    }
 
     // Write our branches to the output tree
     fOut.WriteToFile();

@@ -96,6 +96,8 @@ class NDRecoOutputData
 			  const std::vector<float> &endX, const std::vector<float> &endY, const std::vector<float> &endZ,
                           const std::vector<float> &enddirX,  const std::vector<float> &enddirY,  const std::vector<float> &enddirZ,
 			  const std::vector<float> &length ); ///< Fill the track fit result branches
+  void FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId, const std::vector<float> &tfQ,
+			      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx );
 
  private:
   TFile* m_fileOut;
@@ -186,6 +188,12 @@ class NDRecoOutputData
   std::vector<float> m_out_trkfitEndDirY;
   std::vector<float> m_out_trkfitEndDirZ;
   std::vector<float> m_out_trkfitLength;
+  std::vector<int> m_out_trkfitSliceId;
+  std::vector<int> m_out_trkfitPfoId;
+  std::vector<float> m_out_trkfitQ;
+  std::vector<float> m_out_trkfitRR;
+  std::vector<float> m_out_trkfitdx;
+  std::vector<float> m_out_trkfitdQdx;
 };
 
  NDRecoOutputData::NDRecoOutputData(const std::string filename, const bool writeTracks)
@@ -282,6 +290,12 @@ class NDRecoOutputData
      m_treeOut->Branch("trkfitEndDirY", &m_out_trkfitEndDirY);
      m_treeOut->Branch("trkfitEndDirZ", &m_out_trkfitEndDirZ);
      m_treeOut->Branch("trkfitLength", &m_out_trkfitLength);
+     m_treeOut->Branch("trkfitSliceId", &m_out_trkfitSliceId);
+     m_treeOut->Branch("trkfitPfoId", &m_out_trkfitPfoId);
+     m_treeOut->Branch("trkfitQ", &m_out_trkfitQ);
+     m_treeOut->Branch("trkfitRR", &m_out_trkfitRR);
+     m_treeOut->Branch("trkfitdx", &m_out_trkfitdx);
+     m_treeOut->Branch("trkfitdQdx", &m_out_trkfitdQdx);
    }
  }
 
@@ -371,6 +385,12 @@ class NDRecoOutputData
    m_out_trkfitEndDirY.clear();
    m_out_trkfitEndDirZ.clear();
    m_out_trkfitLength.clear();
+   m_out_trkfitSliceId.clear();
+   m_out_trkfitPfoId.clear();
+   m_out_trkfitQ.clear();
+   m_out_trkfitRR.clear();
+   m_out_trkfitdx.clear();
+   m_out_trkfitdQdx.clear();
  }
 
  void NDRecoOutputData::WriteToFile()
@@ -481,6 +501,17 @@ class NDRecoOutputData
    m_out_trkfitEndDirZ.insert( m_out_trkfitEndDirZ.end(), enddirZ.begin(), enddirZ.end() );
    m_out_trkfitLength.insert( m_out_trkfitLength.end(), length.begin(), length.end() );
  }
+
+void NDRecoOutputData::FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId, const std::vector<float> &tfQ,
+					      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx )
+{
+  m_out_trkfitSliceId.insert( m_out_trkfitSliceId.end(), tfSliceId.begin(), tfSliceId.end() );
+  m_out_trkfitPfoId.insert( m_out_trkfitPfoId.end(), tfPfoId.begin(), tfPfoId.end() );
+  m_out_trkfitQ.insert( m_out_trkfitQ.end(), tfQ.begin(), tfQ.end() );
+  m_out_trkfitRR.insert( m_out_trkfitRR.end(), tfRR.begin(), tfRR.end() );
+  m_out_trkfitdx.insert( m_out_trkfitdx.end(), tfdx.begin(), tfdx.end() );
+  m_out_trkfitdQdx.insert( m_out_trkfitdQdx.end(), tfdQdx.begin(), tfdQdx.end() );
+}
 
 } // namespace lar_nd_postreco
 
