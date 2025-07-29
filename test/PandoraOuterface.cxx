@@ -243,7 +243,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	    // Does not do any lifetime, spacecharge, diffusion, etc. corrections at least yet
 	    if ( idxPt > 0 ){
 	      const lar_content::LArTrackState& trackStatePrev = trackStateVector.at(idxPt-1);
-	      float hitQ = trackState.GetCharge();
+	      float hitQ = trackState.GetCaloHit()->GetInputEnergy();
 	      float hitRR = trklength - lengthSoFar;
 	      float hitdx = std::sqrt( trackStatePrev.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) );
 	      trackFitSliceId.push_back(sliceID);
