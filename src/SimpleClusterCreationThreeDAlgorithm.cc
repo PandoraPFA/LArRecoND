@@ -114,6 +114,7 @@ StatusCode SimpleClusterCreationThreeDAlgorithm::CreateClusters(const CaloHitLis
 
     std::vector<PandoraContentApi::Cluster::Parameters> clusters3D;
 
+    std::cout << "Gianfranco comment, file " << __FILE__ <<", function " <<__func__ << ", line " << __LINE__ << "\n";
     std::cout << "Making clusters from " << caloHitVector.size() << " 3D hits" << std::endl;
     for (const CaloHit *const pSeedCaloHit : caloHitVector)
     {

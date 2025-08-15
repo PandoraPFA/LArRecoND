@@ -277,6 +277,8 @@ void MakePandoraTPC(const pandora::Pandora *const pPrimaryPandora, const Paramet
 
 void ProcessEvents(const Parameters &parameters, const Pandora *const pPrimaryPandora, const LArNDGeomSimple &geom)
 {
+
+    std::cout << "Gianfranco comment, function " << __func__ << ", line " << __LINE__ << "\n";
     if (parameters.m_dataFormat == Parameters::LArNDFormat::EDepSim)
     {
 #ifdef USE_EDEPSIM
@@ -285,10 +287,12 @@ void ProcessEvents(const Parameters &parameters, const Pandora *const pPrimaryPa
     }
     else if (parameters.m_dataFormat == Parameters::LArNDFormat::SED)
     {
+        std::cout << "Gianfranco comment, function " << __func__ << ", line " << __LINE__ << "\n";
         ProcessSEDEvents(parameters, pPrimaryPandora, geom);
     }
     else
     {
+        std::cout << "Gianfranco comment, function " << __func__ << ", line " << __LINE__ << "\n";
         ProcessSPEvents(parameters, pPrimaryPandora, geom);
     }
 }
@@ -298,6 +302,7 @@ void ProcessEvents(const Parameters &parameters, const Pandora *const pPrimaryPa
 void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimaryPandora, const LArNDGeomSimple &geom)
 {
 
+    std::cout << "Gianfranco comment, file " << __FILE__<<", function "<<__func__<<", line " << __LINE__<<"\n";
     TFile *fileSource = TFile::Open(parameters.m_inputFileName.c_str(), "READ");
     if (!fileSource)
     {
@@ -365,6 +370,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
         int hitCounter(0);
 
         // Loop over the space points and make them into caloHits
+        std::cout << "Gianfranco comment : here we make 3D and 2D hits\n";
         for (size_t isp = 0; isp < nSP; ++isp)
         {
             const float voxelX = (*larsp->m_x)[isp];
@@ -486,6 +492,9 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
 
         } // end space point loop
 
+        std::cout << "Gianfranco comment here : start processing algorithms\n";
+        std::cout << "...... \n";
+        std::cout << "...... \n";
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ProcessEvent(*pPrimaryPandora));
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::Reset(*pPrimaryPandora));
     } // end event loop
@@ -2095,6 +2104,15 @@ void ProcessExternalParameters(const Parameters &parameters, const Pandora *cons
     pEventSteeringParameters->m_shouldPerformSliceId = parameters.m_shouldPerformSliceId;
     pEventSteeringParameters->m_printOverallRecoStatus = parameters.m_printOverallRecoStatus;
 
+    std::cout << "Gianfranco comment, function " << __func__ << ", line " << __LINE__ << "\n";
+    std::cout << "parameters.m_shouldRunAllHitsCosmicReco " << parameters.m_shouldRunAllHitsCosmicReco <<"\n";
+    std::cout << "parameters.m_shouldRunStitching " << parameters.m_shouldRunStitching <<"\n";
+    std::cout << "parameters.m_shouldRunCosmicHitRemoval " << parameters.m_shouldRunCosmicHitRemoval <<"\n";
+    std::cout << "parameters.m_shouldRunSlicing " << parameters.m_shouldRunSlicing <<"\n";
+    std::cout << "parameters.m_shouldRunNeutrinoRecoOption " << parameters.m_shouldRunNeutrinoRecoOption <<"\n";
+    std::cout << "parameters.m_shouldRunCosmicRecoOption " << parameters.m_shouldRunCosmicRecoOption <<"\n";
+    std::cout << "parameters.m_shouldPerformSliceId " << parameters.m_shouldPerformSliceId <<"\n";
+    std::cout << "parameters.m_printOverallRecoStatus " << parameters.m_printOverallRecoStatus <<"\n";
     // LArMaster or LArMasterThreeD algorithms
     if (!parameters.m_use3D)
     {

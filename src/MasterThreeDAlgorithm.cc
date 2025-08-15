@@ -39,8 +39,10 @@ namespace lar_content
 
 StatusCode MasterThreeDAlgorithm::Run()
 {
+
     std::cout << "Should run slicing? " << m_shouldRunSlicing << std::endl;
 
+    std::cout << "Gianfranco comment, file " << __FILE__ <<", function " <<__func__ << ", line " << __LINE__ << "\n";
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Reset());
 
     if (!m_workerInstancesInitialized)
@@ -55,17 +57,21 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     if (m_shouldRunAllHitsCosmicReco)
     {
+          std::cout << "Gianfranco comment, file " << __FILE__<<", function "<<__func__<<", line " << __LINE__<<"m_shouldRunAllHitsCosmicReco\n";
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayReconstruction(volumeIdToHitListMap));
 
         PfoToLArTPCMap pfoToLArTPCMap;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RecreateCosmicRayPfos(pfoToLArTPCMap));
 
-        if (m_shouldRunStitching)
-            PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->StitchCosmicRayPfos(pfoToLArTPCMap, stitchedPfosToX0Map));
+        if (m_shouldRunStitching){
+          std::cout << "Gianfranco comment, file " << __FILE__<<", function "<<__func__<<", line " << __LINE__<<" m_shouldRunStitching\n";
+          PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->StitchCosmicRayPfos(pfoToLArTPCMap, stitchedPfosToX0Map));
+        }
     }
 
     if (m_shouldRunCosmicHitRemoval)
     {
+          std::cout << "Gianfranco comment, file " << __FILE__<<", function "<<__func__<<", line " << __LINE__<<" m_shouldRunCosmicHitRemoval\n";
         PfoList clearCosmicRayPfos, ambiguousPfos;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->TagCosmicRayPfos(stitchedPfosToX0Map, clearCosmicRayPfos, ambiguousPfos));
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayHitRemoval(ambiguousPfos));
@@ -76,6 +82,7 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     if (m_shouldRunNeutrinoRecoOption || m_shouldRunCosmicRecoOption)
     {
+        std::cout << "Gianfranco comment, function " << __func__ << ", line " << __LINE__ << "\n";
         SliceHypotheses nuSliceHypotheses, crSliceHypotheses;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunSliceReconstruction(sliceVector, nuSliceHypotheses, crSliceHypotheses));
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->SelectBestSliceHypotheses(nuSliceHypotheses, crSliceHypotheses));
@@ -89,6 +96,7 @@ StatusCode MasterThreeDAlgorithm::Run()
 StatusCode MasterThreeDAlgorithm::RunSlicing(const VolumeIdToHitListMap &volumeIdToHitListMap, SliceVector &sliceVector) const
 {
     std::cout << "There are " << volumeIdToHitListMap.size() << " volumes" << std::endl;
+    std::cout << "Gianfranco comment, file " << __FILE__ <<", function " <<__func__ << ", line " << __LINE__ << "\n";
     for (const VolumeIdToHitListMap::value_type &mapEntry : volumeIdToHitListMap)
     {
         std::cout << "- Volume has " << mapEntry.second.m_allHitList.size() << " hits" << std::endl;
@@ -357,7 +365,13 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
 
         LArTPCHitList &larTPCHitList(volumeIdToHitListMap[volumeId]);
         larTPCHitList.m_allHitList.push_back(pCaloHit);
-
+        
+        // std::cout << "{ \"CaloHitX\" : " << pCaloHit->GetPositionVector().GetX() 
+        //           << ", \"CaloHitY\" : " << pCaloHit->GetPositionVector().GetY()
+        //           << ", \"CaloHitZ\" : " << pCaloHit->GetPositionVector().GetZ() 
+        //           << ", \"HitType\"  : " << pCaloHit->GetHitType() 
+        //           << "},\n"; 
+        //
         if (((pCaloHit->GetPositionVector().GetX() >= (pLArTPC->GetCenterX() - 0.5f * pLArTPC->GetWidthX())) &&
                 (pCaloHit->GetPositionVector().GetX() <= (pLArTPC->GetCenterX() + 0.5f * pLArTPC->GetWidthX()))))
         {
