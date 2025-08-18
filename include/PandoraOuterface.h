@@ -38,11 +38,23 @@ namespace lar_nd_postreco
 
 struct ParameterStruct
 {
-  bool runTrackFit;
-  bool runShowerFit;
-  float pixelPitch = 0.4;
+  bool runTrackFit    = false;
+  bool runShowerFit   = false;
+  float pixelPitch    = 0.4;
   float trackScoreCut = 0.5;
+
+  bool applyThreshold = false;
+  float thresholdVal  = 0.; // ke-
+
+  bool voxelizeZ = false;
+  float voxelZHW = 0.6; // cm
+  bool useVoxelizedStartStop = false;
+
+  int verbosity = 0;
+
+  std::string xmlName = "";
   std::string fileName = "";
+  std::string outfileName = "LArRecoND_outerface_test.root";
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -67,6 +79,15 @@ void ProcessPostReco(const ParameterStruct &parameters);
  *  @return success
  */
 bool ParseCommandLine(int argc, char *argv[], ParameterStruct &parameters);
+
+/**
+ *  @brief  Parse XML file to set parameters
+ *
+ *  @param  parameters to take the XML file name and set the parameters
+ *
+ *  @return success
+ */
+bool ReadSettings(ParameterStruct &parameters);
 
 /**
  *  @brief  Print the list of configurable options
@@ -96,7 +117,8 @@ class NDRecoOutputData
 			  const std::vector<float> &endX, const std::vector<float> &endY, const std::vector<float> &endZ,
                           const std::vector<float> &enddirX,  const std::vector<float> &enddirY,  const std::vector<float> &enddirZ,
 			  const std::vector<float> &length ); ///< Fill the track fit result branches
-  void FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId, const std::vector<float> &tfQ,
+  void FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
+			      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
 			      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx );
 
  private:
@@ -190,6 +212,9 @@ class NDRecoOutputData
   std::vector<float> m_out_trkfitLength;
   std::vector<int> m_out_trkfitSliceId;
   std::vector<int> m_out_trkfitPfoId;
+  std::vector<float> m_out_trkfitX;
+  std::vector<float> m_out_trkfitY;
+  std::vector<float> m_out_trkfitZ;
   std::vector<float> m_out_trkfitQ;
   std::vector<float> m_out_trkfitRR;
   std::vector<float> m_out_trkfitdx;
@@ -292,6 +317,9 @@ class NDRecoOutputData
      m_treeOut->Branch("trkfitLength", &m_out_trkfitLength);
      m_treeOut->Branch("trkfitSliceId", &m_out_trkfitSliceId);
      m_treeOut->Branch("trkfitPfoId", &m_out_trkfitPfoId);
+     m_treeOut->Branch("trkfitX", &m_out_trkfitX);
+     m_treeOut->Branch("trkfitY", &m_out_trkfitY);
+     m_treeOut->Branch("trkfitZ", &m_out_trkfitZ);
      m_treeOut->Branch("trkfitQ", &m_out_trkfitQ);
      m_treeOut->Branch("trkfitRR", &m_out_trkfitRR);
      m_treeOut->Branch("trkfitdx", &m_out_trkfitdx);
@@ -387,6 +415,9 @@ class NDRecoOutputData
    m_out_trkfitLength.clear();
    m_out_trkfitSliceId.clear();
    m_out_trkfitPfoId.clear();
+   m_out_trkfitX.clear();
+   m_out_trkfitY.clear();
+   m_out_trkfitZ.clear();
    m_out_trkfitQ.clear();
    m_out_trkfitRR.clear();
    m_out_trkfitdx.clear();
@@ -502,11 +533,15 @@ class NDRecoOutputData
    m_out_trkfitLength.insert( m_out_trkfitLength.end(), length.begin(), length.end() );
  }
 
-void NDRecoOutputData::FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId, const std::vector<float> &tfQ,
+void NDRecoOutputData::FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
+					      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
 					      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx )
 {
   m_out_trkfitSliceId.insert( m_out_trkfitSliceId.end(), tfSliceId.begin(), tfSliceId.end() );
   m_out_trkfitPfoId.insert( m_out_trkfitPfoId.end(), tfPfoId.begin(), tfPfoId.end() );
+  m_out_trkfitX.insert( m_out_trkfitX.end(), tfX.begin(), tfX.end() );
+  m_out_trkfitY.insert( m_out_trkfitY.end(), tfY.begin(), tfY.end() );
+  m_out_trkfitZ.insert( m_out_trkfitZ.end(), tfZ.begin(), tfZ.end() );
   m_out_trkfitQ.insert( m_out_trkfitQ.end(), tfQ.begin(), tfQ.end() );
   m_out_trkfitRR.insert( m_out_trkfitRR.end(), tfRR.begin(), tfRR.end() );
   m_out_trkfitdx.insert( m_out_trkfitdx.end(), tfdx.begin(), tfdx.end() );
