@@ -297,7 +297,16 @@ def main(argv=None):
                 # Truth-level info for the spill
                 #######################################
                 if badEvt==False:
-                    spillID=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"][0][0][0]
+                    # try to get the spill ID
+                    allSpillIDs=flow_out["charge/calib_prompt_hits","charge/packets","mc_truth/segments",hits_ids]["event_id"]
+                    unmaskedSpillIDs = allSpillIDs.data[ ~allSpillIDs.mask ]
+                    if len(unmaskedSpillIDs) > 0:
+                        spillID = unmaskedSpillIDs[0]
+                    else:
+                        print('This event has no spillID from matches that we want to use in grabbing true particles/neutrinos. Setting as bad event. Trigger type (',triggerIDs[ievt],')')
+                        badEvt=True
+
+                if badEvt==False:
                     # Trajectories
                     traj_indicesArray = np.where(flow_out['mc_truth/trajectories/data']["event_id"] == spillID)[0]
                     traj = flow_out["mc_truth/trajectories/data"][traj_indicesArray]
