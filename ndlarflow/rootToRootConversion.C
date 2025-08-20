@@ -266,18 +266,19 @@ void rootToRootConversion(
     std::vector<long>  all_hit_vertexID;
     std::vector<float> all_hit_packetFrac;
 
-    for (unsigned int idx=0; idx<=NEvents; ++idx) {
+    // First entry is bogus, just sets the right types in uproot. Start on idx 1
+    for (unsigned int idx=1; idx<=NEvents; ++idx) {
         if (idx!=NEvents){
             tr->GetEntry(idx);
         }
-        if ( idx==0 ){
+        if ( idx==1 ){
             thisRun = in_run;
             thisSubRun = in_subrun;
             thisEvent = in_event;
 	    
 	}
 	if ( idx%100==0 ) std::cout << in_run << ":" << in_subrun << ":" << in_event << ":" << in_subevent << std::endl;
-        if ( idx > 0 && ( (in_run!=thisRun || in_subrun!=thisSubRun || in_event!=thisEvent) || idx==NEvents ) ) {
+        if ( idx > 1 && ( (in_run!=thisRun || in_subrun!=thisSubRun || in_event!=thisEvent) || idx==NEvents ) ) {
             if ( isMC ) {
                 // Something has changed... finish with the matches, fill the tree, and reset
                 // Vectors of matches
