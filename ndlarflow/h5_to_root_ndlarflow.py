@@ -221,6 +221,12 @@ def main(argv=None):
             # Removing duplicate hits_id instantiation and getting rid of hits_id_raw which is unused
             #######################################
             if badEvt==False:
+                # Check if the only values are masked and call this a bad event if so
+                if np.ma.count_masked(event_calib_prompt_hits["z"][0]) == len(event_calib_prompt_hits[0]):
+                    print('This event has a hit z array ( len hits =', len(event_calib_prompt_hits[0]), ') that appears to be only masked values, setting as bad event. Trigger type (',triggerIDs[ievt],')')
+                    badEvt=True
+
+            if badEvt==False:
                 hits_z = (np.ma.getdata(event_calib_prompt_hits["z"][0])+trueZOffset).astype('float32')
                 hits_y = ( np.ma.getdata(event_calib_prompt_hits["y"][0])+trueYOffset ).astype('float32')
                 hits_x = ( np.ma.getdata(event_calib_prompt_hits["x"][0])+trueXOffset ).astype('float32')
@@ -237,7 +243,7 @@ def main(argv=None):
                 hits_ts = np.array([]).astype('float32')
                 hits_ids = np.array([])
 
-            if len(hits_ids)<2:
+            if badEvt==False and len(hits_ids)<2:
                 print('This event has < 2 hit IDs, setting as bad event. Trigger type (',triggerIDs[ievt],')')
                 badEvt=True
 
