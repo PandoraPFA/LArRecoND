@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::SetPseudoLayerPlugin(*pPrimaryPandora, new lar_content::LArPseudoLayerPlugin));
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=,
             PandoraApi::SetLArTransformationPlugin(*pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
+        std::cout << "!!! using " << parameters.m_settingsFile << "\n";
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ReadSettings(*pPrimaryPandora, parameters.m_settingsFile));
 
         ProcessEvents(parameters, pPrimaryPandora, simpleGeom);

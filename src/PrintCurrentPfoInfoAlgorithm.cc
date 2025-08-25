@@ -13,6 +13,7 @@
 #include "larpandoracontent/LArHelpers/LArClusterHelper.h"
 #include "larpandoracontent/LArObjects/LArCaloHit.h"
 #include "larpandoracontent/LArHelpers/LArPfoHelper.h"
+#include <fstream>
 #include <iterator>
 
 #include "PrintCurrentPfoInfoAlgorithm.h"
@@ -39,10 +40,13 @@ PrintCurrentPfoInfoAlgorithm::PrintCurrentPfoInfoAlgorithm() :
 }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
+std::ofstream PrintCurrentPfoInfoAlgorithm::pfoInfoOutputFile("pfos_info.txt");
+
 std::map<std::string, int> PrintCurrentPfoInfoAlgorithm::AlgoExecutionCount;
 
 StatusCode PrintCurrentPfoInfoAlgorithm::Run()
 {
+
   std::cout << "Running PrintCurrentPfoInfoAlgorithm after STAGE : "<< m_inputStageName << "\n";
 
   PrintCurrentPfoInfoAlgorithm::AlgoExecutionCount[m_inputStageName]++;
@@ -98,18 +102,39 @@ StatusCode PrintCurrentPfoInfoAlgorithm::Run()
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_INITIALIZED, !=, PandoraContentApi::GetList(*this, pfoListName, pPfoList));
 
     if (!pPfoList || pPfoList->empty())
-    {
-      // std::cout << "PrintCurrentPfoInfoAlgorithm: couldn't find pfo list " << pfoListName << std::endl;
       continue;
-    }
-
-    std::cout << "PrintCurrentPfoInfoAlgorithm::PrintPfoListInfo start \n";
 
     for (const ParticleFlowObject *pPfo : (*pPfoList))
       PrintPfoInfo(pPfo, m_inputStageName, pfoListName);
 
-    std::cout << "PrintCurrentPfoInfoAlgorithm::PrintPfoListInfo end \n";
    }
+
+  // pfoInfoOutputFile.close();
+  
+  // print CR Vertices info --------------------------------------------------------------------
+  for (unsigned int i = 0; i < m_inputVertexListNames.size(); ++i)
+  {
+    const std::string VertexListName(m_inputVertexListNames.at(i));
+    const VertexList *pVertexList{nullptr};
+    
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_INITIALIZED, !=, PandoraContentApi::GetList(*this, VertexListName, pVertexList));
+    
+    if (!pVertexList || pVertexList->empty())
+      continue;
+
+    for (const Vertex *vertex : (*pVertexList))
+    {
+      std::cout << "{ \"label\" : " << vertex->GetVertexLabel() 
+                << ", \"type\" : " << vertex->GetVertexType()
+                << ", \"X0\" : " << vertex->GetX0()
+                << ", \"x\" : " << vertex->GetPosition().GetX() 
+                << ", \"y\" : " << vertex->GetPosition().GetY() 
+                << ", \"z\" : " << vertex->GetPosition().GetZ() 
+                << "}\n";
+    }
+
+  }
+
   return STATUS_CODE_SUCCESS;
 }
 
@@ -118,12 +143,12 @@ void PrintCurrentPfoInfoAlgorithm::PrintPfoInfo(const ParticleFlowObject *& pPfo
       ClusterList cluster3DList, cluster2DList;
       LArPfoHelper::GetThreeDClusterList(pPfo, cluster3DList);
       LArPfoHelper::GetTwoDClusterList(pPfo, cluster2DList);
-      //
-      // if(cluster3DList.empty())
-      // {
-      //   // std::cout << "PrintCurrentPfoInfoAlgorithm: cluster3DList is empty for current pfo\n";
-      //   continue;
-      // }
+    
+      if(!pfoInfoOutputFile.is_open())
+      {
+        std::cout << "Warning: pfoInfoOutputFile not open \n";
+        return;
+      }
 
       for (const Cluster *pCluster : cluster3DList)
       {
@@ -132,13 +157,13 @@ void PrintCurrentPfoInfoAlgorithm::PrintPfoInfo(const ParticleFlowObject *& pPfo
 
         for (const CaloHit *pCaloHit : caloHitList)
         {
-          std::cout << "{ \"STAGE\" : " << "\"" << STAGE << "\""
+          pfoInfoOutputFile   << "{ \"STAGE\" : " << "\"" << STAGE << "\""
                     << ", \"CallNumber\" : " << "\"" <<AlgoExecutionCount[m_inputStageName] << "\""
                     << ", \"pfoListName\" : " << "\"" << LIST_NAME << "\""
-                    << ", \"pfo\" : " << "\"" << pPfo << "\""
+                    << ", \"pfo\" : " << "\"" << pPfo + AlgoExecutionCount[m_inputStageName] << "\""
                     << ", \"NofCluters\" : " << "\"" << cluster3DList.size()  << "\""
-                    << ", \"Cluster\" : " << "\"" << pCluster << "\""
-                    << ", \"CaloHit\" : " << "\"" << pCaloHit << "\""
+                    << ", \"Cluster\" : " << "\"" << pCluster + AlgoExecutionCount[m_inputStageName] << "\""
+                    << ", \"CaloHit\" : " << "\"" << pCaloHit + AlgoExecutionCount[m_inputStageName] << "\""
                     << ", \"CaloHitType\" : " << "\""<< pCaloHit->GetHitType() << "\""
                     << ", \"CaloHitX\" : " << pCaloHit->GetPositionVector().GetX()
                     << ", \"CaloHitY\" : " << pCaloHit->GetPositionVector().GetY()
@@ -154,7 +179,7 @@ void PrintCurrentPfoInfoAlgorithm::PrintPfoInfo(const ParticleFlowObject *& pPfo
 
         for (const CaloHit *pCaloHit : caloHitList)
         {
-          std::cout << "{ \"STAGE\" : " << "\"" << m_inputStageName << "\""
+          pfoInfoOutputFile   << "{ \"STAGE\" : " << "\"" << m_inputStageName << "\""
                     << ", \"CallNumber\" : " << "\"" <<AlgoExecutionCount[m_inputStageName] << "\""
                     << ", \"pfoListName\" : " << "\"" << LIST_NAME << "\""
                     << ", \"pfo\" : " << "\"" << pPfo << "\""
@@ -243,7 +268,7 @@ StatusCode PrintCurrentPfoInfoAlgorithm::ReadSettings(const TiXmlHandle xmlHandl
   PANDORA_RETURN_RESULT_IF_AND_IF(
         STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "InputCaloHitListVName", m_inputCaloHitListVName));
   PANDORA_RETURN_RESULT_IF_AND_IF(
-        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "InputCaloHitListWName", m_inputCaloHitListWName));
+        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Inpum_inputVertexListNamestCaloHitListWName", m_inputCaloHitListWName));
 
   // clusters
 PANDORA_RETURN_RESULT_IF_AND_IF(
@@ -258,6 +283,12 @@ PANDORA_RETURN_RESULT_IF_AND_IF(
   // pfos
   PANDORA_RETURN_RESULT_IF_AND_IF(
         STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadVectorOfValues(xmlHandle, "InputPfoListNames", m_inputPfoListNames));
+
+  // CR Vertices
+  PANDORA_RETURN_RESULT_IF_AND_IF(
+        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadVectorOfValues(xmlHandle, "InputVertexListNames", m_inputVertexListNames));
+
+
 
   return STATUS_CODE_SUCCESS;
 }
