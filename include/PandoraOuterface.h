@@ -67,7 +67,7 @@ struct ParameterStruct
   float fBirksK = 0.0486; // g/cm2/MeV, proto_nd_flow/resources/lar_data.py
   float fDensity = 1.38; // g/cm3
   float fEField = 0.5; // kV/cm
-  float fCalibrationFudgeFactor = 1.176; // calibration multiplicative factor applied to dE/dx
+  float fCalibrationFudgeFactor = 1.176; // calibration multiplicative factor applied to dE/dx, this is based on MR6.4 and Birks
 
   // PID
   bool fShouldRunPID = true;
