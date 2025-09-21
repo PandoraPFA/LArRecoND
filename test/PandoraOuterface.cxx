@@ -223,6 +223,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
 	std::vector<float> trackVecDEDX;
 	std::vector<float> trackVecRR;
+	std::vector<float> trackVecDX;
 
 	bool filledPID=false; // We'll check at the end and fill PID with bogus info if PID info not filled
 
@@ -579,6 +580,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	      trackFitdQdx.push_back(hitdQdx);
 	      trackFitdEdx.push_back(hitdEdx);
 
+	      trackVecDX.push_back(hitdx);
 	      trackVecDEDX.push_back(hitdEdx);
 	      trackVecRR.push_back(hitRR);
 
@@ -597,6 +599,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 		for ( unsigned int idxCaloPt=0; idxCaloPt < trackVecDEDX.size(); ++idxCaloPt ) {
 		  if ( idxCaloPt == 0 || idxCaloPt == trackVecDEDX.size()-1 ) continue; // ignore 1st and last point
 		  if ( trackVecDEDX[idxCaloPt] > 1000. ) continue; // ignore if too high dEdx
+		  if ( parameters.fChi2RestrictDX && ( trackVecDX[idxCaloPt] < 0.35 || trackVecDX[idxCaloPt] > 0.55 ) ) continue; // optionally skip this point if dx too small/large
 		  int bin = parameters.templatesdEdxRR.at("proton")->FindBin(trackVecRR[idxCaloPt]);
 		  if ( bin >= 1 && bin <= nbins_dedx_range ) {
 		    // Content
@@ -798,6 +801,7 @@ bool ReadSettings(ParameterStruct &parameters)
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunPID", parameters.fShouldRunPID) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "PIDAlgChi2PID", parameters.fPIDAlgChi2PID) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Chi2RestrictDX", parameters.fChi2RestrictDX) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "dEdxResTempFile", parameters.fdEdxResTempFile) );
 
     if ( parameters.fShouldRunPID && parameters.fPIDAlgChi2PID ) {

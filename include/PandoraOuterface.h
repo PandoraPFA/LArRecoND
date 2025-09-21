@@ -72,6 +72,7 @@ struct ParameterStruct
   // PID
   bool fShouldRunPID = true;
   bool fPIDAlgChi2PID = true;
+  bool fChi2RestrictDX = false;
   std::string fdEdxResTempFile = "/cvmfs/larsoft.opensciencegrid.org/products/larsoft_data/v1_02_02/ParticleIdentification/dEdxrestemplates.root";
   std::map<std::string, TProfile*> templatesdEdxRR;
 
