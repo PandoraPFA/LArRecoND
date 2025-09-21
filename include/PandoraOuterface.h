@@ -25,6 +25,9 @@
 
 #include "TFile.h"
 #include "TTree.h"
+#include "TProfile.h"
+
+#include <map>
 
 namespace pandora
 {
@@ -49,6 +52,30 @@ struct ParameterStruct
   bool voxelizeZ = false;
   float voxelZHW = 0.6; // cm
   bool useVoxelizedStartStop = false;
+
+  // Calorimetry
+  bool fShouldCorrectLifetime = true;
+  float fElectronLifetime = 2.2e3; // us
+  float fElectronDriftSpeed = 0.1648; // cm/us
+  bool fShouldCorrectRecomb = true;
+  bool fFlowStyleRecombination = false;
+  bool fBoxRecombination = false;
+  float fBoxBeta = 0.207; // ndlar_flow
+  float fBoxAlpha = 0.93; // ndlar_flow
+  bool fBirksRecombination = true;
+  float fBirksA = 0.8; // proto_nd_flow/resources/lar_data.py
+  float fBirksK = 0.0486; // g/cm2/MeV, proto_nd_flow/resources/lar_data.py
+  float fDensity = 1.38; // g/cm3
+  float fEField = 0.5; // kV/cm
+  float fCalibrationFudgeFactor = 1.176; // calibration multiplicative factor applied to dE/dx
+
+  // PID
+  bool fShouldRunPID = true;
+  bool fPIDAlgChi2PID = true;
+  std::string fdEdxResTempFile = "/cvmfs/larsoft.opensciencegrid.org/products/larsoft_data/v1_02_02/ParticleIdentification/dEdxrestemplates.root";
+  std::map<std::string, TProfile*> templatesdEdxRR;
+
+  unsigned int fDetector = 0; // 0=NDLAr, 1=2x2
 
   int verbosity = 0;
 
@@ -103,7 +130,7 @@ bool PrintOptions();
 class NDRecoOutputData
 {
  public:
-  NDRecoOutputData(const std::string filename, const bool writeTracks); ///< default constructor
+  NDRecoOutputData(const std::string filename, const bool writeTracks, const bool writePID); ///< default constructor
 
   void ClearData(); ///< will reset the vectors
 
@@ -119,7 +146,9 @@ class NDRecoOutputData
 			  const std::vector<float> &length ); ///< Fill the track fit result branches
   void FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
 			      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
-			      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx );
+			      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx, const std::vector<float> &tfdEdx );
+  void FillTrackPID( const std::vector<int> &pidPDG, const std::vector<int> &pidNDF, const std::vector<float> &pidMu, const std::vector<float> &pidPi,
+		     const std::vector<float> &pidK, const std::vector<float> &pidPro );
 
  private:
   TFile* m_fileOut;
@@ -219,9 +248,16 @@ class NDRecoOutputData
   std::vector<float> m_out_trkfitRR;
   std::vector<float> m_out_trkfitdx;
   std::vector<float> m_out_trkfitdQdx;
+  std::vector<float> m_out_trkfitdEdx;
+  std::vector<int> m_out_pid_pdg;
+  std::vector<int> m_out_pid_ndf;
+  std::vector<float> m_out_pid_mu;
+  std::vector<float> m_out_pid_pi;
+  std::vector<float> m_out_pid_k;
+  std::vector<float> m_out_pid_pro;
 };
 
- NDRecoOutputData::NDRecoOutputData(const std::string filename, const bool writeTracks)
+ NDRecoOutputData::NDRecoOutputData(const std::string filename, const bool writeTracks, const bool writePID)
  {
 
    m_fileOut = new TFile(filename.c_str(), "RECREATE");
@@ -315,6 +351,15 @@ class NDRecoOutputData
      m_treeOut->Branch("trkfitEndDirY", &m_out_trkfitEndDirY);
      m_treeOut->Branch("trkfitEndDirZ", &m_out_trkfitEndDirZ);
      m_treeOut->Branch("trkfitLength", &m_out_trkfitLength);
+     // if PID
+     if ( writePID ) {
+       m_treeOut->Branch("trkfitPID_PDG", &m_out_pid_pdg);
+       m_treeOut->Branch("trkfitPID_NDF", &m_out_pid_ndf);
+       m_treeOut->Branch("trkfitPID_Mu", &m_out_pid_mu);
+       m_treeOut->Branch("trkfitPID_Pi", &m_out_pid_pi);
+       m_treeOut->Branch("trkfitPID_K", &m_out_pid_k);
+       m_treeOut->Branch("trkfitPID_Pro", &m_out_pid_pro);
+     }
      m_treeOut->Branch("trkfitSliceId", &m_out_trkfitSliceId);
      m_treeOut->Branch("trkfitPfoId", &m_out_trkfitPfoId);
      m_treeOut->Branch("trkfitX", &m_out_trkfitX);
@@ -324,6 +369,7 @@ class NDRecoOutputData
      m_treeOut->Branch("trkfitRR", &m_out_trkfitRR);
      m_treeOut->Branch("trkfitdx", &m_out_trkfitdx);
      m_treeOut->Branch("trkfitdQdx", &m_out_trkfitdQdx);
+     m_treeOut->Branch("trkfitdEdx", &m_out_trkfitdEdx);
    }
  }
 
@@ -422,6 +468,13 @@ class NDRecoOutputData
    m_out_trkfitRR.clear();
    m_out_trkfitdx.clear();
    m_out_trkfitdQdx.clear();
+   m_out_trkfitdEdx.clear();
+   m_out_pid_pdg.clear();
+   m_out_pid_ndf.clear();
+   m_out_pid_mu.clear();
+   m_out_pid_pi.clear();
+   m_out_pid_k.clear();
+   m_out_pid_pro.clear();
  }
 
  void NDRecoOutputData::WriteToFile()
@@ -535,7 +588,7 @@ class NDRecoOutputData
 
 void NDRecoOutputData::FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
 					      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
-					      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx )
+					      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx, const std::vector<float> &tfdEdx )
 {
   m_out_trkfitSliceId.insert( m_out_trkfitSliceId.end(), tfSliceId.begin(), tfSliceId.end() );
   m_out_trkfitPfoId.insert( m_out_trkfitPfoId.end(), tfPfoId.begin(), tfPfoId.end() );
@@ -546,6 +599,18 @@ void NDRecoOutputData::FillTrackCaloBranches( const std::vector<int> &tfSliceId,
   m_out_trkfitRR.insert( m_out_trkfitRR.end(), tfRR.begin(), tfRR.end() );
   m_out_trkfitdx.insert( m_out_trkfitdx.end(), tfdx.begin(), tfdx.end() );
   m_out_trkfitdQdx.insert( m_out_trkfitdQdx.end(), tfdQdx.begin(), tfdQdx.end() );
+  m_out_trkfitdEdx.insert( m_out_trkfitdEdx.end(), tfdEdx.begin(), tfdEdx.end() );
+}
+
+void NDRecoOutputData::FillTrackPID(const std::vector<int> &pidPDG, const std::vector<int> &pidNDF, const std::vector<float> &pidMu, const std::vector<float> &pidPi,
+				    const std::vector<float> &pidK, const std::vector<float> &pidPro)
+{
+  m_out_pid_pdg.insert( m_out_pid_pdg.end(), pidPDG.begin(), pidPDG.end() );
+  m_out_pid_ndf.insert( m_out_pid_ndf.end(), pidNDF.begin(), pidNDF.end() );
+  m_out_pid_mu.insert( m_out_pid_mu.end(), pidMu.begin(), pidMu.end() );
+  m_out_pid_pi.insert( m_out_pid_pi.end(), pidPi.begin(), pidPi.end() );
+  m_out_pid_k.insert( m_out_pid_k.end(), pidK.begin(), pidK.end() );
+  m_out_pid_pro.insert( m_out_pid_pro.end(), pidPro.begin(), pidPro.end() );
 }
 
 } // namespace lar_nd_postreco

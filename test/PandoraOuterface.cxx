@@ -8,6 +8,7 @@
 
 #include "TFile.h"
 #include "TTree.h"
+#include "TMath.h"
 
 #include "TGeoBBox.h"
 #include "TGeoManager.h"
@@ -93,6 +94,31 @@ namespace lar_nd_postreco
 
 void ProcessPostReco(const ParameterStruct &parameters)
 {
+  // A few constants used later
+  const float wIon = 23.6/1.0e6; // MeV/e-
+
+  std::vector<float> posAnodes;
+  if ( parameters.fDetector == 0 ) {
+    // NDLAr anodes
+    posAnodes.push_back(-50.);
+    posAnodes.push_back(-150.);
+    posAnodes.push_back(-250.);
+    posAnodes.push_back(-350.);
+    posAnodes.push_back(50.);
+    posAnodes.push_back(150.);
+    posAnodes.push_back(250.);
+    posAnodes.push_back(350.);
+  }
+  else if ( parameters.fDetector == 1 ) {
+    // 2x2 anodes
+    posAnodes.push_back(3.0652);
+    posAnodes.push_back(63.9273);
+    posAnodes.push_back(-3.0652);
+    posAnodes.push_back(-63.9273);
+  }
+
+  /////////////////////////////////////////////////////////
+
   TFile *fileSource = TFile::Open(parameters.fileName.c_str(), "READ");
   if (!fileSource)
   {
@@ -116,7 +142,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	    << parameters.pixelPitch << " and track/shower separation score of " << parameters.trackScoreCut << std::endl;
 
   // Create the class where we'll store the output info
-  NDRecoOutputData fOut( parameters.outfileName, parameters.runTrackFit );
+  NDRecoOutputData fOut( parameters.outfileName, parameters.runTrackFit, parameters.fShouldRunPID );
 
   // Loop events
   for ( long entryIdx = 0; entryIdx < nEntries; ++entryIdx ) {
@@ -130,9 +156,14 @@ void ProcessPostReco(const ParameterStruct &parameters)
     std::vector<float> trkStartDirX, trkStartDirY, trkStartDirZ, trkEndDirX, trkEndDirY, trkEndDirZ;
     std::vector<float> trkLen;
 
+    // Track fit POINT values
     std::vector<int> trackFitSliceId, trackFitPfoId;
     std::vector<float> trackFitX, trackFitY, trackFitZ;
-    std::vector<float> trackFitQ, trackFitRR, trackFitdx, trackFitdQdx;
+    std::vector<float> trackFitQ, trackFitRR, trackFitdx, trackFitdQdx, trackFitdEdx;
+
+    // Per Particle PID
+    std::vector<float> pid_muScore, pid_piScore, pid_kScore, pid_proScore;
+    std::vector<int> pid_pdg, pid_ndf;
 
     // Loop particles in the event
     unsigned int nParticles = pandoraIn->m_clusterID->size();
@@ -189,6 +220,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	// TODO: Make the MinTrajectoryPoints(default=2) and SlidingFitHalfWindow(20) configurable
 	int minTrajectoryPoints = 2;
 	float slidingFitHalfWindow = 20;
+
+	std::vector<float> trackVecDEDX;
+	std::vector<float> trackVecRR;
+
+	bool filledPID=false; // We'll check at the end and fill PID with bogus info if PID info not filled
 
 	lar_content::LArTrackStateVector trackStateVector;
 	std::vector<int> indexVector;
@@ -459,55 +495,183 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	    float lengthSoFar = 0.;
 	    for (unsigned int idxPt=0; idxPt < trackStateVector_out.size(); ++idxPt ) {
 	      const lar_content::LArTrackState& trackState = trackStateVector_out.at(idxPt);
-	      // First point
-	      if ( idxPt == 0 ){
-		float hitQ = trackState.GetCaloHit()->GetInputEnergy();
-		float hitRR = trklength;
-		float hitdx = 0.;
-		if ( idxPt < trackStateVector_out.size()-1 ) {
-		  const lar_content::LArTrackState& trackStateNext = trackStateVector_out.at(idxPt+1);
-		  hitdx = std::sqrt( trackState.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) );
-		}
-		trackFitSliceId.push_back(sliceID);
-		trackFitPfoId.push_back(clusterID);
-		trackFitX.push_back(trackState.GetPosition().GetX());
-		trackFitY.push_back(trackState.GetPosition().GetY());
-		trackFitZ.push_back(trackState.GetPosition().GetZ());
-		trackFitQ.push_back(hitQ);
-		trackFitRR.push_back(hitRR);
-		trackFitdx.push_back(hitdx);
-		float hitdQdx = hitdx > 0. ? hitQ/hitdx : -5.f;
-		trackFitdQdx.push_back(hitdQdx);
-	      }
-	      // Rest of points
-	      if ( idxPt > 0 ){
+
+	      // charge
+	      float hitQ = trackState.GetCaloHit()->GetInputEnergy();
+	      // residual range
+	      if ( idxPt > 0 ) {
 		const lar_content::LArTrackState& trackStatePrev = trackStateVector_out.at(idxPt-1);
 		lengthSoFar+=std::sqrt( trackStatePrev.GetPosition().GetDistanceSquared( trackState.GetPosition() ) );
-		float hitQ = trackState.GetCaloHit()->GetInputEnergy();
-		float hitRR = trklength - lengthSoFar;
-		float hitdx = 0.;
-		// Middle points
-		if ( idxPt < trackStateVector_out.size()-1 ) {
-		  const lar_content::LArTrackState& trackStateNext = trackStateVector_out.at(idxPt+1);
-		  hitdx = std::sqrt( trackStatePrev.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) );
-		}
-		// Last point
-		else {
-		  hitdx = std::sqrt( trackStatePrev.GetPosition().GetDistanceSquared( trackState.GetPosition() ) );
-		}
-		trackFitSliceId.push_back(sliceID);
-		trackFitPfoId.push_back(clusterID);
-		trackFitX.push_back(trackState.GetPosition().GetX());
-		trackFitY.push_back(trackState.GetPosition().GetY());
-		trackFitZ.push_back(trackState.GetPosition().GetZ());
-		trackFitQ.push_back(hitQ);
-		trackFitRR.push_back(hitRR);
-		trackFitdx.push_back(hitdx);
-		float hitdQdx = hitdx > 0. ? hitQ/hitdx : -5.f;
-		trackFitdQdx.push_back(hitdQdx);
 	      }
-	    }
-	  }
+	      float hitRR = trklength - lengthSoFar;
+	      // dx
+	      float hitdx = 0.;
+	      if ( idxPt == 0 ){
+		if ( idxPt < trackStateVector_out.size()-1 ) {
+                  const lar_content::LArTrackState& trackStateNext = trackStateVector_out.at(idxPt+1);
+                  hitdx = std::sqrt( trackState.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) )/2.;
+                }
+	      }
+	      else {
+		const lar_content::LArTrackState& trackStatePrev = trackStateVector_out.at(idxPt-1);
+		// Middle Points
+		if ( idxPt < trackStateVector_out.size()-1 ) {
+                  const lar_content::LArTrackState& trackStateNext = trackStateVector_out.at(idxPt+1);
+                  hitdx = std::sqrt( trackStatePrev.GetPosition().GetDistanceSquared( trackStateNext.GetPosition() ) )/2.;
+                }
+		// Last Point
+		else {
+                  hitdx = std::sqrt( trackStatePrev.GetPosition().GetDistanceSquared( trackState.GetPosition() ) )/2.;
+                }
+	      }
+	      // dQdx
+	      float hitdQdx = hitdx > 0. ? hitQ/hitdx : -5.f;
+
+	      // Lifetime correction
+	      if ( parameters.fShouldCorrectLifetime ) {
+		float driftDist = std::numeric_limits<float>::max();
+		for ( float wallX : posAnodes ) {
+		  float thisDist = fabs(wallX-trackState.GetPosition().GetX());
+		  if ( thisDist < driftDist ) driftDist = thisDist;
+		}
+		float tDrift = driftDist / parameters.fElectronDriftSpeed;
+		hitdQdx*=( 1000. * TMath::Exp(tDrift/parameters.fElectronLifetime) ); // turn ke- to e- and do lifetime correction
+	      }
+	      // Recombination correction
+	      float hitdEdx = 0.;
+	      if ( parameters.fShouldCorrectRecomb ) {
+		if ( parameters.fFlowStyleRecombination ) {
+		  // MIP Recombination with the Q->E calculation as in FLOW file
+		  // see e.g. https://github.com/DUNE/ndlar_flow/blob/develop/src/proto_nd_flow/reco/charge/calib_prompt_hits.py#L289
+		  float dEdxMIP = 2.; // MeV/cm (using the value in above line)
+		  float recomb = 1.;
+		  if ( parameters.fBoxRecombination ) {
+		    float csi = parameters.fBoxBeta * dEdxMIP / (parameters.fEField * parameters.fDensity);
+		    recomb = TMath::Log(parameters.fBoxAlpha + csi)/csi;
+		  }
+		  else if ( parameters.fBirksRecombination ) {
+		    recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdxMIP / (parameters.fEField * parameters.fDensity) );
+		  }
+		  hitdEdx = hitdQdx / recomb * wIon;
+		}
+		else if ( parameters.fBoxRecombination ) {
+		  // Box style, LArSoft style, angular part turned off, we'll just use the box beta as-is
+		  // https://github.com/LArSoft/larreco/blob/develop/larreco/Calorimetry/CalorimetryAlg.cxx
+		  hitdEdx = (TMath::Exp(parameters.fBoxBeta * wIon * hitdQdx) - parameters.fBoxAlpha) / parameters.fBoxBeta;
+		}
+		else if ( parameters.fBirksRecombination ){
+		  // Birks style, LArSoft style
+		  // https://github.com/LArSoft/larreco/blob/develop/larreco/Calorimetry/CalorimetryAlg.cxx
+		  hitdEdx = hitdQdx / (parameters.fBirksA / wIon - parameters.fBirksK / parameters.fEField * hitdQdx);
+		}
+	      }
+	      hitdEdx*=parameters.fCalibrationFudgeFactor;
+
+	      // Outputs
+	      trackFitSliceId.push_back(sliceID);
+	      trackFitPfoId.push_back(clusterID);
+	      trackFitX.push_back(trackState.GetPosition().GetX());
+	      trackFitY.push_back(trackState.GetPosition().GetY());
+	      trackFitZ.push_back(trackState.GetPosition().GetZ());
+	      trackFitQ.push_back(hitQ);
+	      trackFitRR.push_back(hitRR);
+	      trackFitdx.push_back(hitdx);
+	      trackFitdQdx.push_back(hitdQdx);
+	      trackFitdEdx.push_back(hitdEdx);
+
+	      trackVecDEDX.push_back(hitdEdx);
+	      trackVecRR.push_back(hitRR);
+
+	    } // loop points
+
+	    // Particle ID here
+	    if ( parameters.fShouldRunPID ) {
+	      if ( parameters.fPIDAlgChi2PID ) {
+		// as in https://github.com/LArSoft/larana/blob/develop/larana/ParticleIdentification/Chi2PIDAlg.cxx#L90
+		float chi2pro = 0.;
+		float chi2ka = 0.;
+		float chi2pi = 0.;
+		float chi2mu = 0.;
+		int nbins_dedx_range = parameters.templatesdEdxRR.at("proton")->GetNbinsX();
+		int npts = 0;
+		for ( unsigned int idxCaloPt=0; idxCaloPt < trackVecDEDX.size(); ++idxCaloPt ) {
+		  if ( idxCaloPt == 0 || idxCaloPt == trackVecDEDX.size()-1 ) continue; // ignore 1st and last point
+		  if ( trackVecDEDX[idxCaloPt] > 1000. ) continue; // ignore if too high dEdx
+		  int bin = parameters.templatesdEdxRR.at("proton")->FindBin(trackVecRR[idxCaloPt]);
+		  if ( bin >= 1 && bin <= nbins_dedx_range ) {
+		    // Content
+		    float bincpro = parameters.templatesdEdxRR.at("proton")->GetBinContent(bin);
+		    if ( bincpro < 1e-6 ) bincpro = ( parameters.templatesdEdxRR.at("proton")->GetBinContent(bin-1) + parameters.templatesdEdxRR.at("proton")->GetBinContent(bin+1) )/2.;
+		    float bincka = parameters.templatesdEdxRR.at("kaon")->GetBinContent(bin);
+                    if ( bincka < 1e-6 ) bincka = ( parameters.templatesdEdxRR.at("kaon")->GetBinContent(bin-1) + parameters.templatesdEdxRR.at("kaon")->GetBinContent(bin+1) )/2.;
+		    float bincpi = parameters.templatesdEdxRR.at("pion")->GetBinContent(bin);
+                    if ( bincpi < 1e-6 ) bincpi = ( parameters.templatesdEdxRR.at("pion")->GetBinContent(bin-1) + parameters.templatesdEdxRR.at("pion")->GetBinContent(bin+1) )/2.;
+		    float bincmu = parameters.templatesdEdxRR.at("muon")->GetBinContent(bin);
+                    if ( bincmu < 1e-6 ) bincmu = ( parameters.templatesdEdxRR.at("muon")->GetBinContent(bin-1) + parameters.templatesdEdxRR.at("muon")->GetBinContent(bin+1) )/2.;
+		    // Error
+		    float binepro = parameters.templatesdEdxRR.at("proton")->GetBinError(bin);
+                    if ( binepro < 1e-6 ) binepro = ( parameters.templatesdEdxRR.at("proton")->GetBinError(bin-1) + parameters.templatesdEdxRR.at("proton")->GetBinError(bin+1) )/2.;
+                    float bineka = parameters.templatesdEdxRR.at("kaon")->GetBinError(bin);
+                    if ( bineka < 1e-6 ) bineka = ( parameters.templatesdEdxRR.at("kaon")->GetBinError(bin-1) + parameters.templatesdEdxRR.at("kaon")->GetBinError(bin+1) )/2.;
+                    float binepi = parameters.templatesdEdxRR.at("pion")->GetBinError(bin);
+                    if ( binepi < 1e-6 ) binepi = ( parameters.templatesdEdxRR.at("pion")->GetBinError(bin-1) + parameters.templatesdEdxRR.at("pion")->GetBinError(bin+1) )/2.;
+                    float binemu = parameters.templatesdEdxRR.at("muon")->GetBinError(bin);
+                    if ( binemu < 1e-6 ) binemu = ( parameters.templatesdEdxRR.at("muon")->GetBinError(bin-1) + parameters.templatesdEdxRR.at("muon")->GetBinError(bin+1) )/2.;
+		    float errdedx = 0.04231 + 0.0001783 * trackVecDEDX[idxCaloPt] * trackVecDEDX[idxCaloPt];
+		    errdedx *= trackVecDEDX[idxCaloPt];
+		    float errdedx_square = errdedx*errdedx;
+		    // chi2 values
+		    chi2pro += std::pow(trackVecDEDX[idxCaloPt] - bincpro, 2) / (binepro*binepro + errdedx_square);
+		    chi2ka += std::pow(trackVecDEDX[idxCaloPt] - bincka, 2) / (bineka*bineka + errdedx_square);
+		    chi2pi += std::pow(trackVecDEDX[idxCaloPt] - bincpi, 2) / (binepi*binepi + errdedx_square);
+		    chi2mu += std::pow(trackVecDEDX[idxCaloPt] - bincmu, 2) / (binemu*binemu + errdedx_square);
+		    npts+=1;
+		  } // within bins
+		} // loop calo points
+
+		if ( npts > 0 ) {
+		  int thisPDG = 0;
+		  float thisChi2 = std::numeric_limits<float>::max();
+		  if ( chi2pro/npts < thisChi2 ) {
+		    thisPDG = 2212;
+		    thisChi2 = chi2pro/npts;
+		  }
+		  if ( chi2ka/npts < thisChi2 ) {
+                    thisPDG = 321;
+                    thisChi2 = chi2ka/npts;
+                  }
+		  if ( chi2pi/npts < thisChi2 ) {
+                    thisPDG = 211;
+                    thisChi2 = chi2pi/npts;
+                  }
+		  if ( chi2mu/npts < thisChi2 ) {
+                    thisPDG = 13;
+                    thisChi2 = chi2mu/npts;
+                  }
+		  // prediction is minimum chi2/npts
+		  filledPID=true;
+		  pid_pdg.push_back(thisPDG);
+		  pid_ndf.push_back(npts);
+		  pid_muScore.push_back(chi2mu/npts);
+		  pid_piScore.push_back(chi2pi/npts);
+		  pid_kScore.push_back(chi2ka/npts);
+		  pid_proScore.push_back(chi2pro/npts);
+		}
+	      } // use Chi2PID
+	    } // getting PID
+	    ///////////////////////
+
+	  } // if trackstate has stuff needed to do dEdx
+	} // if we have a track state
+
+	if ( !filledPID ) {
+	  // if PID isn't filled then we need to add in the defaults for this track
+	  pid_pdg.push_back(0);
+	  pid_ndf.push_back(0);
+	  pid_muScore.push_back(-5.);
+	  pid_piScore.push_back(-5.);
+	  pid_kScore.push_back(-5.);
+	  pid_proScore.push_back(-5.);
 	}
       } // TRACK FIT
 
@@ -519,7 +683,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
     if ( parameters.runTrackFit ) {
       fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen);
-      fOut.FillTrackCaloBranches(trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx);
+      fOut.FillTrackCaloBranches(trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
+      if ( parameters.fShouldRunPID ) fOut.FillTrackPID(pid_pdg,pid_ndf,pid_muScore,pid_piScore,pid_kScore,pid_proScore);
     }
 
     // Write our branches to the output tree
@@ -600,6 +765,62 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldVoxelizeZ", parameters.voxelizeZ) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "VoxelHalfWidthZ", parameters.voxelZHW) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "UseVoxelizedStartStop", parameters.useVoxelizedStartStop) );
+
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Detector", parameters.fDetector) );
+
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldCorrectLifetime", parameters.fShouldCorrectLifetime) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ElectronLifetime", parameters.fElectronLifetime) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ElectronDriftSpeed", parameters.fElectronDriftSpeed) );
+
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldCorrectRecombination", parameters.fShouldCorrectRecomb) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "FlowStyleRecombination", parameters.fFlowStyleRecombination) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BoxRecombination", parameters.fBoxRecombination) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BirksRecombination", parameters.fBirksRecombination) );
+    // Check if we have set to do BOTH Box & Birks if correcting lifetime, or if we have set to correct lifetime and chosen NEITHER
+    if ( parameters.fShouldCorrectRecomb ) {
+      if ( parameters.fBoxRecombination && parameters.fBirksRecombination ) {
+	std::cout << "BOTH Box and Birks are true. Please set one to false." << std::endl;
+	return false;
+      }
+      if ( !parameters.fBoxRecombination && !parameters.fBirksRecombination ) {
+	std::cout << "BOTH Box and Birks are false. Please set one to true." << std::endl;
+	return false;
+      }
+    }
+
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Density", parameters.fDensity) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EField", parameters.fEField) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BoxBeta", parameters.fBoxBeta) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BoxAlpha", parameters.fBoxAlpha) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BirksA", parameters.fBirksA) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BirksK", parameters.fBirksK) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "CalibrationFudgeFactor", parameters.fCalibrationFudgeFactor) );
+
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunPID", parameters.fShouldRunPID) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "PIDAlgChi2PID", parameters.fPIDAlgChi2PID) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "dEdxResTempFile", parameters.fdEdxResTempFile) );
+
+    if ( parameters.fShouldRunPID && parameters.fPIDAlgChi2PID ) {
+      // Following scheme as in LArSoft larana/ParticleIdentification/Chi2PIDAlg.cxx
+      TFile *tempFile = TFile::Open(parameters.fdEdxResTempFile.c_str());
+      parameters.templatesdEdxRR["muon"] = (TProfile*)tempFile->Get("dedx_range_mu");
+      parameters.templatesdEdxRR["pion"] = (TProfile*)tempFile->Get("dedx_range_pi");
+      parameters.templatesdEdxRR["proton"] = (TProfile*)tempFile->Get("dedx_range_pro");
+      parameters.templatesdEdxRR["kaon"] = (TProfile*)tempFile->Get("dedx_range_ka");
+      try {
+	if ( parameters.templatesdEdxRR.at("muon")->GetNbinsX() < 1 &&
+	     parameters.templatesdEdxRR.at("pion")->GetNbinsX() < 1 &&
+	     parameters.templatesdEdxRR.at("kaon")->GetNbinsX() < 1 &&
+	     parameters.templatesdEdxRR.at("proton")->GetNbinsX() < 1 ) {
+	  std::cout << "Not enough data in dEdx vs RR templates. Returning" << std::endl; 
+	  return false;
+	}
+      }
+      catch (StatusCodeException &statusCodeException) {
+	std::cout << "Issue loading dEdx vs RR templates. Returning" << std::endl;
+	return false;
+      }
+    }
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Verbosity", parameters.verbosity) );
   }
