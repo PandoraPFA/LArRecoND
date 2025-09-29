@@ -71,7 +71,16 @@ jobs:
   test:
     needs: build
     runs-on: ubuntu-24.04
-    name: Test LArRecoND
+
+    strategy:
+      matrix:
+        data_url:
+          [
+            "https://portal.nersc.gov/project/dune/data/2x2/simulation/productions/MiniRun6_1E19_RHC/MiniRun6_1E19_RHC.flow/FLOW/0000000/MiniRun6_1E19_RHC.flow.0000000.FLOW.hdf5",
+          ]
+        name: ["2x2"]
+
+    name: Test ${{ matrix.name }} Data
 
     steps:
       - name: Checkout LArRecoND Repository
@@ -93,8 +102,12 @@ jobs:
         shell: bash -l {0}
         run: |
           echo "Processing files with Python..."
-          cd /pandora/LArRecoND
-          python3 ndlarflow/h5_to_root_ndlarflow.py
+          mkdir -p /pandora/data
+          cd /pandora/data/
+          wget -q ${{ matrix.data_url }} -O input_data.hdf5
+          python3 /pandora/LArRecoND/ndlarflow/h5_to_root_ndlarflow.py /pandora/data/input_data.hdf5
+          ls
+          ls *
 
       - name: Run Binary Tests
         run: |
