@@ -13,6 +13,10 @@ on:
       - "*"
   workflow_dispatch:
 
+# Top level environment variables...
+env:
+  PRIMARY_COMPILER: gcc-13
+
 # Workflow with 1 stage: Build.
 # Each of the sub-stages in the build job run in parallel.
 jobs:
@@ -31,141 +35,98 @@ jobs:
         compiler: [{ cpp: g++-13, c: gcc-13 }, { cpp: clang++, c: clang }]
 
     # Set the compiler env vars to ensure the correct compiler is used.
+    # Similarly, set all the URLs for external dependencies in one place.
     env:
       CC: ${{ matrix.compiler.c }}
       CXX: ${{ matrix.compiler.cpp }}
+      ROOT_URL: "https://root.cern/download/root_v6.36.04.Linux-ubuntu24.04-x86_64-gcc13.3.tar.gz"
+      TORCH_URL: "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.1.1%2Bcpu.zip"
+      EIGEN_URL: "https://gitlab.com/libeigen/eigen/-/archive/3.3.5/eigen-3.3.5.tar.gz"
 
     steps:
-      # Setup dependencies and build folder...
-      - name: Install Dependencies
-        run: |
-          sudo apt install -y binutils cmake dpkg-dev g++ gcc libssl-dev git libx11-dev \
-            libxext-dev libxft-dev libxpm-dev python3 libtbb-dev libvdt-dev libgif-dev \
-            xlibmesa-glu-dev libftgl-dev libgl2ps-dev libglew-dev
-          sudo mkdir -m 0777 -p /pandora
-
-      # Pull and Install Eigen...
-      - name: Pull Eigen
-        run: wget https://gitlab.com/libeigen/eigen/-/archive/3.3.5/eigen-3.3.5.tar.gz
-      - name: Unpack Eigen
-        run: tar -xf eigen-3.3.5.tar.gz && rm eigen-3.3.5.tar.gz && mv eigen-3.3.5 Eigen3
-      - name: Build Eigen
-        run: |
-          cd Eigen3 && mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=/pandora/Eigen3 ..
-          make -j$(nproc) install
-
-      # Sort ROOT install out if needed...
-      - name: Install ROOT
-        run: |
-          wget https://root.cern/download/root_v6.36.04.Linux-ubuntu24.04-x86_64-gcc13.3.tar.gz
-          tar -xzvf root_v6.36.04.Linux-ubuntu24.04-x86_64-gcc13.3.tar.gz && mv root/ /pandora/root
-
-      # Sort LibTorch install out...
-      - name: Install Torch
-        run: |
-          wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.1.1%2Bcpu.zip
-          unzip libtorch-cxx11-abi-shared-with-deps-2.1.1+cpu.zip && mv libtorch/ /pandora/libtorch
-
-      # Pull the various Pandora repos...
-      - name: Pull PandoraPFA
+      - name: Checkout LArRecoND Repository
         uses: actions/checkout@v4
-        with:
-          repository: "PandoraPFA/PandoraPFA"
-          path: PandoraPFA
 
-      - name: Pull PandoraSDK
+      - name: Setup Env
+        uses: ./.github/actions/setup-env
+
+      - name: Setup External Dependencies
+        uses: ./.github/actions/setup-externals
+        with:
+          root-url: ${{ env.ROOT_URL }}
+          torch-url: ${{ env.TORCH_URL }}
+          eigen-url: ${{ env.EIGEN_URL }}
+
+      - name: Build Pandora Software Stack
+        uses: ./.github/actions/build-pandora
+
+      - name: Archive Build Environment
+        uses: actions/upload-artifact@v4
+        if: matrix.compiler.c == '${{ env.PRIMARY_COMPILER }}'
+        with:
+          name: pandora-build-env-${{ matrix.compiler.c }}
+          path: /pandora
+          retention-days: 1
+
+  test:
+    needs: build
+    runs-on: ubuntu-24.04
+    name: Test LArRecoND
+
+    steps:
+      - name: Checkout LArRecoND Repository
         uses: actions/checkout@v4
+
+      - name: Setup Env
+        uses: ./.github/actions/setup-env
+
+      - name: Setup Python
+        uses: ./.github/actions/setup-python
+
+      - name: Download Build Environment
+        uses: actions/download-artifact@v4
         with:
-          repository: "PandoraPFA/PandoraSDK"
-          path: PandoraSDK
+          name: pandora-build-env-${{ env.PRIMARY_COMPILER }}
+          path: /pandora
 
-      - name: Pull PandoraMonitoring
-        uses: actions/checkout@v4
-        with:
-          repository: "PandoraPFA/PandoraMonitoring"
-          path: PandoraMonitoring
-
-      - name: Pull LArContent
-        uses: actions/checkout@v4
-        with:
-          repository: "PandoraPFA/LArContent"
-          path: LArContent
-
-      - name: Pull LArRecoND
-        uses: actions/checkout@v4
-        with:
-          path: LArRecoND
-
-      # Lets move all the repos to a central /pandora/ path, for easier pathing.
-      - name: Update Repo Locations
+      - name: Process Files With Python
+        shell: bash -l {0}
         run: |
-          mv Pandora* /pandora/
-          mv LAr* /pandora/
+          echo "Processing files with Python..."
+          cd /pandora/LArRecoND
+          python3 ndlarflow/h5_to_root_ndlarflow.py
 
-      # Build the SDK then monitoring (if required).
-      - name: Build PandoraSDK
+      - name: Run Binary Tests
         run: |
-          mkdir -p /pandora/PandoraSDK/build && cd /pandora/PandoraSDK/build
-          cmake -DCMAKE_MODULE_PATH=/pandora/PandoraPFA/cmakemodules /pandora/PandoraSDK/
-          make -j$(nproc) install
-
-      - name: Build PandoraMonitoring
-        run: |
-          mkdir -p /pandora/PandoraMonitoring/build && cd /pandora/PandoraMonitoring/build
-          cmake \
-            -DCMAKE_MODULE_PATH=/pandora/PandoraPFA/cmakemodules \
-            -DROOT_DIR=/pandora/root/cmake \
-            -DPandoraSDK_DIR=/pandora/PandoraSDK \
-            /pandora/PandoraMonitoring/
-          make -j$(nproc) install
-
-      # Now build LArContent.
-      - name: Build LArContent
-        run: |
-          mkdir -p /pandora/LArContent/build && cd /pandora/LArContent/build
-          cmake \
-            -DCMAKE_MODULE_PATH=/pandora/PandoraPFA/cmakemodules \
-            -DPandoraSDK_DIR=/pandora/PandoraSDK \
-            -DEigen3_DIR=/pandora/Eigen3/share/eigen3/cmake \
-            -DROOT_DIR=/pandora/root/cmake \
-            -DPANDORA_MONITORING=ON \
-            -DPandoraMonitoring_DIR=/pandora/PandoraMonitoring \
-            -DPANDORA_LIBTORCH=ON \
-            -DCMAKE_PREFIX_PATH=/pandora/libtorch/ \
-            /pandora/LArContent/
-          make -j$(nproc) install
-
-      # Finally, lets build LArRecoND...
-      - name: Build LArRecoND
-        run: |
-          mkdir -p /pandora/LArRecoND/build && cd /pandora/LArRecoND/build
-          cmake \
-            -DCMAKE_MODULE_PATH=/pandora/PandoraPFA/cmakemodules \
-            -DPandoraSDK_DIR=/pandora/PandoraSDK \
-            -DEigen3_DIR=/pandora/Eigen3/share/eigen3/cmake \
-            -DROOT_DIR=/pandora/root/cmake \
-            -DLArContent_DIR=/pandora/LArContent/ \
-            -DLArDLContent_DIR=/pandora/LArContent/ \
-            -DPANDORA_MONITORING=ON \
-            -DPandoraMonitoring_DIR=/pandora/PandoraMonitoring \
-            -DPANDORA_LIBTORCH=ON \
-            -DCMAKE_PREFIX_PATH=/pandora/libtorch/ \
-            /pandora/LArRecoND/
-          make -j$(nproc) install
-
-      # And now we have it built, lets just run the executable to check it works.
-      # For now...just check the help text comes up.
-      # Can just store and compare the text to some known included string.
-      - name: Verify LArRecoND
-        run: |
+          sudo chmod -R +x /pandora
+          source /pandora/setup.sh
           /pandora/LArRecoND/bin/PandoraInterface -h
-          OUTPUT=$(/pandora/LArRecoND/bin/PandoraInterface -h)
-          echo "$OUTPUT"
 
-          if [[ "$OUTPUT" == *"CRRemHitsSliceCR"* ]]; then
-            echo "Help text check passed."
-          else
-            echo "Help text check failed!"
-            exit 1
+  cleanup:
+    name: Cleanup Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: always()
+    permissions:
+      actions: write
+
+    steps:
+      - name: Delete workflow artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching artifacts for this workflow run..."
+          # Use the GitHub CLI to list artifacts from this specific run
+          ARTIFACT_IDS=$(gh api /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts.[].id')
+
+          if [ -z "$ARTIFACT_IDS" ]; then
+            echo "No artifacts found to delete."
+            exit 0
           fi
+
+          echo "Found artifact IDs: $ARTIFACT_IDS"
+          for ARTIFACT_ID in $ARTIFACT_IDS; do
+            echo "Deleting artifact with ID: $ARTIFACT_ID"
+            gh api --method DELETE /repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID
+          done
+          echo "Artifact cleanup complete."

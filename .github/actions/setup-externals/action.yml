@@ -1,0 +1,78 @@
+name: "Setup External Dependencies"
+description: "Installs external dependencies, from the URLs provided as inputs"
+
+inputs:
+  root-url:
+    description: "The full URL to the ROOT tarball"
+    required: true
+  torch-url:
+    description: "The full URL to the LibTorch zip file"
+    required: true
+  eigen-url:
+    description: "The full URL to the Eigen tarball"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate ROOT Cache Key
+      id: root-key
+      shell: bash
+      run: echo "hash=$(echo -n '${{ inputs.root-url }}' | sha256sum | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+    - name: Cache and Install ROOT
+      id: cache-root
+      uses: actions/cache@v4
+      with:
+        path: /pandora/root
+        key: ${{ runner.os }}-root-${{ steps.root-key.outputs.hash }}
+
+    - name: Install ROOT
+      if: steps.cache-root.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        wget -O root.tar.gz "${{ inputs.root-url }}"
+        tar -xzvf root.tar.gz && mv root/ /pandora/root
+        rm root.tar.gz
+
+    - name: Generate LibTorch Cache Key
+      id: torch-key
+      shell: bash
+      run: echo "hash=$(echo -n '${{ inputs.torch-url }}' | sha256sum | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+    - name: Cache and Install LibTorch
+      id: cache-torch
+      uses: actions/cache@v4
+      with:
+        path: /pandora/libtorch
+        key: ${{ runner.os }}-torch-${{ steps.torch-key.outputs.hash }}
+
+    - name: Install LibTorch
+      if: steps.cache-torch.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        wget -O libtorch.zip "${{ inputs.torch-url }}"
+        unzip libtorch.zip && mv libtorch/ /pandora/libtorch
+        rm libtorch.zip
+
+    - name: Generate Eigen Cache Key
+      id: eigen-key
+      shell: bash
+      run: echo "hash=$(echo -n '${{ inputs.eigen-url }}' | sha256sum | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+    - name: Cache and Install Eigen
+      id: cache-eigen
+      uses: actions/cache@v4
+      with:
+        path: /pandora/Eigen3
+        key: ${{ runner.os }}-eigen-${{ steps.eigen-key.outputs.hash }}
+
+    - name: Install Eigen
+      if: steps.cache-eigen.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        wget -O eigen.tar.gz "${{ inputs.eigen-url }}"
+        tar -xf eigen.tar.gz
+        EIGEN_DIR=$(find . -maxdepth 1 -type d -name "eigen-*")
+        mv $EIGEN_DIR EigenSource
+        cd EigenSource && mkdir build && cd build
+        cmake -DCMAKE_INSTALL_PREFIX=/pandora/Eigen3 ..
+        make -j$(nproc) install
+        cd ../../ && rm -rf EigenSource eigen.tar.gz
