@@ -21,19 +21,26 @@ runs:
 
     - name: Install Conda Packages
       shell: bash -l {0}
+      env:
+        CC: mpicc
+        HDF5_MPI: "ON"
       run: |
         # Enable conda-forge channel
         conda config --add channels conda-forge
         # Install necessary packages
-        conda install -y mpi4py hdf5=*=*mpi_mpich* pyyaml pip tqdm scipy scikit-image \
-          scikit-learn numpy matplotlib pandas awkward uproot h5py
+        conda install -y c-compiler cxx-compiler mpi4py hdf5=*=*mpi_mpich* pyyaml pip \
+          tqdm scipy scikit-image scikit-learn numpy matplotlib pandas awkward uproot
 
-    - name: Install h5flow
+    - name: Install Pip Packages
       shell: bash -l {0}
       env:
         CC: mpicc
         HDF5_MPI: "ON"
       run: |
+        # First, h5py. Doing it this way ensure MPI support.
+        pip install --no-binary=h5py h5py
+
+        # Then h5flow
         cd h5flow
         conda env update --file environment.yml
         pip install .
