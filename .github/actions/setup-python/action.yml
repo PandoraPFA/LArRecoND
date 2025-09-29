@@ -1,0 +1,39 @@
+name: "Setup Python"
+description: "Sets up Python environment"
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Get h5flow
+      shell: bash -l {0}
+      run: |
+        git clone https://github.com/DUNE/h5flow.git
+
+    - name: Setup Conda
+      uses: conda-incubator/setup-miniconda@v2
+      env:
+        CC: mpicc
+        HDF5_MPI: "ON"
+      with:
+        auto-update-conda: true
+        python-version: "3.11"
+
+    - name: Install Conda Packages
+      shell: bash -l {0}
+      run: |
+        # Enable conda-forge channel
+        conda config --add channels conda-forge
+        # Install necessary packages
+        conda install -y mpi4py hdf5=*=*mpi_mpich* pyyaml pip tqdm scipy scikit-image \
+          scikit-learn numpy matplotlib pandas awkward uproot h5py
+
+    - name: Install h5flow
+      shell: bash -l {0}
+      env:
+        CC: mpicc
+        HDF5_MPI: "ON"
+      run: |
+        cd h5flow
+        conda env update --file environment.yml
+        pip install .
