@@ -11,6 +11,7 @@ runs:
         git clone https://github.com/PandoraPFA/PandoraSDK.git /pandora/PandoraSDK
         git clone https://github.com/PandoraPFA/PandoraMonitoring.git /pandora/PandoraMonitoring
         git clone https://github.com/PandoraPFA/LArContent.git /pandora/LArContent
+        git clone https://github.com/PandoraPFA/LArMachineLearningData.git /pandora/LArMachineLearningData
         cp -r $GITHUB_WORKSPACE /pandora/LArRecoND
 
     - name: Define Environment
@@ -18,6 +19,24 @@ runs:
       run: |
         echo 'source /pandora/root/bin/thisroot.sh' >> /pandora/setup.sh
         echo 'export CMAKE_PREFIX_PATH=/pandora/libtorch:$CMAKE_PREFIX_PATH' >> /pandora/setup.sh
+        echo 'export FW_SEARCH_PATH=/pandora/LArRecoND/settings' >> /pandora/setup.sh
+        echo 'export FW_SEARCH_PATH=$FW_SEARCH_PATH:/pandora/LArMachineLearningData/' >> /pandora/setup.sh
+        echo 'export MY_TEST_AREA=/pandora/' >> /pandora/setup.sh
+
+    - name: ML Data Cache
+      id: ml-cache
+      uses: actions/cache@v4
+      with:
+        path: /pandora/LArMachineLearningData
+        key: ml-data-${{ runner.os }}-${{ hashFiles('/pandora/LArMachineLearningData/download.sh') }}
+
+    - name: Download ML Data
+      shell: bash
+      if: steps.ml-cache.outputs.cache-hit != 'true'
+      run: |
+        source /pandora/setup.sh
+        cd /pandora/LArMachineLearningData
+        source download.sh "dune" "dunend"
 
     - name: Build PandoraSDK
       shell: bash

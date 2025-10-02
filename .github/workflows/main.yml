@@ -76,9 +76,13 @@ jobs:
       matrix:
         data_url:
           [
-            "https://portal.nersc.gov/project/dune/data/2x2/simulation/productions/MiniRun6_1E19_RHC/MiniRun6_1E19_RHC.flow/FLOW/0000000/MiniRun6_1E19_RHC.flow.0000000.FLOW.hdf5",
+            "https://portal.nersc.gov/project/dune/data/2x2/simulation/productions/MiniRun6.5_1E19_RHC/MiniRun6.5_1E19_RHC.flow/FLOW/0000000/MiniRun6.5_1E19_RHC.flow.0000000.FLOW.hdf5",
           ]
-        name: ["2x2"]
+        geometry_url:
+          [
+            "https://raw.githubusercontent.com/DUNE/2x2_sim/refs/heads/develop/geometry/Merged2x2MINERvA_v4/Merged2x2MINERvA_v4_withRock.gdml"
+          ]
+        name: ["2x2 MiniRun6.5"]
 
     name: Test ${{ matrix.name }} Data
 
@@ -98,22 +102,76 @@ jobs:
           name: pandora-build-env-${{ env.PRIMARY_COMPILER }}
           path: /pandora
 
+      - name: Setup Downloads
+        run: |
+          mkdir -p /pandora/data
+
+      - name: Generate URL Hash Key
+        id: url-key
+        shell: bash
+        run: echo "hash=$(echo -n '${{ matrix.data_url }}' | sha256sum | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+      - name: Cache Data Files
+        id: cache-data
+        uses: actions/cache@v4
+        with:
+          path: /pandora/data/
+          key: ${{ steps.url-key.outputs.hash }}
+
+      - name: Download Data Files
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          echo "Downloading data files..."
+          cd /pandora/data/
+          wget -q ${{ matrix.data_url }} -O input_data.hdf5
+          wget -q ${{ matrix.geometry_url }} -O geometry.gdml
+
+      - name: TEMP - Patch Processing Script (PR43)
+        shell: bash
+        run: |
+          echo "Patching processing script..."
+          cd /pandora/LArRecoND/ndlarflow
+          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/1e68b6fdf69816d1fdb6c53cacbd234184928ef8/ndlarflow/h5_to_root_ndlarflow.py -O h5_to_root_ndlarflow.py
+          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/1e68b6fdf69816d1fdb6c53cacbd234184928ef8/ndlarflow/rootToRootConversion.C -O rootToRootConversion.C
+
       - name: Process Files With Python
         shell: bash -l {0}
         run: |
+          echo "Fixing data folder..."
+          sudo chmod -R +x /pandora
+
           echo "Processing files with Python..."
-          mkdir -p /pandora/data
           cd /pandora/data/
-          wget -q ${{ matrix.data_url }} -O input_data.hdf5
-          python3 /pandora/LArRecoND/ndlarflow/h5_to_root_ndlarflow.py /pandora/data/input_data.hdf5
-          ls
-          ls *
+          python3 /pandora/LArRecoND/ndlarflow/h5_to_root_ndlarflow.py /pandora/data/input_data.hdf5 0 0 converted_flow.root
+
+          echo "Setting up environment for ROOT..."
+          source /pandora/setup.sh
+
+          echo "Converting processed file to ROOT..."
+          root -l -b -q /pandora/LArRecoND/ndlarflow/rootToRootConversion.C+\(true,\"converted_flow.root\",\"processed_output.root\"\)
+          ln -s processed_output.root /pandora/data/LArRecoNDInput.root
+
+          echo "Converting geometry GDML to ROOT..."
+          root -l -b <<EOF
+            TGeoManager::LockDefaultUnits(kFALSE);
+            TGeoManager::SetDefaultUnits(TGeoManager::kRootUnits);
+            TGeoManager::Import("/pandora/data/geometry.gdml");
+            gGeoManager->Export("/pandora/data/geometry.root");
+          EOF
+
+          echo "Data processing complete."
+          ls -lh /pandora/data/
 
       - name: Run Binary Tests
         run: |
-          sudo chmod -R +x /pandora
           source /pandora/setup.sh
-          /pandora/LArRecoND/bin/PandoraInterface -h
+          cd /pandora/data/
+          /pandora/LArRecoND/bin/PandoraInterface -i /pandora/LArRecoND/settings/PandoraSettings_LArRecoND_ThreeD.xml \
+           -r AllHitsNu \
+           -e /pandora/data/processed_output.root \
+           -g /pandora/data/geometry.root \
+           -f SPMC \
+           -n 10 -N
 
   cleanup:
     name: Cleanup Build Artifacts

@@ -19,6 +19,14 @@ runs:
         auto-update-conda: true
         python-version: "3.11"
 
+    - name: Cache Conda Environment
+      uses: actions/cache@v3
+      with:
+        path: ~/miniconda/envs
+        key: conda-env-${{ runner.os }}-py311-${{ hashFiles('**/action.yml') }}
+        restore-keys: |
+          conda-env-${{ runner.os }}-py311-
+
     - name: Install Conda Packages
       shell: bash -l {0}
       env:
@@ -27,7 +35,7 @@ runs:
       run: |
         # Enable conda-forge channel
         conda config --add channels conda-forge
-        # Install necessary packages
+        # Install necessary packages (only if not cached)
         conda install -y c-compiler cxx-compiler mpi4py hdf5=*=*mpi_mpich* pyyaml pip \
           tqdm scipy scikit-image scikit-learn numpy matplotlib pandas awkward uproot
 
