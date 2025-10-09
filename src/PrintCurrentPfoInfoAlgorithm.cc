@@ -202,12 +202,18 @@ void PrintCurrentPfoInfoAlgorithm::PrintCaloHitsInfo(const CaloHitList *& pCaloH
     // std::cout << "pCaloHitList from" << HitsName << "is nullptr\n";
     return;
   }
+
+  if(!pfoInfoOutputFile.is_open())
+  {
+    std::cout << "Warning: pfoInfoOutputFile not open \n";
+    return;
+  }
   
   std::cout << "PrintCurrentPfoInfoAlgorithm::PrintCaloHitsInfo start \n";
 
   for (const CaloHit *const pCaloHit : *pCaloHitList)
   {
-    std::cout << "{\"STAGE\" : " << "\"" << STAGE << "\"" 
+    pfoInfoOutputFile << "{\"STAGE\" : " << "\"" << STAGE << "\"" 
             << ", \"CaloHitType\" : " << "\""<< HitsName << "\""
             << ", \"CaloHit\" : " << "\""<< pCaloHit << "\""
             << ", \"CaloHitX\" : " << pCaloHit->GetPositionVector().GetX() 
@@ -227,6 +233,12 @@ void PrintCurrentPfoInfoAlgorithm::PrintClusterListInfo(const ClusterList*& pClu
     return;
   }
 
+  if(!pfoInfoOutputFile.is_open())
+  {
+    std::cout << "Warning: pfoInfoOutputFile not open \n";
+    return;
+  }
+
   std::cout << "PrintCurrentPfoInfoAlgorithm::PrintClusterListInfo start \n";
 
   for (const Cluster* pCluster : *pClusterList)
@@ -236,7 +248,7 @@ void PrintCurrentPfoInfoAlgorithm::PrintClusterListInfo(const ClusterList*& pClu
 
     for (const CaloHit *pCaloHit : caloHitList)
     {
-      std::cout << "{\"STAGE\" : " << "\"" << STAGE << "\"" 
+      pfoInfoOutputFile << "{\"STAGE\" : " << "\"" << STAGE << "\"" 
               << ", \"ClusterName\" : " << "\"" << clusterName << "\"" 
               << ", \"Cluster\" : " << "\"" << pCluster << "\"" 
               << ", \"CaloHit\" : " << "\"" << pCaloHit << "\"" 
@@ -268,7 +280,7 @@ StatusCode PrintCurrentPfoInfoAlgorithm::ReadSettings(const TiXmlHandle xmlHandl
   PANDORA_RETURN_RESULT_IF_AND_IF(
         STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "InputCaloHitListVName", m_inputCaloHitListVName));
   PANDORA_RETURN_RESULT_IF_AND_IF(
-        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Inpum_inputVertexListNamestCaloHitListWName", m_inputCaloHitListWName));
+        STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "InputCaloHitListWNames", m_inputCaloHitListWName));
 
   // clusters
 PANDORA_RETURN_RESULT_IF_AND_IF(
