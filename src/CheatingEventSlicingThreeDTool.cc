@@ -49,24 +49,17 @@ void CheatingEventSlicingThreeDTool::RunSlicing(const Algorithm *const pAlgorith
         std::cout << "----> Running Algorithm Tool: " << this->GetInstanceName() << ", " << this->GetType() << std::endl;
 
     MCParticleToSlice3DMap mcParticleToSliceMap;
-    std::cout <<"debug00" << std::endl;
     this->InitializeMCParticleToSlice3DMap(pAlgorithm, caloHitListNames, mcParticleToSliceMap);
-    std::cout <<"debug0" << std::endl;
     this->FillSlices(pAlgorithm, TPC_VIEW_U, caloHitListNames, mcParticleToSliceMap);
-    std::cout <<"debug1" << std::endl;
     this->FillSlices(pAlgorithm, TPC_VIEW_V, caloHitListNames, mcParticleToSliceMap);
-    std::cout <<"debug2" << std::endl;
     this->FillSlices(pAlgorithm, TPC_VIEW_W, caloHitListNames, mcParticleToSliceMap);
-    std::cout <<"debug3" << std::endl;
     this->FillSlices(pAlgorithm, TPC_3D, caloHitListNames, mcParticleToSliceMap);
-    std::cout <<"debug4" << std::endl;
 
     MCParticleVector mcParticleVector;
     for (const auto &mapEntry : mcParticleToSliceMap)
         mcParticleVector.push_back(mapEntry.first);
     std::sort(mcParticleVector.begin(), mcParticleVector.end(), LArMCParticleHelper::SortByMomentum);
 
-    std::cout <<"debug6" << std::endl;
     for (const MCParticle *const pMCParticle : mcParticleVector)
     {
         const Slice3D &slice(mcParticleToSliceMap.at(pMCParticle));
@@ -74,7 +67,6 @@ void CheatingEventSlicingThreeDTool::RunSlicing(const Algorithm *const pAlgorith
         if (!slice.m_caloHitListU.empty() || !slice.m_caloHitListV.empty() || !slice.m_caloHitListW.empty() || !slice.m_caloHitList3D.empty())
             slice3DList.push_back(slice);
     }
-    std::cout <<"debug7" << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -86,15 +78,12 @@ void CheatingEventSlicingThreeDTool::InitializeMCParticleToSlice3DMap(
     {
         const CaloHitList *pCaloHitList(nullptr);
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetList(*pAlgorithm, mapEntry.second, pCaloHitList));
-        std::cout << "mapEntry.second = " << mapEntry.second << std::endl;
 
         for (const CaloHit *const pCaloHit : *pCaloHitList)
         {
             MCParticleVector mcParticleVector;
-	    std::cout << "Cheated algo weight map size = " << pCaloHit->GetMCParticleWeightMap().size() << std::endl;
             for (const auto &weightMapEntry : pCaloHit->GetMCParticleWeightMap())
             {
-                std::cout << "entry n. = " << mcParticleVector.size() << " weightMapEntry.second = " << weightMapEntry.second << std::endl;
                 mcParticleVector.push_back(weightMapEntry.first);
             }
             std::sort(mcParticleVector.begin(), mcParticleVector.end(), LArMCParticleHelper::SortByMomentum);
@@ -112,11 +101,6 @@ void CheatingEventSlicingThreeDTool::InitializeMCParticleToSlice3DMap(
             {
 		continue;
             }
-
-            //if (mcParticleToSliceMap.count(LArMCParticleHelper::GetParentMCParticle(LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit)))))
-            //{ 
-            //    continue;
-	    //}
 
             if (!mcParticleToSliceMap.insert(MCParticleToSlice3DMap::value_type(LArMCParticleHelper::GetParentMCParticle(LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit))), Slice3D())).second)
 	    {
