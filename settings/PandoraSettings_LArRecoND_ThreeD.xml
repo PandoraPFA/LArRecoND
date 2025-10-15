@@ -69,8 +69,8 @@
         <AnalysisFileName>LArRecoND.root</AnalysisFileName>
         <AnalysisTreeName>LArRecoND</AnalysisTreeName>
         <FoldToPrimaries>false</FoldToPrimaries>
-        <FoldToLeadingShowers>false</FoldToLeadingShowers>
-	<FoldDynamic>true</FoldDynamic>
+        <FoldToLeadingShowers>true</FoldToLeadingShowers>
+	<FoldDynamic>false</FoldDynamic>
         <MinPurity>0.5</MinPurity>
         <MinCompleteness>0.1</MinCompleteness>
         <MinRecoHits>15</MinRecoHits>
