@@ -529,8 +529,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
       } // TRACK FIT
 
       if ( parameters.runShowerFit && (parameters.trackScoreCut < 0. || trackScore < parameters.trackScoreCut) ) {
-	//std::cout << "I would have fit this as a shower..." << std::endl;
-     
+
 	//Begin Defining Shower Direction Through a PCA      
 	CartesianVector centroid(0.f, 0.f, 0.f);
         lar_content::LArPcaHelper::EigenVectors eigenVecs;
@@ -581,7 +580,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	
 		minProjectionVector = projection1.second;
 		minProjectionValue = projection1.first;
-//	std::cout << "Projection Value: " << projection1.first << std::endl;	
+
 		for (auto projection2 : ProjectionMap){
 
 			currentShower = projection2.second;
@@ -610,19 +609,17 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
 	//Define dE/dx of the shower
 	//start 
-	float ShowerStartX, ShowerStartY, ShowerStartZ;
+	float showerStartX, showerStartY, showerStartZ;
 
 	int showerStartLength = 5;
 	int showerStartWidth = 4;
 
-	//std::vector<float> ShowerStartingHits;
 
-	ShowerStartX = minProjectionVector.GetX();
-	ShowerStartY = minProjectionVector.GetY();
-	ShowerStartZ = minProjectionVector.GetZ();
+	showerStartX = minProjectionVector.GetX();
+	showerStartY = minProjectionVector.GetY();
+	showerStartZ = minProjectionVector.GetZ();
 	
 	float distanceFromShowerStart;	
-	//float deltaHitX, deltaHitY, deltaHitZ;	
 	
 	float hitPCAOpeningAngle, hitPositionAlongAxis, hitPositionFromAxis;
 	float totalQ = 0;
@@ -637,9 +634,6 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	for(const CaloHit *const pShowerStartCaloHit3D : caloHitList){
 		showerStartPCAProjection = centroid + (axisDirection * minProjectionValue);
 		showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
-if(entryIdx == 31){
-	std::cout <<"Event: "<< entryIdx << "current Hit" << showerStartCurrentHit << std::endl;
-}
 		totalQ += pShowerStartCaloHit3D->GetInputEnergy();	
 		
 		if(showerStartPCAProjection == showerStartCurrentHit){
@@ -647,24 +641,13 @@ if(entryIdx == 31){
 			}
 
 		hitPCAOpeningAngle = axisDirection.GetOpeningAngle(showerStartPCAProjection - showerStartCurrentHit);		
-	if(entryIdx == 31){
-	std::cout << "hitPCAOpeningAngle: " << hitPCAOpeningAngle << std::endl;
-}
 		distanceFromShowerStart = std::sqrt(showerStartCurrentHit.GetDistanceSquared(showerStartPCAProjection));
-	if(entryIdx == 31){
-std::cout << "distanceFromShowerStart" << distanceFromShowerStart <<std::endl;	
-
-}		hitPositionAlongAxis = distanceFromShowerStart * std::abs(std::cos(hitPCAOpeningAngle));
+		hitPositionAlongAxis = distanceFromShowerStart * std::abs(std::cos(hitPCAOpeningAngle));
 		hitPositionFromAxis = distanceFromShowerStart * std::sin(hitPCAOpeningAngle);		
-	if(entryIdx == 31){
-	std::cout << "Along Axis: " << hitPositionAlongAxis << "From Axis: " << hitPositionFromAxis << std::endl;
-}
+
 		if(hitPositionAlongAxis < showerStartLength && hitPositionFromAxis < showerStartWidth){
-if(entryIdx == 31){	
- std::cout<< "Event: " << entryIdx << "Along Axis: " << hitPositionAlongAxis << "From Axis: " << hitPositionFromAxis << std::endl;
-}
 			showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
-               
+   
 
 	       //Add positions of hits to a branch to look at later
 			shwrStartPointsX.push_back(showerStartCurrentHit.GetX());
@@ -678,9 +661,6 @@ if(entryIdx == 31){
 	}	
 
    	shwrTotalE.push_back(totalQ);
-
-      // std::cout << "Number of Shower Start Points: " << showerStartCaloHitList.size() << std::endl;
-
 
 	if(showerStartCaloHitList.size() < 2){
 		std::cout<< "Reco Hit List Too Small. Skipping fit. Event is: " << entryIdx << std::endl;
@@ -787,9 +767,9 @@ else{
         shwrCentroidX.push_back(centroid.GetX());
         shwrCentroidY.push_back(centroid.GetY());
         shwrCentroidZ.push_back(centroid.GetZ());
-        shwrStartX.push_back(ShowerStartX);
-        shwrStartY.push_back(ShowerStartY);
-        shwrStartZ.push_back(ShowerStartZ);
+        shwrStartX.push_back(showerStartX);
+        shwrStartY.push_back(showerStartY);
+        shwrStartZ.push_back(showerStartZ);
         shwrSliceId.push_back(sliceID);
 	shwrClusterId.push_back(clusterID);
         shwrDirX.push_back(axisDirection.GetX());
