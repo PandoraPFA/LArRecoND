@@ -150,6 +150,14 @@ void PrintCurrentPfoInfoAlgorithm::PrintPfoInfo(const ParticleFlowObject *& pPfo
         return;
       }
 
+      int isClearCosmic = -999;
+
+      try {
+          isClearCosmic = static_cast<int>(pPfo->GetPropertiesMap().at("IsClearCosmic"));
+      } catch (const std::out_of_range &) {
+          // Key not found: keep default value (0)
+      }
+
       for (const Cluster *pCluster : cluster3DList)
       {
         CaloHitList caloHitList;
@@ -157,10 +165,11 @@ void PrintCurrentPfoInfoAlgorithm::PrintPfoInfo(const ParticleFlowObject *& pPfo
 
         for (const CaloHit *pCaloHit : caloHitList)
         {
-          pfoInfoOutputFile   << "{ \"STAGE\" : " << "\"" << STAGE << "\""
+          pfoInfoOutputFile << "{\"STAGE\" : " << "\"" << STAGE << "\""
                     << ", \"CallNumber\" : " << "\"" <<AlgoExecutionCount[m_inputStageName] << "\""
                     << ", \"pfoListName\" : " << "\"" << LIST_NAME << "\""
                     << ", \"pfo\" : " << "\"" << pPfo + AlgoExecutionCount[m_inputStageName] << "\""
+                    << ", \"isClearCosmic\" : " << "\"" << isClearCosmic << "\""
                     << ", \"NofCluters\" : " << "\"" << cluster3DList.size()  << "\""
                     << ", \"Cluster\" : " << "\"" << pCluster + AlgoExecutionCount[m_inputStageName] << "\""
                     << ", \"CaloHit\" : " << "\"" << pCaloHit + AlgoExecutionCount[m_inputStageName] << "\""
@@ -179,10 +188,11 @@ void PrintCurrentPfoInfoAlgorithm::PrintPfoInfo(const ParticleFlowObject *& pPfo
 
         for (const CaloHit *pCaloHit : caloHitList)
         {
-          pfoInfoOutputFile   << "{ \"STAGE\" : " << "\"" << m_inputStageName << "\""
+          pfoInfoOutputFile   << "{\"STAGE\" : " << "\"" << m_inputStageName << "\""
                     << ", \"CallNumber\" : " << "\"" <<AlgoExecutionCount[m_inputStageName] << "\""
                     << ", \"pfoListName\" : " << "\"" << LIST_NAME << "\""
                     << ", \"pfo\" : " << "\"" << pPfo << "\""
+                    << ", \"isClearCosmic\" : " << "\"" << isClearCosmic << "\""
                     << ", \"NofCluters\" : " << "\"" << cluster2DList.size()  << "\""
                     << ", \"Cluster\" : " << "\"" << pCluster << "\""
                     << ", \"CaloHit\" : " << "\"" << pCaloHit << "\""
@@ -214,6 +224,7 @@ void PrintCurrentPfoInfoAlgorithm::PrintCaloHitsInfo(const CaloHitList *& pCaloH
   for (const CaloHit *const pCaloHit : *pCaloHitList)
   {
     pfoInfoOutputFile << "{\"STAGE\" : " << "\"" << STAGE << "\"" 
+            << ", \"CallNumber\" : " << "\"" <<AlgoExecutionCount[m_inputStageName] << "\""
             << ", \"CaloHitType\" : " << "\""<< HitsName << "\""
             << ", \"CaloHit\" : " << "\""<< pCaloHit << "\""
             << ", \"CaloHitX\" : " << pCaloHit->GetPositionVector().GetX() 
@@ -249,6 +260,7 @@ void PrintCurrentPfoInfoAlgorithm::PrintClusterListInfo(const ClusterList*& pClu
     for (const CaloHit *pCaloHit : caloHitList)
     {
       pfoInfoOutputFile << "{\"STAGE\" : " << "\"" << STAGE << "\"" 
+              << ", \"CallNumber\" : " << "\"" <<AlgoExecutionCount[m_inputStageName] << "\""
               << ", \"ClusterName\" : " << "\"" << clusterName << "\"" 
               << ", \"Cluster\" : " << "\"" << pCluster << "\"" 
               << ", \"CaloHit\" : " << "\"" << pCaloHit << "\"" 

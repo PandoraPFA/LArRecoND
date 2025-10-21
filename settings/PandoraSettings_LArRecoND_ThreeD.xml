@@ -1,7 +1,7 @@
 <pandora>
     <!-- GLOBAL SETTINGS -->
     <IsMonitoringEnabled>true</IsMonitoringEnabled>
-    <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
+    <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
     <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
     <!-- ALGORITHM SETTINGS -->
@@ -26,11 +26,25 @@
         <NuSettingsFile>PandoraSettings_Neutrino_ThreeD.xml</NuSettingsFile>
         <SlicingSettingsFile>PandoraSettings_Slicing_ThreeD.xml</SlicingSettingsFile>
         <StitchingTools>
-            <tool type = "LArStitchingCosmicRayMerging"><ThreeDStitchingMode>true</ThreeDStitchingMode></tool>
-            <tool type = "LArStitchingCosmicRayMerging"><ThreeDStitchingMode>false</ThreeDStitchingMode></tool>
+          <tool type = "LArStitchingCosmicRayMerging">
+            <ThreeDStitchingMode>true</ThreeDStitchingMode>
+            <ApplyZStitching>true</ApplyZStitching>
+            <MaxXYdisplacementPfoZmatching>2</MaxXYdisplacementPfoZmatching>
+            <MaxZdistancePfoZmatching>10</MaxZdistancePfoZmatching>
+            <MinNCaloHits3D>10</MinNCaloHits3D>
+          </tool>
+          <tool type = "LArStitchingCosmicRayMerging">
+            <ThreeDStitchingMode>false</ThreeDStitchingMode>
+            <ApplyZStitching>true</ApplyZStitching>
+            <MaxXYdisplacementPfoZmatching>2</MaxXYdisplacementPfoZmatching>
+            <MaxZdistancePfoZmatching>10</MaxZdistancePfoZmatching>
+            <MinNCaloHits3D>10</MinNCaloHits3D>
+          </tool>
         </StitchingTools>
         <CosmicRayTaggingTools>
-            <tool type = "LArCosmicRayTagging"/>
+            <tool type = "LArCosmicRayTagging">
+	      <CutMode>cautious</CutMode>
+	    </tool>
         </CosmicRayTaggingTools>
         <SliceIdTools>
             <tool type = "LArSimpleNeutrinoId"/>
@@ -51,13 +65,12 @@
     -->
 
     <algorithm type = "LArHierarchyAnalysis">
-        <EventFileName>LArRecoNDInput.root</EventFileName>
+        <EventFileName>packet-0050017-2024_07_09_00_04_33_CDT.FLOW.hdf5_hits.root</EventFileName>
 	<EventTreeName>events</EventTreeName>
 	<EventLeafName>event</EventLeafName>
 	<RunLeafName>run</RunLeafName>
 	<SubRunLeafName>subrun</SubRunLeafName>
 	<UnixTimeLeafName>unix_ts</UnixTimeLeafName>
-	<UnixTimeUsecLeafName>unix_ts_usec</UnixTimeUsecLeafName>
 	<StartTimeLeafName>event_start_t</StartTimeLeafName>
 	<EndTimeLeafName>event_end_t</EndTimeLeafName>
 	<MCIdLeafName>mcp_id</MCIdLeafName>
@@ -81,6 +94,7 @@
     </algorithm>
 
 <!-- LArContent hierarchy tools MC and event-level information-->
+<!--
     <algorithm type = "LArHierarchyValidation">
         <CaloHitListName>CaloHitList2D</CaloHitListName>
         <PfoListName>RecreatedPfos</PfoListName>
@@ -102,6 +116,7 @@
         <RemoveRecoNeutrons>true</RemoveRecoNeutrons>
 	<SelectRecoHits>true</SelectRecoHits>
     </algorithm>
+-->
 
 <!-- Use old single neutrino event validation
     <algorithm type = "LArNeutrinoEventValidation">
