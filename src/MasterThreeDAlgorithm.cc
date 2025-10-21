@@ -358,13 +358,7 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
 
         LArTPCHitList &larTPCHitList(volumeIdToHitListMap[volumeId]);
         larTPCHitList.m_allHitList.push_back(pCaloHit);
-        
-        // std::cout << "{ \"CaloHitX\" : " << pCaloHit->GetPositionVector().GetX() 
-        //           << ", \"CaloHitY\" : " << pCaloHit->GetPositionVector().GetY()
-        //           << ", \"CaloHitZ\" : " << pCaloHit->GetPositionVector().GetZ() 
-        //           << ", \"HitType\"  : " << pCaloHit->GetHitType() 
-        //           << "},\n"; 
-        //
+
         if (((pCaloHit->GetPositionVector().GetX() >= (pLArTPC->GetCenterX() - 0.5f * pLArTPC->GetWidthX())) &&
                 (pCaloHit->GetPositionVector().GetX() <= (pLArTPC->GetCenterX() + 0.5f * pLArTPC->GetWidthX()))))
         {
