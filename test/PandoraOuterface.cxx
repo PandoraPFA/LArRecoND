@@ -92,11 +92,60 @@ int main(int argc, char *argv[])
 namespace lar_nd_postreco
 {
 
+float LifetimeCorrectionFactor(const std::vector<float> &detAnodes, const float inputPos, const float lifetime, const float driftSpeed )
+{
+  float driftDist = std::numeric_limits<float>::max();
+  for ( float wallX : detAnodes ) {
+    float thisDist = fabs(wallX-inputPos);
+    if ( thisDist < driftDist ) driftDist = thisDist;
+  }
+  float tDrift = driftDist / driftSpeed;
+  return TMath::Exp(tDrift/lifetime);
+}
+
+float dEdxWithRecombination(const ParameterStruct &parameters, const float inputdQdx)
+{
+  float dEdx_val = 0.;
+  const float wIon = 23.6/1.0e6; // MeV/e-, a hard-coded for now value used later
+
+  if ( parameters.fShouldCorrectRecomb ) {
+    if ( parameters.fFlowStyleRecombination ) {
+      // MIP Recombination with the Q->E calculation as in FLOW file
+      // see e.g. https://github.com/DUNE/ndlar_flow/blob/develop/src/proto_nd_flow/reco/charge/calib_prompt_hits.py#L289
+      float dEdxMIP = 2.; // MeV/cm (using the value in above line)
+      float recomb = 1.;
+      if ( parameters.fBoxRecombination ) {
+	float csi = parameters.fBoxBeta * dEdxMIP / (parameters.fEField * parameters.fDensity);
+	recomb = TMath::Log(parameters.fBoxAlpha + csi)/csi;
+      }
+      else if ( parameters.fBirksRecombination ) {
+	recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdxMIP / (parameters.fEField * parameters.fDensity) );
+      }
+      dEdx_val = inputdQdx / recomb * wIon;
+    }
+    else if ( parameters.fBoxRecombination ) {
+      // Box style, LArSoft style, angular part turned off, we'll just use the box beta as-is
+      // https://github.com/LArSoft/larreco/blob/develop/larreco/Calorimetry/CalorimetryAlg.cxx
+      dEdx_val = (TMath::Exp(parameters.fBoxBeta * wIon * inputdQdx) - parameters.fBoxAlpha) / parameters.fBoxBeta;
+    }
+    else if ( parameters.fBirksRecombination ){
+      // Birks style, LArSoft style
+      // https://github.com/LArSoft/larreco/blob/develop/larreco/Calorimetry/CalorimetryAlg.cxx
+      dEdx_val = inputdQdx / (parameters.fBirksA / wIon - parameters.fBirksK / parameters.fEField * inputdQdx);
+    }
+  }
+  else {
+    // Assume recomb = 1?
+    float recomb = 1.;
+    dEdx_val = inputdQdx / recomb * wIon;
+  }
+
+  if ( parameters.fApplyCalibrationFudgeFactor ) dEdx_val*=parameters.fCalibrationFudgeFactor;
+  return dEdx_val;
+}
+
 void ProcessPostReco(const ParameterStruct &parameters)
 {
-  // A few constants used later
-  const float wIon = 23.6/1.0e6; // MeV/e-
-
   std::vector<float> posAnodes;
   if ( parameters.fDetector == 0 ) {
     // NDLAr anodes
@@ -529,44 +578,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	      float hitdQdx = hitdx > 0. ? hitQ/hitdx : -5.f;
 
 	      // Lifetime correction
-	      if ( parameters.fShouldCorrectLifetime ) {
-		float driftDist = std::numeric_limits<float>::max();
-		for ( float wallX : posAnodes ) {
-		  float thisDist = fabs(wallX-trackState.GetPosition().GetX());
-		  if ( thisDist < driftDist ) driftDist = thisDist;
-		}
-		float tDrift = driftDist / parameters.fElectronDriftSpeed;
-		hitdQdx*=( 1000. * TMath::Exp(tDrift/parameters.fElectronLifetime) ); // turn ke- to e- and do lifetime correction
-	      }
+	      if ( parameters.fShouldCorrectLifetime )
+		hitdQdx*=( 1000. * LifetimeCorrectionFactor(posAnodes, trackState.GetPosition().GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed) ); // turn ke- to e- and do lifetime correction
 	      // Recombination correction
-	      float hitdEdx = 0.;
-	      if ( parameters.fShouldCorrectRecomb ) {
-		if ( parameters.fFlowStyleRecombination ) {
-		  // MIP Recombination with the Q->E calculation as in FLOW file
-		  // see e.g. https://github.com/DUNE/ndlar_flow/blob/develop/src/proto_nd_flow/reco/charge/calib_prompt_hits.py#L289
-		  float dEdxMIP = 2.; // MeV/cm (using the value in above line)
-		  float recomb = 1.;
-		  if ( parameters.fBoxRecombination ) {
-		    float csi = parameters.fBoxBeta * dEdxMIP / (parameters.fEField * parameters.fDensity);
-		    recomb = TMath::Log(parameters.fBoxAlpha + csi)/csi;
-		  }
-		  else if ( parameters.fBirksRecombination ) {
-		    recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdxMIP / (parameters.fEField * parameters.fDensity) );
-		  }
-		  hitdEdx = hitdQdx / recomb * wIon;
-		}
-		else if ( parameters.fBoxRecombination ) {
-		  // Box style, LArSoft style, angular part turned off, we'll just use the box beta as-is
-		  // https://github.com/LArSoft/larreco/blob/develop/larreco/Calorimetry/CalorimetryAlg.cxx
-		  hitdEdx = (TMath::Exp(parameters.fBoxBeta * wIon * hitdQdx) - parameters.fBoxAlpha) / parameters.fBoxBeta;
-		}
-		else if ( parameters.fBirksRecombination ){
-		  // Birks style, LArSoft style
-		  // https://github.com/LArSoft/larreco/blob/develop/larreco/Calorimetry/CalorimetryAlg.cxx
-		  hitdEdx = hitdQdx / (parameters.fBirksA / wIon - parameters.fBirksK / parameters.fEField * hitdQdx);
-		}
-	      }
-	      hitdEdx*=parameters.fCalibrationFudgeFactor;
+	      float hitdEdx = dEdxWithRecombination(parameters, hitdQdx);
 
 	      // Outputs
 	      trackFitSliceId.push_back(sliceID);
@@ -624,10 +639,12 @@ void ProcessPostReco(const ParameterStruct &parameters)
 		    errdedx *= trackVecDEDX[idxCaloPt];
 		    float errdedx_square = errdedx*errdedx;
 		    // chi2 values
-		    chi2pro += std::pow(trackVecDEDX[idxCaloPt] - bincpro, 2) / (binepro*binepro + errdedx_square);
-		    chi2ka += std::pow(trackVecDEDX[idxCaloPt] - bincka, 2) / (bineka*bineka + errdedx_square);
-		    chi2pi += std::pow(trackVecDEDX[idxCaloPt] - bincpi, 2) / (binepi*binepi + errdedx_square);
-		    chi2mu += std::pow(trackVecDEDX[idxCaloPt] - bincmu, 2) / (binemu*binemu + errdedx_square);
+		    float thisPointDEDX = trackVecDEDX[idxCaloPt];
+		    if ( !parameters.fApplyCalibrationFudgeFactor && parameters.fApplyCalibrationFudgeFactor_PID ) thisPointDEDX*=parameters.fCalibrationFudgeFactor;
+		    chi2pro += std::pow(thisPointDEDX - bincpro, 2) / (binepro*binepro + errdedx_square);
+		    chi2ka += std::pow(thisPointDEDX - bincka, 2) / (bineka*bineka + errdedx_square);
+		    chi2pi += std::pow(thisPointDEDX - bincpi, 2) / (binepi*binepi + errdedx_square);
+		    chi2mu += std::pow(thisPointDEDX - bincmu, 2) / (binemu*binemu + errdedx_square);
 		    npts+=1;
 		  } // within bins
 		} // loop calo points
@@ -797,6 +814,8 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BoxAlpha", parameters.fBoxAlpha) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BirksA", parameters.fBirksA) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "BirksK", parameters.fBirksK) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ApplyCalibrationFudgeFactor", parameters.fApplyCalibrationFudgeFactor) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ApplyCalibrationFudgeFactorPID", parameters.fApplyCalibrationFudgeFactor_PID) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "CalibrationFudgeFactor", parameters.fCalibrationFudgeFactor) );
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunPID", parameters.fShouldRunPID) );

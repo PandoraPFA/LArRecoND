@@ -67,6 +67,8 @@ struct ParameterStruct
   float fBirksK = 0.0486; // g/cm2/MeV, proto_nd_flow/resources/lar_data.py
   float fDensity = 1.38; // g/cm3
   float fEField = 0.5; // kV/cm
+  bool fApplyCalibrationFudgeFactor = false; // apply calibration fudge factor to BOTH dE/dx calculation and then by virtue of this also in the PID
+  bool fApplyCalibrationFudgeFactor_PID = true; // only takes effect if dEdx version is false, and applies the fudge factor to the PID only
   float fCalibrationFudgeFactor = 1.176; // calibration multiplicative factor applied to dE/dx, this is based on MR6.4 and Birks
 
   // PID
@@ -84,6 +86,32 @@ struct ParameterStruct
   std::string fileName = "";
   std::string outfileName = "LArRecoND_outerface_test.root";
 };
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ *  @brief  Perform lifetime correction
+ *
+ *  @param  the list of anodes (const)
+ *  @param  the input position (const)
+ *  @param  the free electron lifetime (const)
+ *  @param  the free electron drift speed (const)
+ *
+ *  @return the correction factor to apply
+ */
+ float LifetimeCorrectionFactor(const std::vector<float> &detAnodes, const float inputPos, const float lifetime, const float driftSpeed );
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ *  @brief  Perform the recombination correction. Note: wIon and dEdxMIP (latter used for "flow-style" recombination) are hard-coded for now.
+ *
+ *  @param  the set of parameters (const)
+ *  @param  hit dQ/dx (const)
+ *
+ *  @return the resulting dE/dx from dQ/dx
+ */
+float dEdxWithRecombination(const ParameterStruct &parameters, const float inputdQdx );
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
