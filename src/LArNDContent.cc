@@ -22,6 +22,7 @@
 #include "MergeClearTracksThreeDAlgorithm.h"
 #include "PfoThreeDHitAssignmentAlgorithm.h"
 #include "PreProcessingThreeDAlgorithm.h"
+#include "PrintCurrentPfoInfoAlgorithm.h"
 #include "ReplaceHitAndClusterListsAlgorithm.h"
 #include "SimpleClusterCreationThreeDAlgorithm.h"
 #include "SlicingThreeDAlgorithm.h"
@@ -36,9 +37,10 @@
     d("LArPfoThreeDHitAssignment",              PfoThreeDHitAssignmentAlgorithm)                                                   \
     d("LArReplaceHitAndClusterLists",           ReplaceHitAndClusterListsAlgorithm)                                                \
     d("LArPreProcessingThreeD",                 PreProcessingThreeDAlgorithm)                                                      \
+    d("LArPrintCurrentPfoInfo",                 PrintCurrentPfoInfoAlgorithm)                                                      \
     d("LArCutClusterCharacterisationThreeD",    CutClusterCharacterisationThreeDAlgorithm)                                         \
     d("LArCandidateVertexCreationThreeD",       CandidateVertexCreationThreeDAlgorithm)                                            \
-    d("LArHierarchyAnalysis",                   HierarchyAnalysisAlgorithm)
+    d("LArHierarchyAnalysis",                   HierarchyAnalysisAlgorithm)                                                        
 
 #define LAR_ND_ALGORITHM_TOOL_LIST(d)                                                                                              \
     d("LArEventSlicingThreeD",                  EventSlicingThreeDTool)                                                            \
