@@ -54,8 +54,12 @@ void CheatingEventSlicingThreeDTool::RunSlicing(const Algorithm *const pAlgorith
     for (const MCParticle *const pMCParticle : mcParticleVector)
     {
         const Slice3D &slice(mcParticleToSliceMap.at(pMCParticle));
+        const bool enoughUViewHits(slice.m_caloHitListU.size() >= 10);
+        const bool enoughVViewHits(slice.m_caloHitListV.size() >= 10);
+        const bool enoughWViewHits(slice.m_caloHitListW.size() >= 10);
+        const bool enough3DHits(slice.m_caloHitList3D.size() >= 10);
 
-        if (!slice.m_caloHitListU.empty() || !slice.m_caloHitListV.empty() || !slice.m_caloHitListW.empty() || !slice.m_caloHitList3D.empty())
+        if (enoughUViewHits && enoughVViewHits && enoughWViewHits && enough3DHits)
             slice3DList.push_back(slice);
     }
 }
@@ -72,29 +76,20 @@ void CheatingEventSlicingThreeDTool::InitializeMCParticleToSlice3DMap(
 
         for (const CaloHit *const pCaloHit : *pCaloHitList)
         {
-            const MCParticle *mainMCParticle(nullptr);
-            try
-            {
-                mainMCParticle = MCParticleHelper::GetMainMCParticle(pCaloHit);
-            }
-            catch (const StatusCodeException &)
-            {
-            }
+            MCParticleVector mcParticleVector;
+            for (const auto &weightMapEntry : pCaloHit->GetMCParticleWeightMap())
+                mcParticleVector.push_back(weightMapEntry.first);
+            std::sort(mcParticleVector.begin(), mcParticleVector.end(), LArMCParticleHelper::SortByMomentum);
 
-            if (!mainMCParticle ||
-                mcParticleToSliceMap.count(LArMCParticleHelper::GetParentMCParticle(
-                    LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit)))))
+            for (const MCParticle *const pMCParticle : mcParticleVector)
             {
-                continue;
-            }
+                const MCParticle *const pParentMCParticle(LArMCParticleHelper::GetParentMCParticle(pMCParticle));
 
-            if (!mcParticleToSliceMap
-                    .insert(MCParticleToSlice3DMap::value_type(LArMCParticleHelper::GetParentMCParticle(LArMCParticleHelper::GetPrimaryMCParticle(
-                                                                   MCParticleHelper::GetMainMCParticle(pCaloHit))),
-                        Slice3D()))
-                    .second)
-            {
-                throw StatusCodeException(STATUS_CODE_FAILURE);
+                if (mcParticleToSliceMap.count(pParentMCParticle))
+                    continue;
+
+                if (!mcParticleToSliceMap.insert(MCParticleToSlice3DMap::value_type(pParentMCParticle, Slice3D())).second)
+                    throw StatusCodeException(STATUS_CODE_FAILURE);
             }
         }
     }
