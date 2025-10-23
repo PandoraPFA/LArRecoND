@@ -98,7 +98,8 @@ def main(argv=None):
         event_start_t = np.array( [-5], dtype='int32' )
         event_end_t = np.array( [-5], dtype='int32' )
         event_unix_ts = np.array( [-5], dtype='int32' )
-        event_unix_ts_usec = np.array( [-5], dtype='int32' )
+        if legacyMode!=1 and legacyMode!=2:
+            event_unix_ts_usec = np.array( [-5], dtype='int32' )
         if useData==False:
             matches = np.array( [0] ).astype('uint16')
             packetFrac = np.array( [0.] ).astype('float32')
@@ -135,8 +136,10 @@ def main(argv=None):
             nu_code = np.array([0]).astype('int32')
 
         # Set up the dictionaries to write to the file
-        event_dict = { 'run':runID, 'subrun':subrunID, 'event':eventID, "triggers":triggerID, 'unix_ts':event_unix_ts, 'unix_ts_usec':event_unix_ts_usec,
+        event_dict = { 'run':runID, 'subrun':subrunID, 'event':eventID, "triggers":triggerID, 'unix_ts':event_unix_ts,
                        'event_start_t':event_start_t, 'event_end_t':event_end_t }
+        if legacyMode!=1 and legacyMode!=2:
+            event_dict['unix_ts_usec'] = event_unix_ts_usec
 
         if useData==False:
             other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'charge':hits_Q, 'E':hits_E, 'matches':matches,\
