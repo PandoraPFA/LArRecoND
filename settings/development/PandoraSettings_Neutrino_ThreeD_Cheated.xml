@@ -76,10 +76,14 @@
     </algorithm>
 
     <!-- 3D neutrino-induced event reconstruction -->
+    <algorithm type = "LArCheatingVertexCreation">
+        <OutputVertexListName>NVertices</OutputVertexListName>
+        <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
+    </algorithm>
     <algorithm type = "LArCheatingPfoCreation">
         <InputClusterListNames>Clusters3D ClustersU ClustersV ClustersW</InputClusterListNames>
         <OutputPfoListName>NParticles3D</OutputPfoListName>
-        <OutputVertexListName>NVertices</OutputVertexListName>
+        <AddVertices>false</AddVertices>
         <MCParticleListName>Input</MCParticleListName>
         <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
     </algorithm>
@@ -99,11 +103,11 @@
         <OutputVertexListName>NDaughterVertices3D</OutputVertexListName>
     </algorithm>
 
-    <algorithm type = "LArVisualMonitoring">
+    <!-- <algorithm type = "LArVisualMonitoring">
         <PfoListNames>NeutrinoParticles3D NParticles3D</PfoListNames>
         <VertexListNames>NVertices NDaughterVertices3D</VertexListNames>
         <ShowDetector>true</ShowDetector>
-    </algorithm>
+    </algorithm> -->
 
     <!-- Output list management -->
     <algorithm type = "LArPostProcessing">
