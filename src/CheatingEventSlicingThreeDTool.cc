@@ -7,21 +7,10 @@
  */
 
 #include "Pandora/AlgorithmHeaders.h"
-//new
+
 #include "larpandoracontent/LArHelpers/LArMCParticleHelper.h"
-#include "Helpers/MCParticleHelper.h"
-
-/*#include "larpandoracontent/LArHelpers/LArClusterHelper.h"
-#include "larpandoracontent/LArHelpers/LArGeometryHelper.h"
-#include "larpandoracontent/LArHelpers/LArPfoHelper.h"
-#include "larpandoracontent/LArHelpers/LArPointingClusterHelper.h"
-
-#include "larpandoracontent/LArObjects/LArThreeDSlidingConeFitResult.h"
-#include "larpandoracontent/LArObjects/LArThreeDSlidingFitResult.h"*/
 
 #include "CheatingEventSlicingThreeDTool.h"
-
-//#include "larpandoracontent/LArUtility/KDTreeLinkerAlgoT.h"
 
 using namespace pandora;
 
@@ -30,8 +19,10 @@ namespace lar_content
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-CheatingEventSlicingThreeDTool::CheatingEventSlicingThreeDTool(){}
-	
+CheatingEventSlicingThreeDTool::CheatingEventSlicingThreeDTool()
+{
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 StatusCode CheatingEventSlicingThreeDTool::ReadSettings(const TiXmlHandle /*xmlHandle*/)
@@ -39,8 +30,7 @@ StatusCode CheatingEventSlicingThreeDTool::ReadSettings(const TiXmlHandle /*xmlH
     return STATUS_CODE_SUCCESS;
 }
 
-//New
-////------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
 
 void CheatingEventSlicingThreeDTool::RunSlicing(const Algorithm *const pAlgorithm, const HitTypeToNameMap &caloHitListNames,
     const HitTypeToNameMap & /*clusterListNames*/, Slice3DList &slice3DList)
@@ -50,6 +40,7 @@ void CheatingEventSlicingThreeDTool::RunSlicing(const Algorithm *const pAlgorith
 
     MCParticleToSlice3DMap mcParticleToSliceMap;
     this->InitializeMCParticleToSlice3DMap(pAlgorithm, caloHitListNames, mcParticleToSliceMap);
+
     this->FillSlices(pAlgorithm, TPC_VIEW_U, caloHitListNames, mcParticleToSliceMap);
     this->FillSlices(pAlgorithm, TPC_VIEW_V, caloHitListNames, mcParticleToSliceMap);
     this->FillSlices(pAlgorithm, TPC_VIEW_W, caloHitListNames, mcParticleToSliceMap);
@@ -81,31 +72,30 @@ void CheatingEventSlicingThreeDTool::InitializeMCParticleToSlice3DMap(
 
         for (const CaloHit *const pCaloHit : *pCaloHitList)
         {
-            MCParticleVector mcParticleVector;
-            for (const auto &weightMapEntry : pCaloHit->GetMCParticleWeightMap())
-            {
-                mcParticleVector.push_back(weightMapEntry.first);
-            }
-            std::sort(mcParticleVector.begin(), mcParticleVector.end(), LArMCParticleHelper::SortByMomentum);
-            
-
-	    const MCParticle* mainMCParticle(nullptr);
+            const MCParticle *mainMCParticle(nullptr);
             try
             {
-                mainMCParticle=MCParticleHelper::GetMainMCParticle(pCaloHit);
+                mainMCParticle = MCParticleHelper::GetMainMCParticle(pCaloHit);
             }
             catch (const StatusCodeException &)
             {
             }
-	    if(!mainMCParticle || mcParticleToSliceMap.count(LArMCParticleHelper::GetParentMCParticle(LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit)))))
+
+            if (!mainMCParticle ||
+                mcParticleToSliceMap.count(LArMCParticleHelper::GetParentMCParticle(
+                    LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit)))))
             {
-		continue;
+                continue;
             }
 
-            if (!mcParticleToSliceMap.insert(MCParticleToSlice3DMap::value_type(LArMCParticleHelper::GetParentMCParticle(LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit))), Slice3D())).second)
-	    {
+            if (!mcParticleToSliceMap
+                    .insert(MCParticleToSlice3DMap::value_type(LArMCParticleHelper::GetParentMCParticle(LArMCParticleHelper::GetPrimaryMCParticle(
+                                                                   MCParticleHelper::GetMainMCParticle(pCaloHit))),
+                        Slice3D()))
+                    .second)
+            {
                 throw StatusCodeException(STATUS_CODE_FAILURE);
-	    }
+            }
         }
     }
 }
@@ -127,12 +117,13 @@ void CheatingEventSlicingThreeDTool::FillSlices(const Algorithm *const pAlgorith
     {
         try
         {
-            MCParticleToSlice3DMap::iterator mapIter = mcParticleToSliceMap.find(LArMCParticleHelper::GetParentMCParticle(LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit))));
+            MCParticleToSlice3DMap::iterator mapIter = mcParticleToSliceMap.find(LArMCParticleHelper::GetParentMCParticle(
+                LArMCParticleHelper::GetPrimaryMCParticle(MCParticleHelper::GetMainMCParticle(pCaloHit))));
 
             if (mcParticleToSliceMap.end() == mapIter)
-	    {
+            {
                 throw StatusCodeException(STATUS_CODE_FAILURE);
-	    }
+            }
             Slice3D &slice(mapIter->second);
             CaloHitList &caloHitList((TPC_VIEW_U == hitType) ? slice.m_caloHitListU
                     : (TPC_VIEW_V == hitType)                ? slice.m_caloHitListV
@@ -147,8 +138,5 @@ void CheatingEventSlicingThreeDTool::FillSlices(const Algorithm *const pAlgorith
         }
     }
 }
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
 
 } // namespace lar_content
