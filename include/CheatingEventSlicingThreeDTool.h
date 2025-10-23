@@ -11,20 +11,14 @@
 #include "Pandora/Algorithm.h"
 #include "Pandora/AlgorithmTool.h"
 
-#include "LArSlice3D.h"
-#include "SlicingThreeDAlgorithm.h"
-
 #include "larpandoracontent/LArObjects/LArPointingCluster.h"
 #include "larpandoracontent/LArObjects/LArThreeDSlidingConeFitResult.h"
 
-#include <unordered_map>
-
-
-//New
 #include "EventSlicingThreeDBaseTool.h"
+#include "LArSlice3D.h"
+#include "SlicingThreeDAlgorithm.h"
+
 #include <unordered_map>
-
-
 
 namespace lar_content
 {
@@ -54,7 +48,6 @@ public:
         const HitTypeToNameMap &clusterListNames, Slice3DList &sliceList);
 
 private:
-
     typedef std::unordered_map<const pandora::MCParticle *, Slice3D> MCParticleToSlice3DMap;
 
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
@@ -79,7 +72,6 @@ private:
      */
     void FillSlices(const pandora::Algorithm *const pAlgorithm, const pandora::HitType hitType, const HitTypeToNameMap &caloHitListNames,
         MCParticleToSlice3DMap &mcParticleToSliceMap) const;
-
 };
 
 } // namespace lar_content

@@ -10,8 +10,8 @@
 #include "Objects/MCParticle.h"
 #include "Pandora/AlgorithmHeaders.h"
 
-#include "larpandoracontent/LArHelpers/LArVertexHelper.h"
 #include "larpandoracontent/LArHelpers/LArMCParticleHelper.h"
+#include "larpandoracontent/LArHelpers/LArVertexHelper.h"
 
 #include "CheatingRockMuonRemovalAlgorithm.h"
 
@@ -20,7 +20,7 @@ using namespace pandora;
 namespace lar_content
 {
 
-bool CheatingRockMuonRemovalAlgorithm::IsRockMuon(const Pandora& pandora, const MCParticle* const pMCParticle)
+bool CheatingRockMuonRemovalAlgorithm::IsRockMuon(const Pandora &pandora, const MCParticle *const pMCParticle)
 {
     // Get the parent MCParticle.
     // This means things like delta rays, showers etc are all traced back to the original muon, and classified as a rock muon.

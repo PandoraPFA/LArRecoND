@@ -8,8 +8,8 @@
 #ifndef LAR_CHEATING_ROCK_MUON_REMOVAL_ALGORITHM_H
 #define LAR_CHEATING_ROCK_MUON_REMOVAL_ALGORITHM_H 1
 
-#include "Pandora/Algorithm.h"
 #include "Objects/MCParticle.h"
+#include "Pandora/Algorithm.h"
 #include "Pandora/Pandora.h"
 
 #include <unordered_map>
@@ -38,7 +38,7 @@ private:
 
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
 
-    std::string m_inputCaloHitListName; ///< Name of the calo hit list to load
+    std::string m_inputCaloHitListName;    ///< Name of the calo hit list to load
     std::string m_rockMuonCaloHitListName; ///< Name of the rock muon calo hit list to create
     std::string m_neutrinoCaloHitListName; ///< Name of the neutrino calo hit list to create
     std::string m_inputMCParticleListName; ///< Name of the MC particle list to use

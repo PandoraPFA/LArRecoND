@@ -8,8 +8,8 @@
 #ifndef LAR_CHEATING_ROCK_MUON_TAGGING_TOOL_H
 #define LAR_CHEATING_ROCK_MUON_TAGGING_TOOL_H 1
 
-#include "larpandoracontent/LArControlFlow/MasterAlgorithm.h"
 #include "larpandoracontent/LArControlFlow/CosmicRayTaggingBaseTool.h"
+#include "larpandoracontent/LArControlFlow/MasterAlgorithm.h"
 
 namespace lar_content
 {

@@ -8,12 +8,12 @@
 
 #include "Pandora/AlgorithmHeaders.h"
 
+#include "larpandoracontent/LArCheating/CheatingSliceIdBaseTool.h"
 #include "larpandoracontent/LArHelpers/LArMCParticleHelper.h"
 #include "larpandoracontent/LArHelpers/LArPfoHelper.h"
-#include "larpandoracontent/LArCheating/CheatingSliceIdBaseTool.h"
 
-#include "CheatingRockMuonTaggingTool.h"
 #include "CheatingRockMuonRemovalAlgorithm.h"
+#include "CheatingRockMuonTaggingTool.h"
 
 using namespace pandora;
 
@@ -40,7 +40,8 @@ void CheatingRockMuonTaggingTool::FindAmbiguousPfos(const PfoList &parentRockMuo
         LArPfoHelper::GetAllDownstreamPfos(pParentRockMuonPfo, downstreamPfos);
 
         float thisRockMuWeight(0.f), thisTotalWeight(0.f);
-        const auto isRockMu = [this](const MCParticle *const pMCParticle) { return CheatingRockMuonRemovalAlgorithm::IsRockMuon(this->GetPandora(), pMCParticle); };
+        const auto isRockMu = [this](const MCParticle *const pMCParticle)
+        { return CheatingRockMuonRemovalAlgorithm::IsRockMuon(this->GetPandora(), pMCParticle); };
         CheatingSliceIdBaseTool::GetTargetParticleWeight(&downstreamPfos, thisRockMuWeight, thisTotalWeight, isRockMu);
 
         if ((thisTotalWeight > 0.f) && ((thisRockMuWeight / thisTotalWeight) < m_maxRockMuonFraction))
