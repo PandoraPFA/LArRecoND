@@ -1,5 +1,3 @@
-<!-- Pandora settings xml file -->
-
 <pandora>
     <!-- GLOBAL SETTINGS -->
     <IsMonitoringEnabled>true</IsMonitoringEnabled>
