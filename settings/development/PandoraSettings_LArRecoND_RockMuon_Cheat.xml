@@ -84,11 +84,16 @@
         <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
     </algorithm>
 
+    <!-- <algorithm type = "LArVisualMonitoring">
+        <PfoListNames>Particles3D</PfoListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm> -->
+
     <algorithm type = "LArPostProcessing">
         <PfoListNames>Particles3D</PfoListNames>
         <VertexListNames>Vertices3D</VertexListNames>
         <ClusterListNames>ClustersU ClustersV ClustersW Clusters3D</ClusterListNames>
-        <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList3D</CaloHitListNames>
+        <CaloHitListNames>RockMuonCaloHitList NeutrinoCaloHitList CaloHitListU CaloHitListV CaloHitListW CaloHitList3D</CaloHitListNames>
         <CurrentPfoListReplacement>Particles3D</CurrentPfoListReplacement>
     </algorithm>
 </pandora>

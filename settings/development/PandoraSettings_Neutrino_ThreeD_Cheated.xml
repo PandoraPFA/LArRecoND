@@ -5,7 +5,15 @@
     <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
     <!-- ALGORITHM SETTINGS -->
+    <algorithm type = "LArCheatingRockMuonRemoval">
+        <InputCaloHitListName>Input</InputCaloHitListName>
+        <RockMuonCaloHitListName>RockMuonCaloHitList</RockMuonCaloHitListName>
+        <NeutrinoCaloHitListName>NeutrinoCaloHitList</NeutrinoCaloHitListName>
+        <MCParticleListName>Input</MCParticleListName>
+    </algorithm>
+
     <algorithm type = "LArPreProcessingThreeD">
+        <InputCaloHitListName>NeutrinoCaloHitList</InputCaloHitListName>
         <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
         <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
         <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>
@@ -14,10 +22,51 @@
         <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
     </algorithm>
 
-    <!-- Cheated 3D cluster creation -->
+    <!-- <algorithm type = "LArVisualMonitoring">
+        <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV CaloHitList3D</CaloHitListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm> -->
+
+    <!-- 2D neutrino reconstruction, U View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <MCParticleListName>Input</MCParticleListName>
+        </algorithm>
+        <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
+        <ClusterListName>ClustersU </ClusterListName>
+        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+
+    <!-- 2D neutrino reconstruction, V View -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <MCParticleListName>Input</MCParticleListName>
+        </algorithm>
+        <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
+        <ClusterListName>ClustersV</ClusterListName>
+        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+
+    <!-- 2D neutrino reconstruction, W View -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <MCParticleListName>Input</MCParticleListName>
+        </algorithm>
+        <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
+        <ClusterListName>ClustersW</ClusterListName>
+        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+
+    <!-- 3D neutrino reconstruction -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitList3D</InputCaloHitListName>
@@ -26,46 +75,13 @@
         <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
     </algorithm>
 
-    <algorithm type = "LArCreateTwoDClustersFromThreeD">
-        <InputCaloHitListNameU>CaloHitListU</InputCaloHitListNameU>
-        <InputCaloHitListNameV>CaloHitListV</InputCaloHitListNameV>
-        <InputCaloHitListNameW>CaloHitListW</InputCaloHitListNameW>
-        <InputClusterListName3D>Clusters3D</InputClusterListName3D>
-        <OutputClusterListNameU>ClustersU</OutputClusterListNameU>
-        <OutputClusterListNameV>ClustersV</OutputClusterListNameV>
-        <OutputClusterListNameW>ClustersW</OutputClusterListNameW>
-    </algorithm>
-
-    <algorithm type = "LArVisualMonitoring">
-        <CaloHitListNames>CaloHitList3D</CaloHitListNames>
-        <ClusterListNames>Clusters3D ClustersU ClustersV ClustersW</ClusterListNames>
-        <ShowDetector>true</ShowDetector>
-    </algorithm> 
-
-    <!-- 3D neutrino vertex reconstruction -->
-    <algorithm type = "LArCheatingVertexCreation">
-        <OutputVertexListName>NVertices</OutputVertexListName>
-        <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
-    </algorithm>    
-
-    <algorithm type = "LArVisualMonitoring">
-        <VertexListNames>NVertices</VertexListNames>
-        <ClusterListNames>Clusters3D</ClusterListNames>
-        <ShowDetector>true</ShowDetector>
-    </algorithm>
-
     <!-- 3D neutrino-induced event reconstruction -->
     <algorithm type = "LArCheatingPfoCreation">
         <InputClusterListNames>Clusters3D ClustersU ClustersV ClustersW</InputClusterListNames>
         <OutputPfoListName>NParticles3D</OutputPfoListName>
-	<AddVertices>false</AddVertices>
-        <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+        <OutputVertexListName>NVertices</OutputVertexListName>
         <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
-
-    <algorithm type = "LArVisualMonitoring">
-	<PfoListNames>NParticles3D</PfoListNames>
-        <ShowDetector>true</ShowDetector>
+        <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
     </algorithm>
 
     <!-- 3D neutrino event hierarchy -->
@@ -84,7 +100,7 @@
     </algorithm>
 
     <algorithm type = "LArVisualMonitoring">
-	<PfoListNames>NeutrinoParticles3D NParticles3D</PfoListNames>
+        <PfoListNames>NeutrinoParticles3D NParticles3D</PfoListNames>
         <VertexListNames>NVertices NDaughterVertices3D</VertexListNames>
         <ShowDetector>true</ShowDetector>
     </algorithm>
@@ -94,7 +110,7 @@
         <PfoListNames>NeutrinoParticles3D NParticles3D</PfoListNames>
         <VertexListNames>NVertices NDaughterVertices3D</VertexListNames>
         <ClusterListNames>ClustersU ClustersV ClustersW Clusters3D</ClusterListNames>
-        <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D CaloHitList3D</CaloHitListNames>
+        <CaloHitListNames>NeutrinoCaloHitList RockMuonCaloHitList CaloHitListU CaloHitListV CaloHitListW CaloHitList2D CaloHitList3D</CaloHitListNames>
         <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>
     </algorithm>
 </pandora>

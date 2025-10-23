@@ -1,7 +1,7 @@
 <pandora>
     <!-- GLOBAL SETTINGS -->
     <IsMonitoringEnabled>true</IsMonitoringEnabled>
-    <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
+    <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
     <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
     <!-- ALGORITHM SETTINGS -->
@@ -34,10 +34,5 @@
     </algorithm>
     <algorithm type = "LArListChanging">
         <PfoListName>SliceParticles</PfoListName>
-    </algorithm>
-    <algorithm type = "LArVisualMonitoring">
-	<CaloHitListNames>CaloHitList3D</CaloHitListNames>
-        <PfoListNames>SliceParticles</PfoListNames>
-        <ShowDetector>true</ShowDetector>
     </algorithm>
 </pandora>
