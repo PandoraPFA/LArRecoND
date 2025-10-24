@@ -20,7 +20,7 @@ void rootToRootConversion(
     //   https://root-forum.cern.ch/t/problem-in-accessing-vector-vector-float/27983
     // though others also do this.
     gInterpreter->GenerateDictionary("vector<vector<float> >", "vector");
-    gInterpreter->GenerateDictionary("vector<vector<long> >", "vector");
+    gInterpreter->GenerateDictionary("vector<vector<long long> >", "vector");
     gInterpreter->GenerateDictionary("vector<vector<int> >", "vector");
 
     TFile *f = new TFile(fname.c_str(),"read");
@@ -44,11 +44,11 @@ void rootToRootConversion(
     // Hit truth
     int     nmatchesinsubevent(0);
     Float_t packetFrac[MaxDepthArrayMC];
-    Long_t  particleID[MaxDepthArrayMC];
-    Long_t  particleIDLocal[MaxDepthArrayMC];
+    Long64_t  particleID[MaxDepthArrayMC];
+    Long64_t  particleIDLocal[MaxDepthArrayMC];
     Int_t   pdg[MaxDepthArrayMC];
-    Long_t  vertexID[MaxDepthArrayMC];
-    Long_t  segmentID[MaxDepthArrayMC];
+    Long64_t  vertexID[MaxDepthArrayMC];
+    Long64_t  segmentID[MaxDepthArrayMC];
 
     // MCP
     // We have a maximum depth set by the h5_to_root_ndlarflow.py script matching the 10000 set above. For data mode, this will not be used.
@@ -64,14 +64,14 @@ void rootToRootConversion(
     Float_t in_mcp_endy[MaxDepthArrayMC];
     Float_t in_mcp_endz[MaxDepthArrayMC];
     Int_t   in_mcp_pdg[MaxDepthArrayMC];
-    Long_t  in_mcp_nuid[MaxDepthArrayMC];
-    Long_t  in_mcp_vertex_id[MaxDepthArrayMC];
-    Long_t  in_mcp_idLocal[MaxDepthArrayMC];
-    Long_t  in_mcp_id[MaxDepthArrayMC];
-    Long_t  in_mcp_mother[MaxDepthArrayMC];
+    Long64_t  in_mcp_nuid[MaxDepthArrayMC];
+    Long64_t  in_mcp_vertex_id[MaxDepthArrayMC];
+    Long64_t  in_mcp_idLocal[MaxDepthArrayMC];
+    Long64_t  in_mcp_id[MaxDepthArrayMC];
+    Long64_t  in_mcp_mother[MaxDepthArrayMC];
     // Neutrinos: see caveat above, but here we'll have a hard cap at 500 -- TODO: can we tolerate having this officially set to the maximum subevent size of 10000 as well?
     int     nnuinsubevent(0);
-    Long_t  in_nuID[MaxDepthArrayNu];
+    Long64_t  in_nuID[MaxDepthArrayNu];
     Int_t   in_nuPDG[MaxDepthArrayNu];
     Int_t   in_mode[MaxDepthArrayNu];
     Int_t   in_ccnc[MaxDepthArrayNu];
@@ -170,21 +170,21 @@ void rootToRootConversion(
   
     // segmentIndex, particleIndex unfilled!
     std::vector< std::vector<int> >   hit_pdg;
-    std::vector< std::vector<long> >  hit_segmentID;
-    std::vector< std::vector<long> >  hit_particleID;
-    std::vector< std::vector<long> >  hit_particleIDLocal;
-    std::vector< std::vector<long> >  hit_vertexID;
+    std::vector< std::vector<long long> >  hit_segmentID;
+    std::vector< std::vector<long long> >  hit_particleID;
+    std::vector< std::vector<long long> >  hit_particleIDLocal;
+    std::vector< std::vector<long long> >  hit_vertexID;
     std::vector< std::vector<float> > hit_packetFrac;
     
     std::vector<float> mcp_px;
     std::vector<float> mcp_py;
     std::vector<float> mcp_pz;
-    std::vector<long> mcp_id;
-    std::vector<long> mcp_idLocal;
-    std::vector<long> mcp_nuid;
-    std::vector<long> mcp_vertex_id;
+    std::vector<long long> mcp_id;
+    std::vector<long long> mcp_idLocal;
+    std::vector<long long> mcp_nuid;
+    std::vector<long long> mcp_vertex_id;
     std::vector<int> mcp_pdg;
-    std::vector<long> mcp_mother;
+    std::vector<long long> mcp_mother;
     std::vector<float> mcp_energy;
     std::vector<float> mcp_startx;
     std::vector<float> mcp_starty;
@@ -200,8 +200,8 @@ void rootToRootConversion(
     std::vector<float> nupy;
     std::vector<float> nupz;
     std::vector<float> nue;
-    std::vector<long> nuID;
-    std::vector<long> vertex_id;
+    std::vector<long long> nuID;
+    std::vector<long long> vertex_id;
     std::vector<int> nuPDG;
     std::vector<int> mode;
     std::vector<int> ccnc;
@@ -269,10 +269,10 @@ void rootToRootConversion(
     unsigned long sum_matches=0;
     std::vector<short> all_matches;
     std::vector<int>   all_hit_pdg;
-    std::vector<long>  all_hit_segmentID;
-    std::vector<long>  all_hit_particleID;
-    std::vector<long>  all_hit_particleIDLocal;
-    std::vector<long>  all_hit_vertexID;
+    std::vector<long long>  all_hit_segmentID;
+    std::vector<long long>  all_hit_particleID;
+    std::vector<long long>  all_hit_particleIDLocal;
+    std::vector<long long>  all_hit_vertexID;
     std::vector<float> all_hit_packetFrac;
 
     // First entry is bogus, just sets the right types in uproot. Start on idx 1
@@ -299,10 +299,10 @@ void rootToRootConversion(
                 }
                 unsigned long matchIndex = 0;
                 std::vector<int>   this_hit_pdg;
-                std::vector<long>  this_hit_segmentID;
-                std::vector<long>  this_hit_particleID;
-                std::vector<long>  this_hit_particleIDLocal;
-                std::vector<long>  this_hit_vertexID;
+                std::vector<long long>  this_hit_segmentID;
+                std::vector<long long>  this_hit_particleID;
+                std::vector<long long>  this_hit_particleIDLocal;
+                std::vector<long long>  this_hit_vertexID;
                 std::vector<float> this_hit_packetFrac;
                 for ( unsigned int idxMatch=0; idxMatch<=(unsigned int)all_hit_packetFrac.size(); ++idxMatch ){
                     if( this_hit_pdg.size() == (unsigned int)all_matches[matchIndex] || idxMatch==(unsigned int)all_hit_packetFrac.size()) {
