@@ -34,7 +34,7 @@ public:
     MasterThreeDAlgorithm() = default;
 
 protected:
-    pandora::StatusCode Run();
+    pandora::StatusCode Run() override;
 
     /**
      *  @brief  Run cosmic-ray hit removal, freeing hits in ambiguous pfos for further processing
@@ -61,7 +61,7 @@ protected:
      *  @param  newPfoList to receive the list of new pfos
      */
     pandora::StatusCode Recreate(const pandora::ParticleFlowObject *const pInputPfo, const pandora::ParticleFlowObject *const pNewParentPfo,
-        pandora::PfoList &newPfoList) const;
+        pandora::PfoList &newPfoList) const override;
 
     /**
      *  @brief  Create a pandora worker instance to handle a single LArTPC
@@ -103,7 +103,7 @@ protected:
      */
     pandora::StatusCode GetVolumeIdToHitListMap(VolumeIdToHitListMap &volumeIdToHitListMap) const;
 
-    pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
+    pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle) override;
 };
 
 } // namespace lar_content
