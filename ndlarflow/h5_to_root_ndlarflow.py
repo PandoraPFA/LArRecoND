@@ -21,7 +21,7 @@ def printUsage():
     print('-- Parameters')
     print('FileList    [REQUIRED]:                                         comma separated set of files to convert - note it will be one output')
     print('IsData      [OPTIONAL, DEFAULT = 0, is MC]:                     1 = Data, otherwise = MC')
-    print('IsFinalHits [OPTIONAL, DEFAULT = 0, prompt hits]:               1 = use "final" hits, otherwise = "prompt"')
+    print('IsFinalHits [OPTIONAL, DEFAULT = 0, prompt hits]:               1 = use "final" hits, 2 = use "merged" hits, otherwise = "prompt"')
     print('LegacyMode  [OPTIONAL, DEFAULT = 0, no legacy]:                 0 = no legacy mode, 1 = samples < MiniRun6, 2 = > MiniRun6 but no usec time')
     print('OutName     [OPTIONAL, DEFAULT = input[0]+"_hits_uproot.root"]: string for an output file name if you want to override. Note that default writes to current directory.')
     print('')
@@ -32,6 +32,7 @@ def main(argv=None):
     fileNames=[]
     useData=False
     useFinalHits=False
+    useMergedHits=False
     legacyMode=0
     overrideOutname=1
     outname=''
@@ -63,6 +64,8 @@ def main(argv=None):
         if len(sys.argv)>3 and sys.argv[3]!=None:
             if int(sys.argv[3])==1:
                 useFinalHits=True
+            if int(sys.argv[3])==2:
+                useMergedHits=True
         if len(sys.argv)>4 and sys.argv[4]!=None:
             legacyMode=int(sys.argv[4])
         if len(sys.argv)>5 and sys.argv[5]!=None:
@@ -76,6 +79,8 @@ def main(argv=None):
     promptKey='prompt'
     if useFinalHits==True:
         promptKey='final'
+    elif useMergedHits==True:
+        promptKey='merged'
 
     if overrideOutname==1:
         outname = fileNames[0].split('/')[-1]+'_hits_uproot.root'
