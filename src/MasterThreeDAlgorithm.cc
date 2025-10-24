@@ -185,26 +185,17 @@ StatusCode MasterThreeDAlgorithm::RunSlicing(const VolumeIdToHitListMap &volumeI
 
 StatusCode MasterThreeDAlgorithm::Recreate(const ParticleFlowObject *const pInputPfo, const ParticleFlowObject *const pNewParentPfo, PfoList &newPfoList) const
 {
-    ClusterList inputClusterList2D, inputClusterList3D, newClusterList;
+    ClusterList inputClusterList2D, inputClusterList3D, totalClusterList, newClusterList;
+
+    // 2D clusters
     LArPfoHelper::GetTwoDClusterList(pInputPfo, inputClusterList2D);
+    totalClusterList.insert(totalClusterList.end(), inputClusterList2D.begin(), inputClusterList2D.end());
+
+    // 3D clusters
     LArPfoHelper::GetThreeDClusterList(pInputPfo, inputClusterList3D);
+    totalClusterList.insert(totalClusterList.end(), inputClusterList3D.begin(), inputClusterList3D.end());
 
-    for (const Cluster *const pInputCluster : inputClusterList2D)
-    {
-        CaloHitList inputCaloHitList, newCaloHitList, newIsolatedCaloHitList;
-        pInputCluster->GetOrderedCaloHitList().FillCaloHitList(inputCaloHitList);
-
-        for (const CaloHit *const pInputCaloHit : inputCaloHitList)
-            newCaloHitList.push_back(static_cast<const CaloHit *>(pInputCaloHit->GetParentAddress()));
-
-        for (const CaloHit *const pInputCaloHit : pInputCluster->GetIsolatedCaloHitList())
-            newIsolatedCaloHitList.push_back(static_cast<const CaloHit *>(pInputCaloHit->GetParentAddress()));
-
-        if (!newCaloHitList.empty())
-            newClusterList.push_back(this->CreateCluster(pInputCluster, newCaloHitList, newIsolatedCaloHitList));
-    }
-
-    for (const Cluster *const pInputCluster : inputClusterList3D)
+    for (const Cluster *const pInputCluster : totalClusterList)
     {
         CaloHitList inputCaloHitList, newCaloHitList, newIsolatedCaloHitList;
         pInputCluster->GetOrderedCaloHitList().FillCaloHitList(inputCaloHitList);
