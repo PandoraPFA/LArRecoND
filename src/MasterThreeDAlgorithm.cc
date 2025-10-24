@@ -83,6 +83,46 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     return STATUS_CODE_SUCCESS;
 }
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+StatusCode MasterThreeDAlgorithm::RunCosmicRayHitRemoval(const PfoList &ambiguousPfos) const
+{
+    PfoList allPfosToDelete;
+    LArPfoHelper::GetAllConnectedPfos(ambiguousPfos, allPfosToDelete);
+
+    for (const Pfo *const pPfoToDelete : allPfosToDelete)
+    {
+        const ClusterList clusterList(pPfoToDelete->GetClusterList());
+        const VertexList vertexList(pPfoToDelete->GetVertexList());
+
+        // ATTN: If an ambiguous pfo has been stitched, reset the calo hit positions in preparation for subsequent algorithm chains
+        if (LArStitchingHelper::HasPfoBeenStitched(pPfoToDelete))
+        {
+            CaloHitList caloHitList2D;
+            LArPfoHelper::GetCaloHits(pPfoToDelete, TPC_VIEW_U, caloHitList2D);
+            LArPfoHelper::GetCaloHits(pPfoToDelete, TPC_VIEW_V, caloHitList2D);
+            LArPfoHelper::GetCaloHits(pPfoToDelete, TPC_VIEW_W, caloHitList2D);
+            LArPfoHelper::GetCaloHits(pPfoToDelete, TPC_3D, caloHitList2D);
+            LArPfoHelper::GetIsolatedCaloHits(pPfoToDelete, TPC_VIEW_U, caloHitList2D);
+            LArPfoHelper::GetIsolatedCaloHits(pPfoToDelete, TPC_VIEW_V, caloHitList2D);
+            LArPfoHelper::GetIsolatedCaloHits(pPfoToDelete, TPC_VIEW_W, caloHitList2D);
+            LArPfoHelper::GetIsolatedCaloHits(pPfoToDelete, TPC_3D, caloHitList2D);
+
+            for (const CaloHit *const pCaloHit : caloHitList2D)
+            {
+                PandoraContentApi::CaloHit::Metadata metadata;
+                metadata.m_x0 = 0.f;
+                PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::CaloHit::AlterMetadata(*this, pCaloHit, metadata));
+            }
+        }
+
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::Delete(*this, pPfoToDelete));
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::Delete(*this, &clusterList));
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::Delete(*this, &vertexList));
+    }
+
+    return STATUS_CODE_SUCCESS;
+}
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -137,6 +177,52 @@ StatusCode MasterThreeDAlgorithm::RunSlicing(const VolumeIdToHitListMap &volumeI
 
     if (m_printOverallRecoStatus)
         std::cout << "Identified " << sliceVector.size() << " slice(s)" << std::endl;
+
+    return STATUS_CODE_SUCCESS;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+StatusCode MasterThreeDAlgorithm::Recreate(const ParticleFlowObject *const pInputPfo, const ParticleFlowObject *const pNewParentPfo, PfoList &newPfoList) const
+{
+    ClusterList inputClusterList2D, inputClusterList3D, totalClusterList, newClusterList;
+
+    // 2D clusters
+    LArPfoHelper::GetTwoDClusterList(pInputPfo, inputClusterList2D);
+    totalClusterList.insert(totalClusterList.end(), inputClusterList2D.begin(), inputClusterList2D.end());
+
+    // 3D clusters
+    LArPfoHelper::GetThreeDClusterList(pInputPfo, inputClusterList3D);
+    totalClusterList.insert(totalClusterList.end(), inputClusterList3D.begin(), inputClusterList3D.end());
+
+    for (const Cluster *const pInputCluster : totalClusterList)
+    {
+        CaloHitList inputCaloHitList, newCaloHitList, newIsolatedCaloHitList;
+        pInputCluster->GetOrderedCaloHitList().FillCaloHitList(inputCaloHitList);
+
+        for (const CaloHit *const pInputCaloHit : inputCaloHitList)
+            newCaloHitList.push_back(static_cast<const CaloHit *>(pInputCaloHit->GetParentAddress()));
+
+        for (const CaloHit *const pInputCaloHit : pInputCluster->GetIsolatedCaloHitList())
+            newIsolatedCaloHitList.push_back(static_cast<const CaloHit *>(pInputCaloHit->GetParentAddress()));
+
+        if (!newCaloHitList.empty())
+            newClusterList.push_back(this->CreateCluster(pInputCluster, newCaloHitList, newIsolatedCaloHitList));
+    }
+
+    VertexList newVertexList;
+
+    for (const Vertex *const pInputVertex : pInputPfo->GetVertexList())
+        newVertexList.push_back(this->CreateVertex(pInputVertex));
+
+    const ParticleFlowObject *const pNewPfo(this->CreatePfo(pInputPfo, newClusterList, newVertexList));
+    newPfoList.push_back(pNewPfo);
+
+    if (pNewParentPfo)
+        PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::SetPfoParentDaughterRelationship(*this, pNewParentPfo, pNewPfo))
+
+    for (const ParticleFlowObject *const pInputDaughterPfo : pInputPfo->GetDaughterPfoList())
+        this->Recreate(pInputDaughterPfo, pNewPfo, newPfoList);
 
     return STATUS_CODE_SUCCESS;
 }
