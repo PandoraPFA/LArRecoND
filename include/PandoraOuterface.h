@@ -124,9 +124,12 @@ class NDRecoOutputData
                            const std::vector<float> &shrdirX, const std::vector<float> &shwrdirY, const std::vector<float> &shwrdirZ,
 			   const std::vector<float> &shwrlength, const std::vector<int> &shwrSlice, const std::vector<int> &shwrCluster,
 			   const std::vector<float> &startTrackSlidingFitDirX,  const std::vector<float> &startTrackSlidingFitDirY,  const std::vector<float> &startTrackSlidingFitDirZ, 
-                           const std::vector<float> &startTrackPCADirX, const std::vector<float> &startTrackPCADirY, const std::vector<float> &startTrackPCADirZ, 
-                           const std::vector<float> &shwrstartpointsX, const std::vector<float> &shwrstartpointsY, const std::vector<float> &shwrstartpointsZ, 
-			   const std::vector<double> &shwrdEdx, const std::vector<float> &shwrTotalE ); ///< Fill the shower fit result branches
+               const std::vector<float> &startTrackPCADirX, const std::vector<float> &startTrackPCADirY, const std::vector<float> &startTrackPCADirZ, 
+               const std::vector<float> &shwrstartpointsX, const std::vector<float> &shwrstartpointsY, const std::vector<float> &shwrstartpointsZ, 
+			   const std::vector<double> &shwrdEdx, const std::vector<float> &shwrTotalE, const std::vector<int> &shwrStartPointsRecoId,
+               const std::vector<float> &minProjection); ///< Fill the shower fit result branches
+
+
   
   void FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
 			      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
@@ -254,6 +257,8 @@ class NDRecoOutputData
   std::vector<float> m_out_shwrStartPointsZ;
   std::vector<double> m_out_shwrdEdx;
   std::vector<float> m_out_shwrTotalE;
+  std::vector<int> m_out_shwrStartPointsRecoId;
+  std::vector<float> m_out_minProjection;
 };
 
  NDRecoOutputData::NDRecoOutputData(const std::string filename, const bool writeTracks, const bool writeShowers)
@@ -384,6 +389,8 @@ class NDRecoOutputData
      m_treeOut->Branch("shwrStartPointsZ", &m_out_shwrStartPointsZ);
      m_treeOut->Branch("shwrdEdx", &m_out_shwrdEdx);
      m_treeOut->Branch("shwrTotalE", &m_out_shwrTotalE);
+     m_treeOut->Branch("shwrStartPointsRecoId", &m_out_shwrStartPointsRecoId);
+     m_treeOut->Branch("minProjection", &m_out_minProjection);
    }
   
  }
@@ -507,7 +514,9 @@ class NDRecoOutputData
    m_out_shwrStartPointsZ.clear();
    m_out_shwrdEdx.clear();
    m_out_shwrTotalE.clear();
-}
+   m_out_shwrStartPointsRecoId.clear();
+   m_out_minProjection.clear();
+ }
 
  void NDRecoOutputData::WriteToFile()
  {
@@ -620,9 +629,11 @@ class NDRecoOutputData
 
 void NDRecoOutputData::FillShowerBranches( const std::vector<float> &shwrcentX, const std::vector<float> &shwrcentY, const std::vector<float> &shwrcentZ,                                           const std::vector<float> &shwrstartX, const std::vector<float> &shwrstartY, const std::vector<float> &shwrstartZ,
                                            const std::vector<float> &shwrdirX, const std::vector<float> &shwrdirY, const std::vector<float> &shwrdirZ,                                                 const std::vector<float> &shwrlength, const std::vector<int> &shwrSlice, const std::vector<int> &shwrCluster,
-					   const std::vector<float> &startTrackSlidingFitDirX, const std::vector<float> &startTrackSlidingFitDirY, const std::vector<float> &startTrackSlidingFitDirZ, const std::vector<float> &startTrackPCADirX, const std::vector<float> &startTrackPCADirY, const std::vector<float> &startTrackPCADirZ,
+					   const std::vector<float> &startTrackSlidingFitDirX, const std::vector<float> &startTrackSlidingFitDirY, const std::vector<float> &startTrackSlidingFitDirZ, 
+                       const std::vector<float> &startTrackPCADirX, const std::vector<float> &startTrackPCADirY, const std::vector<float> &startTrackPCADirZ,
                                            const std::vector<float> &shwrstartpointsX,const std::vector<float> &shwrstartpointsY,const std::vector<float> &shwrstartpointsZ, 
-                                           const std::vector<double> &shwrdEdx, const std::vector<float> &shwrTotalE)
+                       const std::vector<double> &shwrdEdx, const std::vector<float> &shwrTotalE, const std::vector<int> &shwrStartPointsRecoId,
+                       const std::vector<float> &minProjection)
 {
   m_out_shwrfitCentroidX.insert(m_out_shwrfitCentroidX.end(), shwrcentX.begin(), shwrcentX.end() );
   m_out_shwrfitCentroidY.insert(m_out_shwrfitCentroidY.end(), shwrcentY.begin(), shwrcentY.end() );
@@ -647,6 +658,8 @@ void NDRecoOutputData::FillShowerBranches( const std::vector<float> &shwrcentX, 
   m_out_shwrStartPointsZ.insert(m_out_shwrStartPointsZ.end(), shwrstartpointsZ.begin(), shwrstartpointsZ.end());
   m_out_shwrdEdx.insert(m_out_shwrdEdx.end(), shwrdEdx.begin(), shwrdEdx.end());
   m_out_shwrTotalE.insert(m_out_shwrTotalE.end(), shwrTotalE.begin(), shwrTotalE.end());
+  m_out_shwrStartPointsRecoId.insert(m_out_shwrStartPointsRecoId.end(), shwrStartPointsRecoId.begin(), shwrStartPointsRecoId.end());
+  m_out_minProjection.insert(m_out_minProjection.end(), minProjection.begin(), minProjection.end());
 }
 
 void NDRecoOutputData::FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
