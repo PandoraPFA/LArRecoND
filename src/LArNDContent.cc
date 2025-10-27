@@ -15,6 +15,7 @@
 #include "CheatingEventSlicingThreeDTool.h"
 #include "CheatingRockMuonRemovalAlgorithm.h"
 #include "CheatingRockMuonTaggingTool.h"
+#include "CheatingStitchingTool.h"
 
 #include "CandidateVertexCreationThreeDAlgorithm.h"
 #include "CreateTwoDClustersFromThreeDAlgorithm.h"
@@ -48,6 +49,7 @@
 #define LAR_ND_ALGORITHM_TOOL_LIST(d)                                                                                              \
     d("LArEventSlicingThreeD",                  EventSlicingThreeDTool)                                                            \
     d("LArCheatingEventSlicingThreeD",          CheatingEventSlicingThreeDTool)                                                    \
+    d("LArCheatingStitching",                   CheatingStitchingTool)                                                             \
     d("LArCheatingRockMuonTagging",             CheatingRockMuonTaggingTool)
 
 #define FACTORY Factory
