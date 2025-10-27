@@ -29,23 +29,16 @@ void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const P
     if (PandoraContentApi::GetSettings(*pAlgorithm)->ShouldDisplayAlgorithmInfo())
         std::cout << "----> Running Algorithm Tool: " << this->GetInstanceName() << ", " << this->GetType() << std::endl;
 
-    std::cout << "Cheating stitching tool: there are " << pMultiPfoList->size() << " PFOs to consider for stitching" << std::endl;
-    std::cout << "There are " << pfoToLArTPCMap.size() << " PFOs with associated TPCs" << std::endl;
-
     if (this->GetPandora().GetGeometry()->GetLArTPCMap().size() < 2)
         return;
 
     if (pfoToLArTPCMap.empty())
         throw StatusCodeException(STATUS_CODE_NOT_FOUND);
 
-    std::cout << "Now performing cheating stitching based on MCParticle associations" << std::endl;
-
     const MCParticleList *pMCParticleList{nullptr};
     PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*pAlgorithm, pMCParticleList));
-    std::cout << "There are " << pMCParticleList->size() << " MCParticles in the event" << std::endl;
     const PfoList *pPfoList{nullptr};
     PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*pAlgorithm, pPfoList));
-    std::cout << "There are " << pPfoList->size() << " PFOs in the event" << std::endl;
 
     std::map<const MCParticle *, std::map<unsigned int, std::vector<const ParticleFlowObject *>>> mcParticleToLArTPCToPfosMap;
 
@@ -89,8 +82,6 @@ void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const P
         mcParticleToLArTPCToPfosMap[pMCParticle][tpcVolumeId].push_back(pPfo);
     }
 
-    std::cout << "There are " << mcParticleToLArTPCToPfosMap.size() << " MCParticles associated to PFOs" << std::endl;
-
     // Now, join together any PFOs from different TPCs associated to the same MCParticle
     for (const auto &mcParticlePfosPair : mcParticleToLArTPCToPfosMap)
     {
@@ -99,8 +90,6 @@ void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const P
         // Nothing to stitch if only one TPC involved
         if (tpcToPfosMap.size() < 2)
             continue;
-
-        std::cout << "Stitching together PFOs from " << tpcToPfosMap.size() << " TPCs" << std::endl;
 
         // Sort the PFOs in each TPC by number of hits.
         // Since this is JUST cheated stitching, we will take the largest PFO in each TPC as the "main" one to stitch to.
@@ -125,15 +114,10 @@ void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const P
             tpcToMainPfoMap[tpcVolumeId] = pLargestPfo;
         }
 
-        std::cout << "Stitching " << tpcToMainPfoMap.size() << " PFOs together" << std::endl;
-
         // Stitch all other PFOs in this TPC to the main one
         auto tpcToMainPfoIter = tpcToMainPfoMap.begin();
         const ParticleFlowObject *const pReferencePfo = tpcToMainPfoIter->second;
         ++tpcToMainPfoIter;
-
-        std::cout << "Reference PFO has " << LArPfoHelper::GetNumberOfThreeDHits(pReferencePfo) << " 3D hits and "
-                  << LArPfoHelper::GetNumberOfTwoDHits(pReferencePfo) << " 2D hits" << std::endl;
 
         for (; tpcToMainPfoIter != tpcToMainPfoMap.end(); ++tpcToMainPfoIter)
         {
@@ -142,9 +126,6 @@ void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const P
             // Stitch the current PFO to the reference PFO
             pAlgorithm->StitchPfos(pReferencePfo, pCurrentPfo, pfoToLArTPCMap);
         }
-
-        std::cout << "Stitched PFO now has " << LArPfoHelper::GetNumberOfThreeDHits(pReferencePfo) << " 3D hits and "
-                  << LArPfoHelper::GetNumberOfTwoDHits(pReferencePfo) << " 2D hits" << std::endl;
     }
 }
 
