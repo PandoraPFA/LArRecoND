@@ -93,7 +93,7 @@
         <PfoListNames>Particles3D</PfoListNames>
         <VertexListNames>Vertices3D</VertexListNames>
         <ClusterListNames>ClustersU ClustersV ClustersW Clusters3D</ClusterListNames>
-        <CaloHitListNames>RockMuonCaloHitList NeutrinoCaloHitList CaloHitListU CaloHitListV CaloHitListW CaloHitList3D</CaloHitListNames>
+        <CaloHitListNames>RockMuonCaloHitList NeutrinoCaloHitList CaloHitListU CaloHitListV CaloHitListW CaloHitList2D CaloHitList3D</CaloHitListNames>
         <CurrentPfoListReplacement>Particles3D</CurrentPfoListReplacement>
     </algorithm>
 </pandora>
