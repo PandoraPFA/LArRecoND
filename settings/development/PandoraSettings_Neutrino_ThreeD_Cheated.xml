@@ -5,15 +5,7 @@
     <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
     <!-- ALGORITHM SETTINGS -->
-    <algorithm type = "LArCheatingRockMuonRemoval">
-        <InputCaloHitListName>Input</InputCaloHitListName>
-        <RockMuonCaloHitListName>RockMuonCaloHitList</RockMuonCaloHitListName>
-        <NeutrinoCaloHitListName>NeutrinoCaloHitList</NeutrinoCaloHitListName>
-        <MCParticleListName>Input</MCParticleListName>
-    </algorithm>
-
     <algorithm type = "LArPreProcessingThreeD">
-        <InputCaloHitListName>NeutrinoCaloHitList</InputCaloHitListName>
         <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
         <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
         <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>
@@ -114,7 +106,7 @@
         <PfoListNames>NeutrinoParticles3D NParticles3D</PfoListNames>
         <VertexListNames>NVertices NDaughterVertices3D</VertexListNames>
         <ClusterListNames>ClustersU ClustersV ClustersW Clusters3D</ClusterListNames>
-        <CaloHitListNames>NeutrinoCaloHitList RockMuonCaloHitList CaloHitListU CaloHitListV CaloHitListW CaloHitList2D CaloHitList3D</CaloHitListNames>
+        <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D CaloHitList3D</CaloHitListNames>
         <CurrentPfoListReplacement>NeutrinoParticles3D</CurrentPfoListReplacement>
     </algorithm>
 </pandora>
