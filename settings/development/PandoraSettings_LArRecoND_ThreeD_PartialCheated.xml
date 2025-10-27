@@ -24,8 +24,7 @@
         <NuSettingsFile>PandoraSettings_Neutrino_ThreeD.xml</NuSettingsFile>
         <SlicingSettingsFile>PandoraSettings_Slicing_ThreeD_Cheated.xml</SlicingSettingsFile>
         <StitchingTools>
-            <tool type = "LArStitchingCosmicRayMerging"><ThreeDStitchingMode>true</ThreeDStitchingMode></tool>
-            <tool type = "LArStitchingCosmicRayMerging"><ThreeDStitchingMode>false</ThreeDStitchingMode></tool>
+            <tool type = "LArCheatingStitching" />
         </StitchingTools>
         <CosmicRayTaggingTools>
             <tool type = "LArCheatingRockMuonTagging"/>
