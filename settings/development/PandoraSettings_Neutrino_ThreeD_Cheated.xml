@@ -1,7 +1,7 @@
 <pandora>
     <!-- GLOBAL SETTINGS -->
     <IsMonitoringEnabled>false</IsMonitoringEnabled>
-    <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
+    <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
     <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
     <!-- ALGORITHM SETTINGS -->
@@ -22,7 +22,7 @@
     <!-- 2D neutrino reconstruction, U View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
@@ -34,7 +34,7 @@
     <!-- 2D neutrino reconstruction, V View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
@@ -46,7 +46,7 @@
     <!-- 2D neutrino reconstruction, W View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
@@ -58,7 +58,7 @@
     <!-- 3D neutrino reconstruction -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitList3D</InputCaloHitListName>
@@ -77,19 +77,19 @@
         <OutputPfoListName>NParticles3D</OutputPfoListName>
         <AddVertices>false</AddVertices>
         <MCParticleListName>Input</MCParticleListName>
-        <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+        <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
     </algorithm>
 
     <!-- 3D neutrino event hierarchy -->
     <algorithm type = "LArCheatingNeutrinoCreation">
-        <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+        <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
         <MCParticleListName>Input</MCParticleListName>
         <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
         <VertexListName>NVertices</VertexListName>
         <DaughterPfoListNames>NParticles3D</DaughterPfoListNames>
     </algorithm>
     <algorithm type = "LArCheatingNeutrinoDaughterVertices">
-        <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
+        <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
         <MCParticleListName>Input</MCParticleListName>
         <NeutrinoPfoListName>NeutrinoParticles3D</NeutrinoPfoListName>
         <OutputVertexListName>NDaughterVertices3D</OutputVertexListName>

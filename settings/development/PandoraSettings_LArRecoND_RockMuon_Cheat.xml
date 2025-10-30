@@ -89,6 +89,7 @@
         <ShowDetector>true</ShowDetector>
     </algorithm> -->
 
+    <!-- Output list management -->
     <algorithm type = "LArPostProcessing">
         <PfoListNames>Particles3D</PfoListNames>
         <VertexListNames>Vertices3D</VertexListNames>

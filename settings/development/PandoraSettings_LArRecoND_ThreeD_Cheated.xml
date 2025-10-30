@@ -70,15 +70,15 @@
         <AnalysisFileName>LArRecoND.root</AnalysisFileName>
         <AnalysisTreeName>LArRecoND</AnalysisTreeName>
         <FoldToPrimaries>false</FoldToPrimaries>
-        <FoldToLeadingShowers>true</FoldToLeadingShowers>
+        <FoldToLeadingShowers>false</FoldToLeadingShowers>
         <FoldDynamic>false</FoldDynamic>
         <MinPurity>0.5</MinPurity>
         <MinCompleteness>0.1</MinCompleteness>
-        <MinRecoHits>15</MinRecoHits>
-        <MinRecoHitsPerView>5</MinRecoHitsPerView>
-        <MinRecoGoodViews>2</MinRecoGoodViews>
-        <RemoveRecoNeutrons>true</RemoveRecoNeutrons>
-        <SelectRecoHits>true</SelectRecoHits>
+        <MinRecoHits>1</MinRecoHits>
+        <MinRecoHitsPerView>1</MinRecoHitsPerView>
+        <MinRecoGoodViews>1</MinRecoGoodViews>
+        <RemoveRecoNeutrons>false</RemoveRecoNeutrons>
+        <SelectRecoHits>false</SelectRecoHits>
     </algorithm>
 
 <!-- LArContent hierarchy tools MC and event-level information-->
