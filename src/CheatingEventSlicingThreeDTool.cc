@@ -54,10 +54,10 @@ void CheatingEventSlicingThreeDTool::RunSlicing(const Algorithm *const pAlgorith
     for (const MCParticle *const pMCParticle : mcParticleVector)
     {
         const Slice3D &slice(mcParticleToSliceMap.at(pMCParticle));
-        const bool enoughUViewHits(slice.m_caloHitListU.size() >= 10);
-        const bool enoughVViewHits(slice.m_caloHitListV.size() >= 10);
-        const bool enoughWViewHits(slice.m_caloHitListW.size() >= 10);
-        const bool enough3DHits(slice.m_caloHitList3D.size() >= 10);
+        const bool enoughUViewHits(slice.m_caloHitListU.size() >= 5);
+        const bool enoughVViewHits(slice.m_caloHitListV.size() >= 5);
+        const bool enoughWViewHits(slice.m_caloHitListW.size() >= 5);
+        const bool enough3DHits(slice.m_caloHitList3D.size() >= 5);
 
         if (enoughUViewHits && enoughVViewHits && enoughWViewHits && enough3DHits)
             slice3DList.push_back(slice);

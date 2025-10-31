@@ -72,7 +72,7 @@
         <FoldToPrimaries>false</FoldToPrimaries>
         <FoldToLeadingShowers>false</FoldToLeadingShowers>
         <FoldDynamic>false</FoldDynamic>
-        <MinPurity>0.5</MinPurity>
+        <MinPurity>0.1</MinPurity>
         <MinCompleteness>0.1</MinCompleteness>
         <MinRecoHits>1</MinRecoHits>
         <MinRecoHitsPerView>1</MinRecoHitsPerView>
