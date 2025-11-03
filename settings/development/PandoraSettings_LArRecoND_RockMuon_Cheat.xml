@@ -22,10 +22,10 @@
         <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
     </algorithm>
 
-    <algorithm type = "LArVisualMonitoring">
+    <!-- <algorithm type = "LArVisualMonitoring">
         <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV CaloHitList3D</CaloHitListNames>
         <ShowDetector>true</ShowDetector>
-    </algorithm>
+    </algorithm> -->
 
     <!-- 2D rock muon reconstruction, U View -->
     <algorithm type = "LArClusteringParent">
