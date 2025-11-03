@@ -131,8 +131,8 @@ jobs:
         run: |
           echo "Patching processing script..."
           cd /pandora/LArRecoND/ndlarflow
-          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/1e68b6fdf69816d1fdb6c53cacbd234184928ef8/ndlarflow/h5_to_root_ndlarflow.py -O h5_to_root_ndlarflow.py
-          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/1e68b6fdf69816d1fdb6c53cacbd234184928ef8/ndlarflow/rootToRootConversion.C -O rootToRootConversion.C
+          wget https://raw.githubusercontent.com/CrossR/LArRecoND/3ff9ecfc151f226cf33da01def00cfae53ffc54a/ndlarflow/h5_to_root_ndlarflow.py -O h5_to_root_ndlarflow.py
+          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/c35fd8173d2c24c3150054471b34cd3f58e590e0/ndlarflow/rootToRootConversion.C -O rootToRootConversion.C
 
       - name: Process Files With Python
         shell: bash -l {0}
