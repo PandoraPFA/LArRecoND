@@ -44,6 +44,7 @@
         <CosmicRayTaggingTools>
             <tool type = "LArCosmicRayTagging">
 	      <CutMode>cautious</CutMode>
+              <TagRockMuons>true</TagRockMuons>
 	    </tool>
         </CosmicRayTaggingTools>
         <SliceIdTools>
