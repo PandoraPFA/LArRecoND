@@ -757,9 +757,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	float minProjectionValue;
 	float distanceProjectionToShower;
 
-	int HitProximityRadius = 5;
+	int HitProximityRadius = 1;
 	int ProximityHitsCounter = 0;
-	int ProximityHitsThreshold = 10;
+	int ProximityHitsThreshold = 50;
 
 	//loop through minProjections then loop through hits
 	//if proxthreshold is met, break the loop
@@ -772,6 +772,9 @@ for(auto projection1 : ProjectionMap){
 
     for(auto projection2 : ProjectionMap){
         currentShower = projection2.second;
+        if(currentShower == minProjectionVector){
+            continue;
+        }
         distanceProjectionToShower = std::sqrt(minProjectionVector.GetDistanceSquared(currentShower));
         if(distanceProjectionToShower <= HitProximityRadius){
             ProximityHitsCounter ++;
@@ -820,24 +823,27 @@ for(auto projection1 : ProjectionMap){
     showerStartCaloHitList.clear();
 
 	for(const CaloHit *const pShowerStartCaloHit3D : caloHitList){
-	
 		showerStartPCAProjection = centroid + (axisDirection * minProjectionValue);
-		showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
+        showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
 		totalQ += pShowerStartCaloHit3D->GetInputEnergy();	
-		
 		if(showerStartPCAProjection == showerStartCurrentHit){
-			continue;
+            continue;
 			}
-
-		hitPCAOpeningAngle = axisDirection.GetOpeningAngle(showerStartCurrentHit - showerStartPCAProjection);		
+        else{
+        CartesianVector input = showerStartCurrentHit - showerStartPCAProjection;
+            if(input.GetMagnitude() < 0.001){
+               continue;
+            }
+		hitPCAOpeningAngle = axisDirection.GetOpeningAngle(showerStartCurrentHit - showerStartPCAProjection);
 		distanceFromShowerStart = std::sqrt(showerStartCurrentHit.GetDistanceSquared(showerStartPCAProjection));
 		hitPositionAlongAxis = distanceFromShowerStart * (std::cos(hitPCAOpeningAngle));
-		hitPositionFromAxis = distanceFromShowerStart * std::sin(hitPCAOpeningAngle);		
+        hitPositionFromAxis = distanceFromShowerStart * std::sin(hitPCAOpeningAngle);		
+        }
 
-		if(hitPositionAlongAxis > 0 && hitPositionAlongAxis < showerStartLength && hitPositionFromAxis < showerStartWidth){
+        if(hitPositionAlongAxis > 0 && hitPositionAlongAxis < showerStartLength && hitPositionFromAxis < showerStartWidth){
 			showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
             shwrStartPointsRecoId.push_back(caloHitIndex);
-    
+        
 	       //Add positions of hits to a branch to look at later
 			shwrStartPointsX.push_back(showerStartCurrentHit.GetX());
             shwrStartPointsY.push_back(showerStartCurrentHit.GetY());
@@ -906,32 +912,38 @@ else{
 	for(unsigned int iTrackHit = 0; iTrackHit < showerFitTrackStateVector.size(); ++iTrackHit){
 		const lar_content::LArTrackState& showerFitTrackState = showerFitTrackStateVector.at(iTrackHit);
 		hitQ_Shower = showerFitTrackState.GetCaloHit()->GetInputEnergy();
+        std::cout << "Q Hit Energy" << hitQ_Shower << std::endl;
 		Q_ShowerVector.push_back(hitQ_Shower);
 		}
 
-	projectedShowerDir = std::sqrt(std::pow(showerFitTrackStateVector.front().GetDirection().GetY(), 2) + std::pow(showerFitTrackStateVector.front().GetDirection().GetZ(), 2));
-
+	projectedShowerDir = std::sqrt(std::pow(showerFitTrackStateVector.front().GetDirection().GetY(), 2) +
+            std::pow(showerFitTrackStateVector.front().GetDirection().GetZ(), 2));
+    
+    std::cout << "Projected Shower Dir" << projectedShowerDir << std::endl;
+ 
 if(projectedShowerDir == 0){
 	std::cout << "Pitch is calculated to be inf. dEdx calculation will be skipped." << std::endl;
 	shwrdEdx.push_back(-9999.);
 	}
 else{
-	cosgamma = showerFitTrackStateVector.front().GetDirection().GetZ() / projectedShowerDir;
-
+	cosgamma = std::abs(showerFitTrackStateVector.front().GetDirection().GetZ() / projectedShowerDir);
 		if(cosgamma == 0){
 			std::cout << "Pitch is calculated to be inf. dEdx calculation will be skipped." << std::endl;
 			shwrdEdx.push_back(-9999.);
 		}	
 		else{
 			pitch = parameters.pixelPitch/cosgamma;
-
+            std::cout << "Pitch" << pitch << std::endl;
 			if(pitch == 0){
 				std::cout << "Pitch is calculated to be 0. dEdx calculation will be skipped." << std::endl;
 				shwrdEdx.push_back(-9999.);
 			}
 			else{
-				double dQdx = TMath::Median(Q_ShowerVector.size(), &Q_ShowerVector[0]) / pitch;
-				shwrdEdx.push_back(dQdx);
+				double dQdx = (1000) * TMath::Median(Q_ShowerVector.size(), &Q_ShowerVector[0]) / pitch;
+                std::cout << "Total Charge dQdx = " << dQdx << std::endl;
+				double dEdx = dEdxWithRecombination(parameters, dQdx);
+                std::cout << "Total dEdx = " << dEdx << std::endl;
+                shwrdEdx.push_back(dEdx);
 				}	
 		}
 
