@@ -9,6 +9,8 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TMath.h"
+#include "TSpline.h"
+#include "TGraph.h"
 
 #include "TGeoBBox.h"
 #include "TGeoManager.h"
@@ -144,6 +146,50 @@ float dEdxWithRecombination(const ParameterStruct &parameters, const float input
   return dEdx_val;
 }
 
+float pFromRange_proton( const float inputRange )
+{
+  /// Set up the necessary pieces for proton momentum vs range spline: CSDA
+  /// Result from LArSoft -> LArReco -> TrackMomentumCalculator (v09_26_02)
+  float KE = 0.;
+  if (inputRange > 0 && inputRange <= 80)
+    KE = 29.9317 * std::pow(inputRange, 0.586304);
+  else if (inputRange > 80 && inputRange <= 3.022E3)
+    KE = 149.904 + (3.34146 * inputRange) + (-0.00318856 * inputRange * inputRange) +
+      (4.34587E-6 * inputRange * inputRange * inputRange) +
+      (-3.18146E-9 * inputRange * inputRange * inputRange * inputRange) +
+      (1.17854E-12 * inputRange * inputRange * inputRange * inputRange * inputRange) +
+      (-1.71763E-16 * inputRange * inputRange * inputRange * inputRange * inputRange * inputRange);
+  else
+    KE = -999;
+
+  // convert KE to Momentum
+  float massProton = 938.272;
+
+  if ( KE < 0 )
+    return 0.f;
+  return std::sqrt((KE * KE) + (2 * massProton * KE))/1000.;
+}
+
+float KEFromRange_proton( const float inputRange )
+{
+  // Same as above but just KE
+  float KE = 0.;
+  if (inputRange > 0 && inputRange <= 80)
+    KE = 29.9317 * std::pow(inputRange, 0.586304);
+  else if (inputRange > 80 && inputRange <= 3.022E3)
+    KE = 149.904 + (3.34146 * inputRange) + (-0.00318856 * inputRange * inputRange) +
+      (4.34587E-6 * inputRange * inputRange * inputRange) +
+      (-3.18146E-9 * inputRange * inputRange * inputRange * inputRange) +
+      (1.17854E-12 * inputRange * inputRange * inputRange * inputRange * inputRange) +
+      (-1.71763E-16 * inputRange * inputRange * inputRange * inputRange * inputRange * inputRange);
+  else
+    KE = -999;
+
+  if ( KE < 0 )
+    return 0.f;
+  return KE/1000.;
+}
+
 void ProcessPostReco(const ParameterStruct &parameters)
 {
   std::vector<float> posAnodes;
@@ -165,6 +211,24 @@ void ProcessPostReco(const ParameterStruct &parameters)
     posAnodes.push_back(-3.0652);
     posAnodes.push_back(-63.9273);
   }
+
+  /////////////////////////////////////////////////////////
+  /// Set up the necessary pieces for muon momentum vs range spline: CSDA
+  /// copied from LArSoft -> LArReco -> TrackMomentumCalculator
+  ///   v09_26_02
+  std::array<float, 29> Range_grampercm2{
+    {9.833E-1, 1.786E0, 3.321E0, 6.598E0, 1.058E1, 3.084E1, 4.250E1, 6.732E1, 1.063E2, 1.725E2,
+     2.385E2,  4.934E2, 6.163E2, 8.552E2, 1.202E3, 1.758E3, 2.297E3, 4.359E3, 5.354E3, 7.298E3,
+     1.013E4,  1.469E4, 1.910E4, 3.558E4, 4.326E4, 5.768E4, 7.734E4, 1.060E5, 1.307E5}};
+  for (float& value : Range_grampercm2) {
+    value /= 1.396; // convert to cm
+  }
+  constexpr std::array<float, 29> KE_MeV{
+    {10,    14,    20,    30,    40,     80,     100,    140,    200,   300,
+     400,   800,   1000,  1400,  2000,   3000,   4000,   8000,   10000, 14000,
+     20000, 30000, 40000, 80000, 100000, 140000, 200000, 300000, 400000}};
+  TGraph const KEvsR{29, Range_grampercm2.data(), KE_MeV.data()};
+  TSpline3 const KEvsR_spline3_muon{"KEvsRS", &KEvsR};
 
   /////////////////////////////////////////////////////////
 
@@ -203,7 +267,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
     // Track fit vectors of importance
     std::vector<float> trkStartX, trkStartY, trkStartZ, trkEndX, trkEndY, trkEndZ;
     std::vector<float> trkStartDirX, trkStartDirY, trkStartDirZ, trkEndDirX, trkEndDirY, trkEndDirZ;
-    std::vector<float> trkLen;
+    std::vector<float> trkLen, trk_KEFromLength_muon, trk_KEFromLength_proton, trk_pFromLength_muon, trk_pFromLength_proton;
+
+    // Track fit calo vectors of importance
+    std::vector<float> trackFitTrackCaloE;
 
     // Track fit POINT values
     std::vector<int> trackFitSliceId, trackFitPfoId;
@@ -498,6 +565,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
           trkEndDirY.push_back(0.);
           trkEndDirZ.push_back(0.);
 	  trkLen.push_back(0.);
+	  trackFitTrackCaloE.push_back(0.);
+	  trk_KEFromLength_muon.push_back(0.);
+	  trk_KEFromLength_proton.push_back(0.);
+	  trk_pFromLength_muon.push_back(0.);
+	  trk_pFromLength_proton.push_back(0.);
 	}
 	else {
 	  const lar_content::LArTrackState& trackStateStart =
@@ -538,9 +610,28 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	  }
 	  trkLen.push_back(trklength);
 
+	  // Track momentum from range:
+	  trk_KEFromLength_proton.push_back( KEFromRange_proton(trklength) );
+	  trk_pFromLength_proton.push_back( pFromRange_proton(trklength) );
+	  float KEFromLength_muon = KEvsR_spline3_muon.Eval(trklength);
+	  if (KEFromLength_muon > 0.) {
+	    trk_KEFromLength_muon.push_back( KEFromLength_muon/1000. );
+	    trk_pFromLength_muon.push_back( std::sqrt((KEFromLength_muon * KEFromLength_muon) + (2 * 105.7 * KEFromLength_muon))/1000. );
+	  }
+	  else {
+	    trk_KEFromLength_muon.push_back( 0. );
+	    trk_pFromLength_muon.push_back( 0. );
+	  }
+
 	  // Track calorimetry --> very rough first pass basically reimplemented from other test branch:
 	  // ! Consider the first and last points, but here we only have one side of dx
-	  // ! Does not do any lifetime, spacecharge, diffusion, etc. corrections at least yet
+	  // ! Does not do spacecharge, diffusion, etc. corrections at least yet
+	  float summedTrkE = 0.;
+
+	  // If we aren't going to do the track calorimetry, then say the track caloE = 0
+          if ( !(trackStateVector_out.size() >= minTrajectoryPoints) )
+            trackFitTrackCaloE.push_back(0.);
+
 	  if ( trackStateVector_out.size() >= minTrajectoryPoints ) {
 	    float lengthSoFar = 0.;
 	    for (unsigned int idxPt=0; idxPt < trackStateVector_out.size(); ++idxPt ) {
@@ -599,7 +690,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	      trackVecDEDX.push_back(hitdEdx);
 	      trackVecRR.push_back(hitRR);
 
+	      summedTrkE+=hitdEdx*hitdx; // sum up the energy along the track
+
 	    } // loop points
+	    // And now that we have dE/dx for all points, we can use the sum of that all to get the track calo E
+	    trackFitTrackCaloE.push_back(summedTrkE);
 
 	    // Particle ID here
 	    if ( parameters.fShouldRunPID ) {
@@ -614,7 +709,12 @@ void ProcessPostReco(const ParameterStruct &parameters)
 		for ( unsigned int idxCaloPt=0; idxCaloPt < trackVecDEDX.size(); ++idxCaloPt ) {
 		  if ( idxCaloPt == 0 || idxCaloPt == trackVecDEDX.size()-1 ) continue; // ignore 1st and last point
 		  if ( trackVecDEDX[idxCaloPt] > 1000. ) continue; // ignore if too high dEdx
-		  if ( parameters.fChi2RestrictDX && ( trackVecDX[idxCaloPt] < 0.35 || trackVecDX[idxCaloPt] > 0.55 ) ) continue; // optionally skip this point if dx too small/large
+		  if ( trackVecDEDX[idxCaloPt] < parameters.fChi2RestrictDEDXLo ) continue; // also, optionally restrict unexpected low dE/dx. By default just requires it to be positive.
+		  if ( parameters.fChi2RestrictDX && 
+		       ( trackVecDX[idxCaloPt] < parameters.fChi2RestrictDXLo || 
+			 (parameters.fChi2RestrictDXHi > 0. && trackVecDX[idxCaloPt] > parameters.fChi2RestrictDXHi) ) ) {
+		    continue; // optionally skip this point if dx too small/large
+		  }
 		  int bin = parameters.templatesdEdxRR.at("proton")->FindBin(trackVecRR[idxCaloPt]);
 		  if ( bin >= 1 && bin <= nbins_dedx_range ) {
 		    // Content
@@ -702,8 +802,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
     } // loop particles
 
     if ( parameters.runTrackFit ) {
-      fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen);
-      fOut.FillTrackCaloBranches(trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
+      fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen,
+			     trk_KEFromLength_muon,trk_KEFromLength_proton,trk_pFromLength_muon,trk_pFromLength_proton);
+      fOut.FillTrackCaloBranches(trackFitTrackCaloE,trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
       if ( parameters.fShouldRunPID ) fOut.FillTrackPID(pid_pdg,pid_ndf,pid_muScore,pid_piScore,pid_kScore,pid_proScore);
     }
 
@@ -821,6 +922,9 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunPID", parameters.fShouldRunPID) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "PIDAlgChi2PID", parameters.fPIDAlgChi2PID) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Chi2RestrictDX", parameters.fChi2RestrictDX) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Chi2RestrictDXLo", parameters.fChi2RestrictDXLo) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Chi2RestrictDXHi", parameters.fChi2RestrictDXHi) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Chi2RestrictDEDXLo", parameters.fChi2RestrictDEDXLo) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "dEdxResTempFile", parameters.fdEdxResTempFile) );
 
     if ( parameters.fShouldRunPID && parameters.fPIDAlgChi2PID ) {
