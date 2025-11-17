@@ -34,7 +34,14 @@ public:
     MasterThreeDAlgorithm() = default;
 
 protected:
-    pandora::StatusCode Run();
+    pandora::StatusCode Run() override;
+
+    /**
+     *  @brief  Run cosmic-ray hit removal, freeing hits in ambiguous pfos for further processing
+     *
+     *  @param  ambiguousPfos the list of ambiguous cosmic-ray pfos
+     */
+    pandora::StatusCode RunCosmicRayHitRemoval(const pandora::PfoList &ambiguousPfos) const;
 
     /**
      *  @brief  Run the event slicing procedures, dividing available hits up into distinct 3D regions
@@ -45,6 +52,16 @@ protected:
      *  @return whether slicing could be run
      */
     pandora::StatusCode RunSlicing(const VolumeIdToHitListMap &volumeIdToHitListMap, SliceVector &sliceVector) const;
+
+    /**
+     *  @brief  Recreate a specified pfo in the current pandora instance
+     *
+     *  @param  pInputPfo the input pfo
+     *  @param  pNewParentPfo the new parent of the new output pfo (nullptr if none)
+     *  @param  newPfoList to receive the list of new pfos
+     */
+    pandora::StatusCode Recreate(const pandora::ParticleFlowObject *const pInputPfo, const pandora::ParticleFlowObject *const pNewParentPfo,
+        pandora::PfoList &newPfoList) const override;
 
     /**
      *  @brief  Create a pandora worker instance to handle a single LArTPC
@@ -86,7 +103,7 @@ protected:
      */
     pandora::StatusCode GetVolumeIdToHitListMap(VolumeIdToHitListMap &volumeIdToHitListMap) const;
 
-    pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
+    pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle) override;
 };
 
 } // namespace lar_content
