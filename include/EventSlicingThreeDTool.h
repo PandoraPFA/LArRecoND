@@ -13,6 +13,7 @@
 
 #include "LArSlice3D.h"
 #include "SlicingThreeDAlgorithm.h"
+#include "EventSlicingThreeDBaseTool.h"
 
 #include "larpandoracontent/LArObjects/LArPointingCluster.h"
 #include "larpandoracontent/LArObjects/LArThreeDSlidingConeFitResult.h"
@@ -34,7 +35,7 @@ class SimpleCone;
 /**
  *  @brief  EventSlicingThreeDTool class
  */
-class EventSlicingThreeDTool : public pandora::AlgorithmTool
+class EventSlicingThreeDTool : public EventSlicingThreeDBaseTool
 {
 public:
     /**

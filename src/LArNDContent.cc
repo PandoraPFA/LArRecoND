@@ -12,6 +12,11 @@
 #include "Pandora/AlgorithmTool.h"
 #include "Pandora/Pandora.h"
 
+#include "CheatingEventSlicingThreeDTool.h"
+#include "CheatingRockMuonRemovalAlgorithm.h"
+#include "CheatingRockMuonTaggingTool.h"
+#include "CheatingStitchingTool.h"
+
 #include "CandidateVertexCreationThreeDAlgorithm.h"
 #include "CreateTwoDClustersFromThreeDAlgorithm.h"
 #include "CutClusterCharacterisationThreeDAlgorithm.h"
@@ -38,10 +43,14 @@
     d("LArPreProcessingThreeD",                 PreProcessingThreeDAlgorithm)                                                      \
     d("LArCutClusterCharacterisationThreeD",    CutClusterCharacterisationThreeDAlgorithm)                                         \
     d("LArCandidateVertexCreationThreeD",       CandidateVertexCreationThreeDAlgorithm)                                            \
-    d("LArHierarchyAnalysis",                   HierarchyAnalysisAlgorithm)
+    d("LArHierarchyAnalysis",                   HierarchyAnalysisAlgorithm)                                                        \
+    d("LArCheatingRockMuonRemoval",             CheatingRockMuonRemovalAlgorithm)
 
 #define LAR_ND_ALGORITHM_TOOL_LIST(d)                                                                                              \
     d("LArEventSlicingThreeD",                  EventSlicingThreeDTool)                                                            \
+    d("LArCheatingEventSlicingThreeD",          CheatingEventSlicingThreeDTool)                                                    \
+    d("LArCheatingStitching",                   CheatingStitchingTool)                                                             \
+    d("LArCheatingRockMuonTagging",             CheatingRockMuonTaggingTool)
 
 #define FACTORY Factory
 
