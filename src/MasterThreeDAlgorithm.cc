@@ -39,6 +39,7 @@ namespace lar_content
 
 StatusCode MasterThreeDAlgorithm::Run()
 {
+
     std::cout << "Should run slicing? " << m_shouldRunSlicing << std::endl;
 
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Reset());
@@ -60,8 +61,9 @@ StatusCode MasterThreeDAlgorithm::Run()
         PfoToLArTPCMap pfoToLArTPCMap;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RecreateCosmicRayPfos(pfoToLArTPCMap));
 
-        if (m_shouldRunStitching)
-            PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->StitchCosmicRayPfos(pfoToLArTPCMap, stitchedPfosToX0Map));
+        if (m_shouldRunStitching){
+          PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->StitchCosmicRayPfos(pfoToLArTPCMap, stitchedPfosToX0Map));
+        }
     }
 
     if (m_shouldRunCosmicHitRemoval)
@@ -128,7 +130,6 @@ StatusCode MasterThreeDAlgorithm::RunCosmicRayHitRemoval(const PfoList &ambiguou
 
 StatusCode MasterThreeDAlgorithm::RunSlicing(const VolumeIdToHitListMap &volumeIdToHitListMap, SliceVector &sliceVector) const
 {
-    std::cout << "There are " << volumeIdToHitListMap.size() << " volumes" << std::endl;
     for (const VolumeIdToHitListMap::value_type &mapEntry : volumeIdToHitListMap)
     {
         std::cout << "- Volume has " << mapEntry.second.m_allHitList.size() << " hits" << std::endl;
