@@ -225,13 +225,13 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
     std::vector<int> shwrSliceId, shwrClusterId;
 
-    std::vector<float> startTrkSlidingFitDirX,  startTrkSlidingFitDirY,  startTrkSlidingFitDirZ;  
-    std::vector<float> startTrkPCADirX, startTrkPCADirY, startTrkPCADirZ;  
+    std::vector<float> startTrkSlidingFitDirX,  startTrkSlidingFitDirY,  startTrkSlidingFitDirZ;    
     std::vector<float> shwrStartPointsX, shwrStartPointsY, shwrStartPointsZ;
     std::vector<double> shwrdEdx;
     std::vector<float> shwrTotalE;
     std::vector<int> shwrStartPointsRecoId;
-    std::vector<float> minProjection;
+    std::vector<float> minProjection, medianQ, chargePerHit, chargePerHitStartPoints, pitchValue;
+    std::vector<float> shwrPCAX, shwrPCAY, shwrPCAZ;
     std::vector<float> shwrStartHitPositionX, shwrStartHitPositionY, shwrStartHitPositionZ;
 
     // Loop particles in the event
@@ -773,10 +773,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
     CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f, 0.f, 0.f);
     float hit_i_proj(9999);
 
-    int hitProximityRadius = 2;
+    int hitProximityRadius = 4;
     int proximityHitsCounter;
     float hit_i_j_dist;
-    int proximityHitsThreshold = 15;
+    int proximityHitsThreshold = 10;
 
     for(auto iMapEntry: projectionMap){
         proximityHitsCounter = 0;
@@ -832,7 +832,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
 	float showerStartX, showerStartY, showerStartZ;
 
-	int showerStartLength = 7;
+	int showerStartLength = 5;
 	int showerStartWidth = 4;
 
 
@@ -849,6 +849,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
     CartesianVector showerDirection = (centroid - showerStartHitPos);
     showerDirection = showerDirection.GetUnitVector();
 
+    shwrPCAX.push_back(axisDirection.GetX());
+    shwrPCAY.push_back(axisDirection.GetY());
+    shwrPCAZ.push_back(axisDirection.GetZ());
+    
     shwrDirX.push_back(showerDirection.GetX());
     shwrDirY.push_back(showerDirection.GetY());
     shwrDirZ.push_back(showerDirection.GetZ());
@@ -879,7 +883,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
 		showerStartPCAProjection = centroid + ( showerDirection * showerStartHitProjectionValue);
         showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
 		totalQ += pShowerStartCaloHit3D->GetInputEnergy();	
-		if(showerStartPCAProjection == showerStartCurrentHit){
+		chargePerHit.push_back(pShowerStartCaloHit3D->GetInputEnergy());
+        if(showerStartPCAProjection == showerStartCurrentHit){
             continue;
 			}
         else{
@@ -895,8 +900,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
         if(hitPositionAlongAxis > 0 && hitPositionAlongAxis < showerStartLength && hitPositionFromAxis < showerStartWidth){
 			showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
-            shwrStartPointsRecoId.push_back(caloHitIndex);
-        
+            shwrStartPointsRecoId.push_back(clusterID);
+            
+            chargePerHitStartPoints.push_back(pShowerStartCaloHit3D->GetInputEnergy());
 	       //Add positions of hits to a branch to look at later
 			shwrStartPointsX.push_back(showerStartCurrentHit.GetX());
             shwrStartPointsY.push_back(showerStartCurrentHit.GetY());
@@ -908,10 +914,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
 			continue;
 			}	
 
-	}	
-    if(showerStartCaloHitList.size() < 1){
-    shwrStartPointsRecoId.push_back(9999);
-    }
+	}
+    
+
 
    	std::cout << "Reco Hit List Size " << showerStartCaloHitList.size() << std::endl; 
 	shwrTotalE.push_back(totalQ);
@@ -922,13 +927,12 @@ void ProcessPostReco(const ParameterStruct &parameters)
 		startTrkSlidingFitDirX.push_back(-9999.);
         startTrkSlidingFitDirY.push_back(-9999.);
         startTrkSlidingFitDirZ.push_back(-9999.);
-	
-		startTrkPCADirX.push_back(-9999.);
-		startTrkPCADirY.push_back(-9999.);
-		startTrkPCADirZ.push_back(-9999.);
+
 
         shwrdEdx.push_back(-9999.);
-		continue;
+		pitchValue.push_back(-9999.);
+        medianQ.push_back(-9999.);
+        continue;
 		}
 
 	else{
@@ -949,8 +953,9 @@ std::cout << "TRACK STATE FAILED " << " Event is: " << entryIdx << "Slice: "<< s
         startTrkSlidingFitDirZ.push_back(-9999.);
 	
 	shwrdEdx.push_back(-9999.);
-	
-	}
+	pitchValue.push_back(-9999.);
+    medianQ.push_back(-9999.);	
+}
 
 else{
 
@@ -979,47 +984,41 @@ else{
 if(projectedShowerDir == 0){
 	std::cout << "Pitch is calculated to be inf. dEdx calculation will be skipped." << std::endl;
 	shwrdEdx.push_back(-9999.);
-	}
+	pitchValue.push_back(-9999.);
+    medianQ.push_back(-9999.);
+}
 else{
 	cosgamma = std::abs(showerFitTrackStateVector.front().GetDirection().GetZ() / projectedShowerDir);
 		if(cosgamma == 0){
 			std::cout << "Pitch is calculated to be inf. dEdx calculation will be skipped." << std::endl;
 			shwrdEdx.push_back(-9999.);
-		}	
+		    pitchValue.push_back(-9999.);
+            medianQ.push_back(-9999.);
+        }	
 		else{
 			pitch = parameters.pixelPitch/cosgamma;
-            std::cout << "Pitch" << pitch << std::endl;
-			if(pitch == 0){
+            if(pitch == 0){
 				std::cout << "Pitch is calculated to be 0. dEdx calculation will be skipped." << std::endl;
 				shwrdEdx.push_back(-9999.);
-			}
+			    pitchValue.push_back(-9999.);
+                medianQ.push_back(-9999.);
+            }
 			else{
-				double dQdx = (1000) * TMath::Median(Q_ShowerVector.size(), &Q_ShowerVector[0]) / pitch;
-                //std::cout << "Total Charge dQdx = " << dQdx << std::endl;
-				double dEdx = dEdxWithRecombination(parameters, dQdx);
-                //std::cout << "Total dEdx = " << dEdx << std::endl;
+				double Q = TMath::Median(Q_ShowerVector.size(), &Q_ShowerVector[0]);
+                double dQdx =  Q / pitch;
+                std::cout << "Uncalibrated dQdx = " << dQdx << std::endl;
+                double dQdx_Calibrated = dQdx*(1000);
+                std::cout << "Calibrated dQdx = " << dQdx_Calibrated << std::endl;
+				double dEdx = dEdxWithRecombination(parameters, dQdx_Calibrated);
+                std::cout << "Total dEdx = " << dEdx << std::endl;
                 shwrdEdx.push_back(dEdx);
-				}	
+				pitchValue.push_back(pitch);
+                medianQ.push_back(Q);
+            }	
 		}
 
-	}
-}	
-//PCA of beginning points
-//
-
- //Begin Defining Shower Direction Through a PCA
- CartesianVector centroidShowerStart(0.f, 0.f, 0.f);
- lar_content::LArPcaHelper::EigenVectors eigenVecsShowerStart;
- lar_content::LArPcaHelper::EigenValues eigenValuesShowerStart(0.f, 0.f, 0.f);
- lar_content::LArPcaHelper::RunPca(showerStartCaloHitList, centroidShowerStart, eigenValuesShowerStart, eigenVecsShowerStart);
-
-//Define directions to be positive
- const CartesianVector axisDirectionShowerStart(eigenVecsShowerStart.at(0).GetZ() > 0.f ? eigenVecsShowerStart.at(0) : eigenVecsShowerStart.at(0) * -1.f);
- 
- 	    startTrkPCADirX.push_back(axisDirectionShowerStart.GetX());
-        startTrkPCADirY.push_back(axisDirectionShowerStart.GetY());
-        startTrkPCADirZ.push_back(axisDirectionShowerStart.GetZ());
-
+    }
+}
 
 }
 
@@ -1035,8 +1034,10 @@ else{
     }
    if ( parameters.runShowerFit){
      fOut.FillShowerBranches(shwrCentroidX,shwrCentroidY,shwrCentroidZ,shwrStartX, shwrStartY, shwrStartZ, shwrDirX, shwrDirY, shwrDirZ, shwrLen, 
-             shwrSliceId, shwrClusterId, startTrkSlidingFitDirX, startTrkSlidingFitDirY, startTrkSlidingFitDirZ, startTrkPCADirX, startTrkPCADirY, startTrkPCADirZ, 
+             shwrSliceId, shwrClusterId, startTrkSlidingFitDirX, startTrkSlidingFitDirY, startTrkSlidingFitDirZ,
              shwrStartPointsX, shwrStartPointsY, shwrStartPointsZ, shwrdEdx, shwrTotalE, shwrStartPointsRecoId, minProjection, 
+             medianQ,chargePerHit, chargePerHitStartPoints, pitchValue,
+             shwrPCAX, shwrPCAY, shwrPCAZ,
              shwrStartHitPositionX, shwrStartHitPositionY, shwrStartHitPositionZ);
 }
 
