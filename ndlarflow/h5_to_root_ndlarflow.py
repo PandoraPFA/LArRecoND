@@ -329,7 +329,7 @@ def main(argv=None):
                     particleIDLocal = all_segments['traj_id'][segments_where].astype('int64')
                     interactionIndex = all_segments['vertex_id'][segments_where].astype('int64')
                 else:
-                    matches = np.array( [0] ).astype('uint16')
+                    matches = np.zeros( len(hits_z), dtype='uint16')
                     packetFrac = np.array( [] ).astype('float32')
                     pdgHit = np.array( [] ).astype('int32')
                     trackID = np.array( [] ).astype('int64')
