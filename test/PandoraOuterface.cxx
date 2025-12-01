@@ -105,6 +105,25 @@ float LifetimeCorrectionFactor(const std::vector<float> &detAnodes, const float 
   return TMath::Exp(tDrift/lifetime);
 }
 
+float eVisWithRecombination(const ParameterStruct &parameters, const float inputQ)
+{
+  const float wIon = 23.6/1.0e6; // MeV/e-, a hard-coded for now value used later
+
+  // MIP Recombination with the Q->E calculation as in FLOW file
+  // see e.g. https://github.com/DUNE/ndlar_flow/blob/develop/src/proto_nd_flow/reco/charge/calib_prompt_hits.py#L289
+  float dEdxMIP = 2.; // MeV/cm (using the value in above line)
+  float recomb = 1.;
+  if ( parameters.fBoxRecombination ) {
+    float csi = parameters.fBoxBeta * dEdxMIP / (parameters.fEField * parameters.fDensity);
+    recomb = TMath::Log(parameters.fBoxAlpha + csi)/csi;
+  }
+  else if ( parameters.fBirksRecombination ) {
+    recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdxMIP / (parameters.fEField * parameters.fDensity) );
+  }
+
+  return inputQ * wIon / recomb;
+}
+
 float dEdxWithRecombination(const ParameterStruct &parameters, const float inputdQdx)
 {
   float dEdx_val = 0.;
@@ -193,6 +212,9 @@ float KEFromRange_proton( const float inputRange )
 void ProcessPostReco(const ParameterStruct &parameters)
 {
   std::vector<float> posAnodes;
+  std::vector<float> xBoundaries;
+  std::vector<float> yBoundaries;
+  std::vector<float> zBoundaries;
   if ( parameters.fDetector == 0 ) {
     // NDLAr anodes
     posAnodes.push_back(-50.);
@@ -203,6 +225,13 @@ void ProcessPostReco(const ParameterStruct &parameters)
     posAnodes.push_back(150.);
     posAnodes.push_back(250.);
     posAnodes.push_back(350.);
+    // NDLAr edges
+    xBoundaries.push_back(-350.);
+    xBoundaries.push_back(350.);
+    zBoundaries.push_back(418.);
+    zBoundaries.push_back(913.);
+    yBoundaries.push_back(-216.);
+    yBoundaries.push_back(82.);
   }
   else if ( parameters.fDetector == 1 ) {
     // 2x2 anodes
@@ -210,6 +239,13 @@ void ProcessPostReco(const ParameterStruct &parameters)
     posAnodes.push_back(63.9273);
     posAnodes.push_back(-3.0652);
     posAnodes.push_back(-63.9273);
+    // 2x2 edges
+    xBoundaries.push_back(-63.9273);
+    xBoundaries.push_back(63.9273);
+    zBoundaries.push_back(-63.9273);
+    zBoundaries.push_back(63.9273);
+    yBoundaries.push_back(-63.9273);
+    yBoundaries.push_back(63.9273);
   }
 
   /////////////////////////////////////////////////////////
@@ -268,9 +304,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
     std::vector<float> trkStartX, trkStartY, trkStartZ, trkEndX, trkEndY, trkEndZ;
     std::vector<float> trkStartDirX, trkStartDirY, trkStartDirZ, trkEndDirX, trkEndDirY, trkEndDirZ;
     std::vector<float> trkLen, trk_KEFromLength_muon, trk_KEFromLength_proton, trk_pFromLength_muon, trk_pFromLength_proton;
+    std::vector<bool> trkContained;
 
     // Track fit calo vectors of importance
-    std::vector<float> trackFitTrackCaloE;
+    std::vector<float> trackFitTrackCaloE, trackFitVisE;
 
     // Track fit POINT values
     std::vector<int> trackFitSliceId, trackFitPfoId;
@@ -565,7 +602,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
           trkEndDirY.push_back(0.);
           trkEndDirZ.push_back(0.);
 	  trkLen.push_back(0.);
+	  trkContained.push_back(false);
 	  trackFitTrackCaloE.push_back(0.);
+	  trackFitVisE.push_back(0.);
 	  trk_KEFromLength_muon.push_back(0.);
 	  trk_KEFromLength_proton.push_back(0.);
 	  trk_pFromLength_muon.push_back(0.);
@@ -592,6 +631,23 @@ void ProcessPostReco(const ParameterStruct &parameters)
           trkEndDirX.push_back(trackStateEnd.GetDirection().GetX());
           trkEndDirY.push_back(trackStateEnd.GetDirection().GetY());
           trkEndDirZ.push_back(trackStateEnd.GetDirection().GetZ());
+
+	  // is the track contained?
+	  bool thisTrackContained = true;
+	  if      ( trackStateStart.GetPosition().GetX() < xBoundaries[0]+5. ) thisTrackContained = false;
+	  else if ( trackStateStart.GetPosition().GetX() > xBoundaries[1]-5. ) thisTrackContained = false;
+	  else if ( trackStateStart.GetPosition().GetY() < yBoundaries[0]+5. ) thisTrackContained = false;
+          else if ( trackStateStart.GetPosition().GetY() > yBoundaries[1]-5. ) thisTrackContained = false;
+	  else if ( trackStateStart.GetPosition().GetZ() < zBoundaries[0]+5. ) thisTrackContained = false;
+          else if ( trackStateStart.GetPosition().GetZ() > zBoundaries[1]-5. ) thisTrackContained = false;
+	  else if ( trackStateEnd.GetPosition().GetX() < xBoundaries[0]+5. ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetX() > xBoundaries[1]-5. ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetY() < yBoundaries[0]+5. ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetY() > yBoundaries[1]-5. ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetZ() < zBoundaries[0]+5. ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetZ() > zBoundaries[1]-5. ) thisTrackContained = false;
+	  trkContained.push_back(thisTrackContained);
+
 	  float trklength = 0.;
 	  // Get the length going point to point
 	  if ( parameters.useVoxelizedStartStop && (trackStateSuccess_v2 && trackStateVector_out.size() >= minTrajectoryPoints) ) {
@@ -627,10 +683,13 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	  // ! Consider the first and last points, but here we only have one side of dx
 	  // ! Does not do spacecharge, diffusion, etc. corrections at least yet
 	  float summedTrkE = 0.;
+	  float summedQinTrk = 0.;
 
 	  // If we aren't going to do the track calorimetry, then say the track caloE = 0
-          if ( !(trackStateVector_out.size() >= minTrajectoryPoints) )
+          if ( !(trackStateVector_out.size() >= minTrajectoryPoints) ) {
             trackFitTrackCaloE.push_back(0.);
+	    trackFitVisE.push_back(0.);
+	  }
 
 	  if ( trackStateVector_out.size() >= minTrajectoryPoints ) {
 	    float lengthSoFar = 0.;
@@ -669,8 +728,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	      float hitdQdx = hitdx > 0. ? hitQ/hitdx : -5.f;
 
 	      // Lifetime correction
-	      if ( parameters.fShouldCorrectLifetime )
+	      if ( parameters.fShouldCorrectLifetime ) {
 		hitdQdx*=( 1000. * LifetimeCorrectionFactor(posAnodes, trackState.GetPosition().GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed) ); // turn ke- to e- and do lifetime correction
+		summedQinTrk += ( 1000. * hitQ * LifetimeCorrectionFactor(posAnodes, trackState.GetPosition().GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed) );
+	      }
 	      // Recombination correction
 	      float hitdEdx = dEdxWithRecombination(parameters, hitdQdx);
 
@@ -695,6 +756,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	    } // loop points
 	    // And now that we have dE/dx for all points, we can use the sum of that all to get the track calo E
 	    trackFitTrackCaloE.push_back(summedTrkE);
+	    // And calculate the total VisE for the track:
+	    trackFitVisE.push_back( eVisWithRecombination(parameters, summedQinTrk) );
 
 	    // Particle ID here
 	    if ( parameters.fShouldRunPID ) {
@@ -802,9 +865,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
     } // loop particles
 
     if ( parameters.runTrackFit ) {
-      fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen,
+      fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen,trkContained,
 			     trk_KEFromLength_muon,trk_KEFromLength_proton,trk_pFromLength_muon,trk_pFromLength_proton);
-      fOut.FillTrackCaloBranches(trackFitTrackCaloE,trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
+      fOut.FillTrackCaloBranches(trackFitTrackCaloE,trackFitVisE,trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
       if ( parameters.fShouldRunPID ) fOut.FillTrackPID(pid_pdg,pid_ndf,pid_muScore,pid_piScore,pid_kScore,pid_proScore);
     }
 

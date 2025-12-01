@@ -189,9 +189,9 @@ class NDRecoOutputData
 			  const std::vector<float> &dirX,  const std::vector<float> &dirY,  const std::vector<float> &dirZ,
 			  const std::vector<float> &endX, const std::vector<float> &endY, const std::vector<float> &endZ,
                           const std::vector<float> &enddirX,  const std::vector<float> &enddirY,  const std::vector<float> &enddirZ,
-			  const std::vector<float> &length, const std::vector<float> &keFromRangeMu, const std::vector<float> &keFromRangeP,
+			  const std::vector<float> &length, const std::vector<bool> &trkCont, const std::vector<float> &keFromRangeMu, const std::vector<float> &keFromRangeP,
 			  const std::vector<float> &pFromRangeMu, const std::vector<float> &pFromRangeP ); ///< Fill the track fit result branches
-  void FillTrackCaloBranches( const std::vector<float> &tfCaloE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
+  void FillTrackCaloBranches( const std::vector<float> &tfCaloE, const std::vector<float> &tfVisE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
 			      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
 			      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx, const std::vector<float> &tfdEdx );
   void FillTrackPID( const std::vector<int> &pidPDG, const std::vector<int> &pidNDF, const std::vector<float> &pidMu, const std::vector<float> &pidPi,
@@ -286,11 +286,13 @@ class NDRecoOutputData
   std::vector<float> m_out_trkfitEndDirY;
   std::vector<float> m_out_trkfitEndDirZ;
   std::vector<float> m_out_trkfitLength;
+  std::vector<bool> m_out_trkfitContained;
   std::vector<float> m_out_KEFromLengthMuon;
   std::vector<float> m_out_KEFromLengthProton;
   std::vector<float> m_out_pFromLengthMuon;
   std::vector<float> m_out_pFromLengthProton;
   std::vector<float> m_out_trkfitTrackCaloE;
+  std::vector<float> m_out_trkfitVisE;
   std::vector<int> m_out_trkfitSliceId;
   std::vector<int> m_out_trkfitPfoId;
   std::vector<float> m_out_trkfitX;
@@ -403,6 +405,7 @@ class NDRecoOutputData
      m_treeOut->Branch("trkfitEndDirY", &m_out_trkfitEndDirY);
      m_treeOut->Branch("trkfitEndDirZ", &m_out_trkfitEndDirZ);
      m_treeOut->Branch("trkfitLength", &m_out_trkfitLength);
+     m_treeOut->Branch("trkfitContained", &m_out_trkfitContained);
      m_treeOut->Branch("trkfitKEFromLengthMuon", &m_out_KEFromLengthMuon);
      m_treeOut->Branch("trkfitKEFromLengthProton", &m_out_KEFromLengthProton);
      m_treeOut->Branch("trkfitPFromLengthMuon", &m_out_pFromLengthMuon);
@@ -417,6 +420,7 @@ class NDRecoOutputData
        m_treeOut->Branch("trkfitPID_Pro", &m_out_pid_pro);
      }
      m_treeOut->Branch("trkfitTrackCaloE", &m_out_trkfitTrackCaloE);
+     m_treeOut->Branch("trkfitVisE", &m_out_trkfitVisE);
      m_treeOut->Branch("trkfitSliceId", &m_out_trkfitSliceId);
      m_treeOut->Branch("trkfitPfoId", &m_out_trkfitPfoId);
      m_treeOut->Branch("trkfitX", &m_out_trkfitX);
@@ -516,11 +520,13 @@ class NDRecoOutputData
    m_out_trkfitEndDirY.clear();
    m_out_trkfitEndDirZ.clear();
    m_out_trkfitLength.clear();
+   m_out_trkfitContained.clear();
    m_out_KEFromLengthMuon.clear();
    m_out_KEFromLengthProton.clear();
    m_out_pFromLengthMuon.clear();
    m_out_pFromLengthProton.clear();
    m_out_trkfitTrackCaloE.clear();
+   m_out_trkfitVisE.clear();
    m_out_trkfitSliceId.clear();
    m_out_trkfitPfoId.clear();
    m_out_trkfitX.clear();
@@ -631,7 +637,7 @@ class NDRecoOutputData
 					   const std::vector<float> &dirX,  const std::vector<float> &dirY,  const std::vector<float> &dirZ,
 					   const std::vector<float> &endX, const std::vector<float> &endY, const std::vector<float> &endZ,
 					   const std::vector<float> &enddirX,  const std::vector<float> &enddirY,  const std::vector<float> &enddirZ,
-					   const std::vector<float> &length, const std::vector<float> &keFromRangeMu, const std::vector<float> &keFromRangeP,
+					   const std::vector<float> &length, const std::vector<bool> &trkCont, const std::vector<float> &keFromRangeMu, const std::vector<float> &keFromRangeP,
 					   const std::vector<float> &pFromRangeMu, const std::vector<float> &pFromRangeP )
  {
    m_out_trkfitStartX.insert( m_out_trkfitStartX.end(), startX.begin(), startX.end() );
@@ -647,18 +653,20 @@ class NDRecoOutputData
    m_out_trkfitEndDirY.insert( m_out_trkfitEndDirY.end(), enddirY.begin(), enddirY.end() );
    m_out_trkfitEndDirZ.insert( m_out_trkfitEndDirZ.end(), enddirZ.begin(), enddirZ.end() );
    m_out_trkfitLength.insert( m_out_trkfitLength.end(), length.begin(), length.end() );
+   m_out_trkfitContained.insert( m_out_trkfitContained.end(), trkCont.begin(), trkCont.end() );
    m_out_KEFromLengthMuon.insert( m_out_KEFromLengthMuon.end(), keFromRangeMu.begin(), keFromRangeMu.end() );
    m_out_KEFromLengthProton.insert( m_out_KEFromLengthProton.end(), keFromRangeP.begin(), keFromRangeP.end() );
    m_out_pFromLengthMuon.insert( m_out_pFromLengthMuon.end(), pFromRangeMu.begin(), pFromRangeMu.end() );
    m_out_pFromLengthProton.insert( m_out_pFromLengthProton.end(), pFromRangeP.begin(), pFromRangeP.end() );
  }
 
-void NDRecoOutputData::FillTrackCaloBranches( const std::vector<float> &tfCaloE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
+void NDRecoOutputData::FillTrackCaloBranches( const std::vector<float> &tfCaloE, const std::vector<float> &tfVisE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
 					      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
 					      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx, const std::vector<float> &tfdEdx )
 {
   // one per track
   m_out_trkfitTrackCaloE.insert( m_out_trkfitTrackCaloE.end(), tfCaloE.begin(), tfCaloE.end() );
+  m_out_trkfitVisE.insert( m_out_trkfitVisE.end(), tfVisE.begin(), tfVisE.end() );
   // one per point
   m_out_trkfitSliceId.insert( m_out_trkfitSliceId.end(), tfSliceId.begin(), tfSliceId.end() );
   m_out_trkfitPfoId.insert( m_out_trkfitPfoId.end(), tfPfoId.begin(), tfPfoId.end() );
