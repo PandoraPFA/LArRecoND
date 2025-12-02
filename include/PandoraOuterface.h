@@ -176,7 +176,7 @@ bool PrintOptions();
 class NDRecoOutputData
 {
  public:
-  NDRecoOutputData(const std::string filename, const bool writeTracks, const bool writePID); ///< default constructor
+  NDRecoOutputData(const std::string filename); ///< default constructor
 
   void ClearData(); ///< will reset the vectors
 
@@ -313,7 +313,7 @@ class NDRecoOutputData
   std::vector<float> m_out_pid_pro;
 };
 
- NDRecoOutputData::NDRecoOutputData(const std::string filename, const bool writeTracks, const bool writePID)
+ NDRecoOutputData::NDRecoOutputData(const std::string filename)
  {
 
    m_fileOut = new TFile(filename.c_str(), "RECREATE");
@@ -393,48 +393,46 @@ class NDRecoOutputData
    m_treeOut->Branch("mcNuPz", &m_out_mcNuPz);
 
    // And the new ones
-   if ( writeTracks ) {
-     m_treeOut->Branch("trkfitStartX", &m_out_trkfitStartX);
-     m_treeOut->Branch("trkfitStartY", &m_out_trkfitStartY);
-     m_treeOut->Branch("trkfitStartZ", &m_out_trkfitStartZ);
-     m_treeOut->Branch("trkfitStartDirX", &m_out_trkfitStartDirX);
-     m_treeOut->Branch("trkfitStartDirY", &m_out_trkfitStartDirY);
-     m_treeOut->Branch("trkfitStartDirZ", &m_out_trkfitStartDirZ);
-     m_treeOut->Branch("trkfitEndX", &m_out_trkfitEndX);
-     m_treeOut->Branch("trkfitEndY", &m_out_trkfitEndY);
-     m_treeOut->Branch("trkfitEndZ", &m_out_trkfitEndZ);
-     m_treeOut->Branch("trkfitEndDirX", &m_out_trkfitEndDirX);
-     m_treeOut->Branch("trkfitEndDirY", &m_out_trkfitEndDirY);
-     m_treeOut->Branch("trkfitEndDirZ", &m_out_trkfitEndDirZ);
-     m_treeOut->Branch("trkfitLength", &m_out_trkfitLength);
-     m_treeOut->Branch("trkfitContained", &m_out_trkfitContained);
-     m_treeOut->Branch("trkfitWallDist", &m_out_trkfitWallDist);
-     m_treeOut->Branch("trkfitKEFromLengthMuon", &m_out_KEFromLengthMuon);
-     m_treeOut->Branch("trkfitKEFromLengthProton", &m_out_KEFromLengthProton);
-     m_treeOut->Branch("trkfitPFromLengthMuon", &m_out_pFromLengthMuon);
-     m_treeOut->Branch("trkfitPFromLengthProton", &m_out_pFromLengthProton);
-     // if PID
-     if ( writePID ) {
-       m_treeOut->Branch("trkfitPID_PDG", &m_out_pid_pdg);
-       m_treeOut->Branch("trkfitPID_NDF", &m_out_pid_ndf);
-       m_treeOut->Branch("trkfitPID_Mu", &m_out_pid_mu);
-       m_treeOut->Branch("trkfitPID_Pi", &m_out_pid_pi);
-       m_treeOut->Branch("trkfitPID_K", &m_out_pid_k);
-       m_treeOut->Branch("trkfitPID_Pro", &m_out_pid_pro);
-     }
-     m_treeOut->Branch("trkfitTrackCaloE", &m_out_trkfitTrackCaloE);
-     m_treeOut->Branch("trkfitVisE", &m_out_trkfitVisE);
-     m_treeOut->Branch("trkfitSliceId", &m_out_trkfitSliceId);
-     m_treeOut->Branch("trkfitPfoId", &m_out_trkfitPfoId);
-     m_treeOut->Branch("trkfitX", &m_out_trkfitX);
-     m_treeOut->Branch("trkfitY", &m_out_trkfitY);
-     m_treeOut->Branch("trkfitZ", &m_out_trkfitZ);
-     m_treeOut->Branch("trkfitQ", &m_out_trkfitQ);
-     m_treeOut->Branch("trkfitRR", &m_out_trkfitRR);
-     m_treeOut->Branch("trkfitdx", &m_out_trkfitdx);
-     m_treeOut->Branch("trkfitdQdx", &m_out_trkfitdQdx);
-     m_treeOut->Branch("trkfitdEdx", &m_out_trkfitdEdx);
-   }
+   // Tracks
+   m_treeOut->Branch("trkfitStartX", &m_out_trkfitStartX);
+   m_treeOut->Branch("trkfitStartY", &m_out_trkfitStartY);
+   m_treeOut->Branch("trkfitStartZ", &m_out_trkfitStartZ);
+   m_treeOut->Branch("trkfitStartDirX", &m_out_trkfitStartDirX);
+   m_treeOut->Branch("trkfitStartDirY", &m_out_trkfitStartDirY);
+   m_treeOut->Branch("trkfitStartDirZ", &m_out_trkfitStartDirZ);
+   m_treeOut->Branch("trkfitEndX", &m_out_trkfitEndX);
+   m_treeOut->Branch("trkfitEndY", &m_out_trkfitEndY);
+   m_treeOut->Branch("trkfitEndZ", &m_out_trkfitEndZ);
+   m_treeOut->Branch("trkfitEndDirX", &m_out_trkfitEndDirX);
+   m_treeOut->Branch("trkfitEndDirY", &m_out_trkfitEndDirY);
+   m_treeOut->Branch("trkfitEndDirZ", &m_out_trkfitEndDirZ);
+   m_treeOut->Branch("trkfitLength", &m_out_trkfitLength);
+   m_treeOut->Branch("trkfitContained", &m_out_trkfitContained);
+   m_treeOut->Branch("trkfitWallDist", &m_out_trkfitWallDist);
+   m_treeOut->Branch("trkfitKEFromLengthMuon", &m_out_KEFromLengthMuon);
+   m_treeOut->Branch("trkfitKEFromLengthProton", &m_out_KEFromLengthProton);
+   m_treeOut->Branch("trkfitPFromLengthMuon", &m_out_pFromLengthMuon);
+   m_treeOut->Branch("trkfitPFromLengthProton", &m_out_pFromLengthProton);
+   // Track PID
+   m_treeOut->Branch("trkfitPID_PDG", &m_out_pid_pdg);
+   m_treeOut->Branch("trkfitPID_NDF", &m_out_pid_ndf);
+   m_treeOut->Branch("trkfitPID_Mu", &m_out_pid_mu);
+   m_treeOut->Branch("trkfitPID_Pi", &m_out_pid_pi);
+   m_treeOut->Branch("trkfitPID_K", &m_out_pid_k);
+   m_treeOut->Branch("trkfitPID_Pro", &m_out_pid_pro);
+   // Track Calo
+   m_treeOut->Branch("trkfitTrackCaloE", &m_out_trkfitTrackCaloE);
+   m_treeOut->Branch("trkfitVisE", &m_out_trkfitVisE);
+   m_treeOut->Branch("trkfitSliceId", &m_out_trkfitSliceId);
+   m_treeOut->Branch("trkfitPfoId", &m_out_trkfitPfoId);
+   m_treeOut->Branch("trkfitX", &m_out_trkfitX);
+   m_treeOut->Branch("trkfitY", &m_out_trkfitY);
+   m_treeOut->Branch("trkfitZ", &m_out_trkfitZ);
+   m_treeOut->Branch("trkfitQ", &m_out_trkfitQ);
+   m_treeOut->Branch("trkfitRR", &m_out_trkfitRR);
+   m_treeOut->Branch("trkfitdx", &m_out_trkfitdx);
+   m_treeOut->Branch("trkfitdQdx", &m_out_trkfitdQdx);
+   m_treeOut->Branch("trkfitdEdx", &m_out_trkfitdEdx);
  }
 
  void NDRecoOutputData::ClearData()
