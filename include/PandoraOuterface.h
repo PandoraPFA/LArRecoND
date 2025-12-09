@@ -112,14 +112,28 @@ struct ParameterStruct
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 /**
- *  @brief  Perform the recombination correction. Note: wIon and dEdxMIP (latter used for "flow-style" recombination) are hard-coded for now.
+ *  @brief  Perform the recombination correction on charge to give an energy value. Note: wIon is hard-coded for now.
  *
  *  @param  the set of parameters (const)
  *  @param  hit dQ/dx (const)
+ *  @param  input dE/dx to assume in recombination correction (if using "flow-style" recombination corrections
  *
  *  @return the resulting dE/dx from dQ/dx
  */
-float dEdxWithRecombination(const ParameterStruct &parameters, const float inputdQdx );
+float eVisWithRecombination(const ParameterStruct &parameters, const float inputQ, const float dEdx_use );
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ *  @brief  Perform the recombination correction. Note: wIon is hard-coded for now.
+ *
+ *  @param  the set of parameters (const)
+ *  @param  hit dQ/dx (const)
+ *  @param  input dE/dx to assume in recombination correction (if using "flow-style" recombination corrections 
+ *
+ *  @return the resulting dE/dx from dQ/dx
+ */
+float dEdxWithRecombination(const ParameterStruct &parameters, const float inputdQdx, const float dEdx_use );
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 

@@ -105,26 +105,25 @@ float LifetimeCorrectionFactor(const std::vector<float> &detAnodes, const float 
   return TMath::Exp(tDrift/lifetime);
 }
 
-float eVisWithRecombination(const ParameterStruct &parameters, const float inputQ)
+float eVisWithRecombination(const ParameterStruct &parameters, const float inputQ, const float dEdx_use = 2. /*MeV/cm "dEdxMIP" from FLOW code*/)
 {
   const float wIon = 23.6/1.0e6; // MeV/e-, a hard-coded for now value used later
 
   // MIP Recombination with the Q->E calculation as in FLOW file
   // see e.g. https://github.com/DUNE/ndlar_flow/blob/develop/src/proto_nd_flow/reco/charge/calib_prompt_hits.py#L289
-  float dEdxMIP = 2.; // MeV/cm (using the value in above line)
   float recomb = 1.;
   if ( parameters.fBoxRecombination ) {
-    float csi = parameters.fBoxBeta * dEdxMIP / (parameters.fEField * parameters.fDensity);
+    float csi = parameters.fBoxBeta * dEdx_use / (parameters.fEField * parameters.fDensity);
     recomb = TMath::Log(parameters.fBoxAlpha + csi)/csi;
   }
   else if ( parameters.fBirksRecombination ) {
-    recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdxMIP / (parameters.fEField * parameters.fDensity) );
+    recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdx_use / (parameters.fEField * parameters.fDensity) );
   }
 
   return inputQ * wIon / recomb;
 }
 
-float dEdxWithRecombination(const ParameterStruct &parameters, const float inputdQdx)
+float dEdxWithRecombination(const ParameterStruct &parameters, const float inputdQdx, const float dEdx_use = 2. /*MeV/cm "dEdxMIP" from FLOW code*/)
 {
   float dEdx_val = 0.;
   const float wIon = 23.6/1.0e6; // MeV/e-, a hard-coded for now value used later
@@ -133,14 +132,13 @@ float dEdxWithRecombination(const ParameterStruct &parameters, const float input
     if ( parameters.fFlowStyleRecombination ) {
       // MIP Recombination with the Q->E calculation as in FLOW file
       // see e.g. https://github.com/DUNE/ndlar_flow/blob/develop/src/proto_nd_flow/reco/charge/calib_prompt_hits.py#L289
-      float dEdxMIP = 2.; // MeV/cm (using the value in above line)
       float recomb = 1.;
       if ( parameters.fBoxRecombination ) {
-	float csi = parameters.fBoxBeta * dEdxMIP / (parameters.fEField * parameters.fDensity);
+	float csi = parameters.fBoxBeta * dEdx_use / (parameters.fEField * parameters.fDensity);
 	recomb = TMath::Log(parameters.fBoxAlpha + csi)/csi;
       }
       else if ( parameters.fBirksRecombination ) {
-	recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdxMIP / (parameters.fEField * parameters.fDensity) );
+	recomb = parameters.fBirksA / ( 1. + parameters.fBirksK * dEdx_use / (parameters.fEField * parameters.fDensity) );
       }
       dEdx_val = inputdQdx / recomb * wIon;
     }
@@ -1004,9 +1002,9 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "UseVoxelizedStartStop", parameters.useVoxelizedStartStop) );
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Detector", parameters.fDetector) );
-    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.fContainDistX) );
-    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistY", parameters.fContainDistY) );
-    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistZ", parameters.fContainDistZ) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.ContainDistX) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistY", parameters.ContainDistY) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistZ", parameters.ContainDistZ) );
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldCorrectLifetime", parameters.fShouldCorrectLifetime) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ElectronLifetime", parameters.fElectronLifetime) );
