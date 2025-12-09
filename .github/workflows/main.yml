@@ -131,7 +131,7 @@ jobs:
         run: |
           echo "Patching processing script..."
           cd /pandora/LArRecoND/ndlarflow
-          wget https://raw.githubusercontent.com/CrossR/LArRecoND/ef96f5382b1dc334e9f21f192fb54668ea4a7def/ndlarflow/h5_to_root_ndlarflow.py -O h5_to_root_ndlarflow.py
+          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/c35fd8173d2c24c3150054471b34cd3f58e590e0/ndlarflow/h5_to_root_ndlarflow.py -O h5_to_root_ndlarflow.py
           wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/c35fd8173d2c24c3150054471b34cd3f58e590e0/ndlarflow/rootToRootConversion.C -O rootToRootConversion.C
 
       - name: Process Files With Python
@@ -142,7 +142,7 @@ jobs:
 
           echo "Processing files with Python..."
           cd /pandora/data/
-          python3 /pandora/LArRecoND/ndlarflow/h5_to_root_ndlarflow.py /pandora/data/input_data.hdf5 -o converted_flow.root
+          python3 /pandora/LArRecoND/ndlarflow/h5_to_root_ndlarflow.py /pandora/data/input_data.hdf5 0 0 0 converted_flow.root
 
           echo "Setting up environment for ROOT..."
           source /pandora/setup.sh
