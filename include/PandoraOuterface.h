@@ -83,6 +83,11 @@ struct ParameterStruct
 
   unsigned int fDetector = 0; // 0=NDLAr, 1=2x2
 
+  // Containment volumes
+  float ContainDistX = 5.f;
+  float ContainDistY = 5.f;
+  float ContainDistZ = 5.f;
+
   int verbosity = 0;
 
   std::string xmlName = "";

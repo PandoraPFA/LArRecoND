@@ -216,7 +216,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
   std::vector<float> yBoundaries;
   std::vector<float> zBoundaries;
   if ( parameters.fDetector == 0 ) {
-    // NDLAr anodes
+    // NDLAr anodes -- these are approximately the mid points of each anode. Could try to use each side of this a few cm apart instead.
     posAnodes.push_back(-50.);
     posAnodes.push_back(-150.);
     posAnodes.push_back(-250.);
@@ -225,12 +225,12 @@ void ProcessPostReco(const ParameterStruct &parameters)
     posAnodes.push_back(150.);
     posAnodes.push_back(250.);
     posAnodes.push_back(350.);
-    // NDLAr edges
-    xBoundaries.push_back(-350.);
-    xBoundaries.push_back(350.);
+    // NDLAr edges -- these are approximate and based on MicroProd N3p4 hit positions with 0.5 cm bins
+    xBoundaries.push_back(-347.);
+    xBoundaries.push_back(347.);
     zBoundaries.push_back(418.);
-    zBoundaries.push_back(913.);
-    yBoundaries.push_back(-216.);
+    zBoundaries.push_back(913.5);
+    yBoundaries.push_back(-215.5);
     yBoundaries.push_back(82.);
   }
   else if ( parameters.fDetector == 1 ) {
@@ -242,10 +242,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
     // 2x2 edges
     xBoundaries.push_back(-63.9273);
     xBoundaries.push_back(63.9273);
-    zBoundaries.push_back(-63.9273);
-    zBoundaries.push_back(63.9273);
-    yBoundaries.push_back(-63.9273);
-    yBoundaries.push_back(63.9273);
+    // Y and Z boundaries from looking at hit positions in MiniRun 6.4 with 0.5 cm bins
+    zBoundaries.push_back(-64.5);
+    zBoundaries.push_back(64.5);
+    yBoundaries.push_back(-62.0);
+    yBoundaries.push_back(62.0);
   }
 
   /////////////////////////////////////////////////////////
@@ -670,18 +671,18 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
 	  // is the track contained?
 	  bool thisTrackContained = true;
-	  if      ( trackStateStart.GetPosition().GetX() < xBoundaries[0]+5. ) thisTrackContained = false;
-	  else if ( trackStateStart.GetPosition().GetX() > xBoundaries[1]-5. ) thisTrackContained = false;
-	  else if ( trackStateStart.GetPosition().GetY() < yBoundaries[0]+5. ) thisTrackContained = false;
-          else if ( trackStateStart.GetPosition().GetY() > yBoundaries[1]-5. ) thisTrackContained = false;
-	  else if ( trackStateStart.GetPosition().GetZ() < zBoundaries[0]+5. ) thisTrackContained = false;
-          else if ( trackStateStart.GetPosition().GetZ() > zBoundaries[1]-5. ) thisTrackContained = false;
-	  else if ( trackStateEnd.GetPosition().GetX() < xBoundaries[0]+5. ) thisTrackContained = false;
-          else if ( trackStateEnd.GetPosition().GetX() > xBoundaries[1]-5. ) thisTrackContained = false;
-          else if ( trackStateEnd.GetPosition().GetY() < yBoundaries[0]+5. ) thisTrackContained = false;
-          else if ( trackStateEnd.GetPosition().GetY() > yBoundaries[1]-5. ) thisTrackContained = false;
-          else if ( trackStateEnd.GetPosition().GetZ() < zBoundaries[0]+5. ) thisTrackContained = false;
-          else if ( trackStateEnd.GetPosition().GetZ() > zBoundaries[1]-5. ) thisTrackContained = false;
+	  if      ( trackStateStart.GetPosition().GetX() < xBoundaries[0]+parameters.ContainDistX ) thisTrackContained = false;
+	  else if ( trackStateStart.GetPosition().GetX() > xBoundaries[1]-parameters.ContainDistX ) thisTrackContained = false;
+	  else if ( trackStateStart.GetPosition().GetY() < yBoundaries[0]+parameters.ContainDistY ) thisTrackContained = false;
+          else if ( trackStateStart.GetPosition().GetY() > yBoundaries[1]-parameters.ContainDistY ) thisTrackContained = false;
+	  else if ( trackStateStart.GetPosition().GetZ() < zBoundaries[0]+parameters.ContainDistZ ) thisTrackContained = false;
+          else if ( trackStateStart.GetPosition().GetZ() > zBoundaries[1]-parameters.ContainDistZ ) thisTrackContained = false;
+	  else if ( trackStateEnd.GetPosition().GetX() < xBoundaries[0]+parameters.ContainDistX ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetX() > xBoundaries[1]-parameters.ContainDistX ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetY() < yBoundaries[0]+parameters.ContainDistY ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetY() > yBoundaries[1]-parameters.ContainDistY ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetZ() < zBoundaries[0]+parameters.ContainDistZ ) thisTrackContained = false;
+          else if ( trackStateEnd.GetPosition().GetZ() > zBoundaries[1]-parameters.ContainDistZ ) thisTrackContained = false;
 	  trkContained.push_back(thisTrackContained);
 	  // distance to closest wall
 	  float minDistFromWall = std::numeric_limits<float>::max();
@@ -1003,6 +1004,9 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "UseVoxelizedStartStop", parameters.useVoxelizedStartStop) );
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Detector", parameters.fDetector) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.fContainDistX) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistY", parameters.fContainDistY) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistZ", parameters.fContainDistZ) );
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldCorrectLifetime", parameters.fShouldCorrectLifetime) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ElectronLifetime", parameters.fElectronLifetime) );
