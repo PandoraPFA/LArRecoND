@@ -23,8 +23,8 @@ CheatingStitchingTool::CheatingStitchingTool()
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const PfoList *const pMultiPfoList, PfoToLArTPCMap &pfoToLArTPCMap,
-    PfoToFloatMap &stitchedPfosToX0Map)
+void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const PfoList *const /*pMultiPfoList*/, PfoToLArTPCMap &pfoToLArTPCMap,
+    PfoToFloatMap &/*stitchedPfosToX0Map*/)
 {
     if (PandoraContentApi::GetSettings(*pAlgorithm)->ShouldDisplayAlgorithmInfo())
         std::cout << "----> Running Algorithm Tool: " << this->GetInstanceName() << ", " << this->GetType() << std::endl;
