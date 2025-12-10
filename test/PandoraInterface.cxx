@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::SetPseudoLayerPlugin(*pPrimaryPandora, new lar_content::LArPseudoLayerPlugin));
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=,
             PandoraApi::SetLArTransformationPlugin(*pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
+        std::cout << "!!! using " << parameters.m_settingsFile << "\n";
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ReadSettings(*pPrimaryPandora, parameters.m_settingsFile));
 
         ProcessEvents(parameters, pPrimaryPandora, simpleGeom);
@@ -277,6 +278,7 @@ void MakePandoraTPC(const pandora::Pandora *const pPrimaryPandora, const Paramet
 
 void ProcessEvents(const Parameters &parameters, const Pandora *const pPrimaryPandora, const LArNDGeomSimple &geom)
 {
+
     if (parameters.m_dataFormat == Parameters::LArNDFormat::EDepSim)
     {
 #ifdef USE_EDEPSIM
@@ -371,6 +373,8 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             const float voxelY = (*larsp->m_y)[isp];
             const float voxelZ = (*larsp->m_z)[isp];
             const float voxelE = (*larsp->m_charge)[isp];
+            const float voxel_io_group = (*larsp->m_io_group)[isp];
+            // std::cout << "voxel ( " << voxelX << ", " << voxelY << ", " << voxelZ << ") io_group " << voxel_io_group << "\n";
 
             // Skip this hit if its coordinates or energy are NaNs
             if (std::isnan(voxelX) || std::isnan(voxelY) || std::isnan(voxelZ) || std::isnan(voxelE))
