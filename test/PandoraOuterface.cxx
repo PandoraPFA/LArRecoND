@@ -228,12 +228,12 @@ void ProcessPostReco(const ParameterStruct &parameters)
     std::vector<float> startTrkSlidingFitDirX,  startTrkSlidingFitDirY,  startTrkSlidingFitDirZ;    
     std::vector<float> shwrStartPointsX, shwrStartPointsY, shwrStartPointsZ;
     std::vector<double> shwrdEdx;
-    std::vector<float> shwrTotalE;
+    std::vector<float> shwrEnergy;
     std::vector<int> shwrStartPointsRecoId;
     std::vector<float> minProjection, medianQ, chargePerHit, chargePerHitStartPoints, pitchValue;
     std::vector<float> shwrPCAX, shwrPCAY, shwrPCAZ;
     std::vector<float> shwrStartHitPositionX, shwrStartHitPositionY, shwrStartHitPositionZ;
-
+    std::vector<float> shwrEnergyLifetimeCorrected;
     // Loop particles in the event
     unsigned int nParticles = pandoraIn->m_clusterID->size();
     for ( unsigned int particleIdx=0; particleIdx < nParticles; ++particleIdx ) {
@@ -869,6 +869,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	
 	float hitPCAOpeningAngle, hitPositionAlongAxis, hitPositionFromAxis;
 	float totalQ = 0;
+    float totalQ_corrected = 0;
 
 	CartesianVector showerStartCurrentHit(0.f, 0.f, 0.f);
 	CartesianVector showerStartPCAProjection(0.f, 0.f, 0.f);
@@ -882,6 +883,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	for(const CaloHit *const pShowerStartCaloHit3D : caloHitList){
 		showerStartPCAProjection = centroid + ( showerDirection * showerStartHitProjectionValue);
         showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
+        totalQ_corrected += (pShowerStartCaloHit3D->GetInputEnergy())*LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
 		totalQ += pShowerStartCaloHit3D->GetInputEnergy();	
 		chargePerHit.push_back(pShowerStartCaloHit3D->GetInputEnergy());
         if(showerStartPCAProjection == showerStartCurrentHit){
@@ -902,7 +904,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 			showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
             shwrStartPointsRecoId.push_back(clusterID);
             
-            chargePerHitStartPoints.push_back(pShowerStartCaloHit3D->GetInputEnergy());
+            chargePerHitStartPoints.push_back(pShowerStartCaloHit3D->GetInputEnergy()*LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed));
 	       //Add positions of hits to a branch to look at later
 			shwrStartPointsX.push_back(showerStartCurrentHit.GetX());
             shwrStartPointsY.push_back(showerStartCurrentHit.GetY());
@@ -919,7 +921,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
 
    	std::cout << "Reco Hit List Size " << showerStartCaloHitList.size() << std::endl; 
-	shwrTotalE.push_back(totalQ);
+	shwrEnergy.push_back(totalQ);
+    shwrEnergyLifetimeCorrected.push_back(totalQ_corrected);
 
 	if(showerStartCaloHitList.size() < 2){
 		std::cout<< "Reco Hit List Too Small. Skipping fit. Event is: " << entryIdx << std::endl;
@@ -1035,10 +1038,10 @@ else{
    if ( parameters.runShowerFit){
      fOut.FillShowerBranches(shwrCentroidX,shwrCentroidY,shwrCentroidZ,shwrStartX, shwrStartY, shwrStartZ, shwrDirX, shwrDirY, shwrDirZ, shwrLen, 
              shwrSliceId, shwrClusterId, startTrkSlidingFitDirX, startTrkSlidingFitDirY, startTrkSlidingFitDirZ,
-             shwrStartPointsX, shwrStartPointsY, shwrStartPointsZ, shwrdEdx, shwrTotalE, shwrStartPointsRecoId, minProjection, 
+             shwrStartPointsX, shwrStartPointsY, shwrStartPointsZ, shwrdEdx, shwrEnergy, shwrStartPointsRecoId, minProjection, 
              medianQ,chargePerHit, chargePerHitStartPoints, pitchValue,
              shwrPCAX, shwrPCAY, shwrPCAZ,
-             shwrStartHitPositionX, shwrStartHitPositionY, shwrStartHitPositionZ);
+             shwrStartHitPositionX, shwrStartHitPositionY, shwrStartHitPositionZ, shwrEnergyLifetimeCorrected);
 }
 
 

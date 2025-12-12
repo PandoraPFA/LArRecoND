@@ -7,8 +7,8 @@
     <TrackScoreCut>-1.0</TrackScoreCut>
     <!-- Track fitter settings -->
     <!-- 2x2 -->
-    <Detector>2</Detector>
-    <PixelPitch>0.44</PixelPitch>
+    <Detector>0</Detector>
+    <PixelPitch>0.38</PixelPitch>
     <!-- More complicated options on refining algs -->
     <ShouldApplyThreshold>false</ShouldApplyThreshold>
     <ChargeThreshold>0.</ChargeThreshold>

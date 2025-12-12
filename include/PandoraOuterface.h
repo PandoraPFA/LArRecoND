@@ -180,14 +180,15 @@ NDRecoOutputData(const std::string filename, const bool writeTracks, const bool 
 			   const std::vector<float> &shwrlength, const std::vector<int> &shwrSlice, const std::vector<int> &shwrCluster,
 			   const std::vector<float> &startTrackSlidingFitDirX,  const std::vector<float> &startTrackSlidingFitDirY,  const std::vector<float> &startTrackSlidingFitDirZ,  
                const std::vector<float> &shwrstartpointsX, const std::vector<float> &shwrstartpointsY, const std::vector<float> &shwrstartpointsZ, 
-			   const std::vector<double> &shwrdEdx, const std::vector<float> &shwrTotalE, const std::vector<int> &shwrStartPointsRecoId,
+			   const std::vector<double> &shwrdEdx, const std::vector<float> &shwrEnergy, const std::vector<int> &shwrStartPointsRecoId,
                const std::vector<float> &minProjection,
                const std::vector<float> &medianQ,
                const std::vector<float> &chargePerHit,
                const std::vector<float> &chargePerHitStartPoints,
                const std::vector<float> &pitchValue,
                const std::vector<float> &shwrPCAX, const std::vector<float> &shwrPCAY, const std::vector<float> &shwrPCAZ,
-               const std::vector<float> &shwrStartHitPositionX, const std::vector<float> &shwrStartHitPositionY, const std::vector<float> &shwrStartHitPositionZ ); ///< Fill the shower fit result branches
+               const std::vector<float> &shwrStartHitPositionX, const std::vector<float> &shwrStartHitPositionY, const std::vector<float> &shwrStartHitPositionZ,
+               const std::vector<float> &shwrEnergyLifetimeCorrected); ///< Fill the shower fit result branches
 
 
   
@@ -324,7 +325,7 @@ NDRecoOutputData(const std::string filename, const bool writeTracks, const bool 
   std::vector<float> m_out_shwrStartPointsY;
   std::vector<float> m_out_shwrStartPointsZ;
   std::vector<double> m_out_shwrdEdx;
-  std::vector<float> m_out_shwrTotalE;
+  std::vector<float> m_out_shwrEnergy;
   std::vector<int> m_out_shwrStartPointsRecoId;
   std::vector<float> m_out_minProjection;
   std::vector<float> m_out_medianQ;
@@ -337,6 +338,7 @@ NDRecoOutputData(const std::string filename, const bool writeTracks, const bool 
   std::vector<float> m_out_shwrStartHitPositionX;
   std::vector<float> m_out_shwrStartHitPositionY;
   std::vector<float> m_out_shwrStartHitPositionZ;
+  std::vector<float> m_out_shwrEnergyLifetimeCorrected;
 };
 
  NDRecoOutputData::NDRecoOutputData(const std::string filename, const bool writeTracks, const bool writeShowers, const bool writePID)
@@ -475,7 +477,7 @@ NDRecoOutputData(const std::string filename, const bool writeTracks, const bool 
      m_treeOut->Branch("shwrStartPointsY", &m_out_shwrStartPointsY);
      m_treeOut->Branch("shwrStartPointsZ", &m_out_shwrStartPointsZ);
      m_treeOut->Branch("shwrdEdx", &m_out_shwrdEdx);
-     m_treeOut->Branch("shwrTotalE", &m_out_shwrTotalE);
+     m_treeOut->Branch("shwrEnergy", &m_out_shwrEnergy);
      m_treeOut->Branch("shwrStartPointsRecoId", &m_out_shwrStartPointsRecoId);
      m_treeOut->Branch("minProjection", &m_out_minProjection);
      m_treeOut->Branch("medianQ", &m_out_medianQ);
@@ -488,7 +490,7 @@ NDRecoOutputData(const std::string filename, const bool writeTracks, const bool 
      m_treeOut->Branch("shwrStartHitPositionX", &m_out_shwrStartHitPositionX);
      m_treeOut->Branch("shwrStartHitPositionY", &m_out_shwrStartHitPositionY);
      m_treeOut->Branch("shwrStartHitPositionZ", &m_out_shwrStartHitPositionZ);
-
+     m_treeOut->Branch("shwrEnergyLifetimeCorrected", &m_out_shwrEnergyLifetimeCorrected);
    }
   
  }
@@ -615,7 +617,7 @@ NDRecoOutputData(const std::string filename, const bool writeTracks, const bool 
    m_out_shwrStartPointsY.clear();
    m_out_shwrStartPointsZ.clear();
    m_out_shwrdEdx.clear();
-   m_out_shwrTotalE.clear();
+   m_out_shwrEnergy.clear();
    m_out_shwrStartPointsRecoId.clear();
    m_out_minProjection.clear();
    m_out_medianQ.clear();
@@ -628,7 +630,7 @@ NDRecoOutputData(const std::string filename, const bool writeTracks, const bool 
    m_out_shwrStartHitPositionX.clear();
    m_out_shwrStartHitPositionY.clear();
    m_out_shwrStartHitPositionZ.clear();
-   
+   m_out_shwrEnergyLifetimeCorrected.clear();
  }
 
  void NDRecoOutputData::WriteToFile()
@@ -744,14 +746,15 @@ void NDRecoOutputData::FillShowerBranches( const std::vector<float> &shwrcentX, 
                                            const std::vector<float> &shwrdirX, const std::vector<float> &shwrdirY, const std::vector<float> &shwrdirZ,                                                 const std::vector<float> &shwrlength, const std::vector<int> &shwrSlice, const std::vector<int> &shwrCluster,
 					   const std::vector<float> &startTrackSlidingFitDirX, const std::vector<float> &startTrackSlidingFitDirY, const std::vector<float> &startTrackSlidingFitDirZ, 
                                            const std::vector<float> &shwrstartpointsX,const std::vector<float> &shwrstartpointsY,const std::vector<float> &shwrstartpointsZ, 
-                       const std::vector<double> &shwrdEdx, const std::vector<float> &shwrTotalE, const std::vector<int> &shwrStartPointsRecoId,
+                       const std::vector<double> &shwrdEdx, const std::vector<float> &shwrEnergy, const std::vector<int> &shwrStartPointsRecoId,
                        const std::vector<float> &minProjection,
                        const std::vector<float> &medianQ,
                        const std::vector<float> &chargePerHit,
                        const std::vector<float> &chargePerHitStartPoints,
                        const std::vector<float> &pitchValue,
                        const std::vector<float> &shwrPCAX, const std::vector<float> &shwrPCAY, const std::vector<float> &shwrPCAZ,
-                       const std::vector<float> &shwrStartHitPositionX, const std::vector<float> &shwrStartHitPositionY, const std::vector<float> &shwrStartHitPositionZ)
+                       const std::vector<float> &shwrStartHitPositionX, const std::vector<float> &shwrStartHitPositionY, const std::vector<float> &shwrStartHitPositionZ,
+                       const std::vector<float> &shwrEnergyLifetimeCorrected)
 {
   m_out_shwrfitCentroidX.insert(m_out_shwrfitCentroidX.end(), shwrcentX.begin(), shwrcentX.end() );
   m_out_shwrfitCentroidY.insert(m_out_shwrfitCentroidY.end(), shwrcentY.begin(), shwrcentY.end() );
@@ -772,7 +775,7 @@ void NDRecoOutputData::FillShowerBranches( const std::vector<float> &shwrcentX, 
   m_out_shwrStartPointsY.insert(m_out_shwrStartPointsY.end(), shwrstartpointsY.begin(), shwrstartpointsY.end());
   m_out_shwrStartPointsZ.insert(m_out_shwrStartPointsZ.end(), shwrstartpointsZ.begin(), shwrstartpointsZ.end());
   m_out_shwrdEdx.insert(m_out_shwrdEdx.end(), shwrdEdx.begin(), shwrdEdx.end());
-  m_out_shwrTotalE.insert(m_out_shwrTotalE.end(), shwrTotalE.begin(), shwrTotalE.end());
+  m_out_shwrEnergy.insert(m_out_shwrEnergy.end(), shwrEnergy.begin(), shwrEnergy.end());
   m_out_shwrStartPointsRecoId.insert(m_out_shwrStartPointsRecoId.end(), shwrStartPointsRecoId.begin(), shwrStartPointsRecoId.end());
   m_out_minProjection.insert(m_out_minProjection.end(), minProjection.begin(), minProjection.end());
   m_out_medianQ.insert(m_out_medianQ.end(), medianQ.begin(), medianQ.end());
@@ -785,7 +788,7 @@ void NDRecoOutputData::FillShowerBranches( const std::vector<float> &shwrcentX, 
   m_out_shwrStartHitPositionX.insert(m_out_shwrStartHitPositionX.end(), shwrStartHitPositionX.begin(), shwrStartHitPositionX.end());
   m_out_shwrStartHitPositionY.insert(m_out_shwrStartHitPositionY.end(), shwrStartHitPositionY.begin(), shwrStartHitPositionY.end());
   m_out_shwrStartHitPositionZ.insert(m_out_shwrStartHitPositionZ.end(), shwrStartHitPositionZ.begin(), shwrStartHitPositionZ.end());
-
+  m_out_shwrEnergyLifetimeCorrected.insert(m_out_shwrEnergyLifetimeCorrected.end(), shwrEnergyLifetimeCorrected.begin(), shwrEnergyLifetimeCorrected.end());
 }
 
 void NDRecoOutputData::FillTrackCaloBranches( const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
