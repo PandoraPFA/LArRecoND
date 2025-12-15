@@ -96,6 +96,7 @@ def main(argv=None):
         hits_Q = np.array([0.]).astype('float32')
         hits_E = np.array([0.]).astype('float32')
         hits_ts = np.array([0.]).astype('float32')
+        hits_io_group = np.array([0.]).astype('uint8')
         runID = np.array( [0], dtype='int32' )
         subrunID = np.array( [0], dtype='int32' )
         eventID = np.array( [0], dtype='int32' )
@@ -147,7 +148,7 @@ def main(argv=None):
             event_dict['unix_ts_usec'] = event_unix_ts_usec
 
         if useData==False:
-            other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'charge':hits_Q, 'E':hits_E, 'matches':matches,\
+            other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'io_group':hits_io_group, 'charge':hits_Q, 'E':hits_E, 'matches':matches,\
                             'mcp_energy':trajE, 'mcp_pdg':trajPDG, 'mcp_nuid':trajVertexID, 'mcp_vertex_id':trajVertexID,\
                             'mcp_idLocal':trajIDLocal, 'mcp_id':trajID, 'mcp_px':trajPx, 'mcp_py':trajPy, 'mcp_pz':trajPz,\
                             'mcp_mother':trajParentID, 'mcp_startx':trajStartX, 'mcp_starty':trajStartY, 'mcp_startz':trajStartZ,\
@@ -158,7 +159,7 @@ def main(argv=None):
                             'hit_packetFrac':packetFrac, 'hit_particleID':particleID, 'hit_particleIDLocal':particleIDLocal,\
                             'hit_pdg':pdgHit, 'hit_vertexID':interactionIndex, 'hit_segmentID':trackID }
         else:
-            other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'charge':hits_Q, 'E':hits_E }
+            other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'io_group':hits_io_group, 'charge':hits_Q, 'E':hits_E }
 
         max_entries=0
         for key in other_dict.keys():
@@ -245,6 +246,7 @@ def main(argv=None):
                 hits_Q = ( np.ma.getdata(event_calib_prompt_hits["Q"][0]) ).astype('float32')
                 hits_E = ( np.ma.getdata(event_calib_prompt_hits["E"][0]) ).astype('float32')
                 hits_ts = ( np.ma.getdata(event_calib_prompt_hits["ts_pps"][0]) ).astype('float32')
+                hits_io_group = ( np.ma.getdata(event_calib_prompt_hits["io_group"][0]) ).astype('uint8')
                 hits_ids = np.ma.getdata(event_calib_prompt_hits["id"][0])
             else:
                 hits_z = np.array([]).astype('float32')
@@ -253,6 +255,7 @@ def main(argv=None):
                 hits_Q = np.array([]).astype('float32')
                 hits_E = np.array([]).astype('float32')
                 hits_ts = np.array([]).astype('float32')
+                hits_io_group = np.array([]).astype('uint8')
                 hits_ids = np.array([])
 
             if badEvt==False and len(hits_ids)<2:
@@ -329,7 +332,7 @@ def main(argv=None):
                     particleIDLocal = all_segments['traj_id'][segments_where].astype('int64')
                     interactionIndex = all_segments['vertex_id'][segments_where].astype('int64')
                 else:
-                    matches = np.zeros( len(hits_z), dtype='uint16')
+                    matches = np.zeros( len(hits_z), dtype='uint16' )
                     packetFrac = np.array( [] ).astype('float32')
                     pdgHit = np.array( [] ).astype('int32')
                     trackID = np.array( [] ).astype('int64')
@@ -431,7 +434,7 @@ def main(argv=None):
                 event_dict['unix_ts_usec'] = event_unix_ts_usec
 
             if useData==False:
-                other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'charge':hits_Q, 'E':hits_E, 'matches':matches,\
+                other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'io_group':hits_io_group, 'charge':hits_Q, 'E':hits_E, 'matches':matches,\
                                 'mcp_energy':trajE, 'mcp_pdg':trajPDG, 'mcp_nuid':trajVertexID, 'mcp_vertex_id':trajVertexID,\
                                 'mcp_idLocal':trajIDLocal, 'mcp_id':trajID, 'mcp_px':trajPx, 'mcp_py':trajPy, 'mcp_pz':trajPz,\
                                 'mcp_mother':trajParentID, 'mcp_startx':trajStartX, 'mcp_starty':trajStartY, 'mcp_startz':trajStartZ,\
@@ -442,7 +445,7 @@ def main(argv=None):
                                 'hit_packetFrac':packetFrac, 'hit_particleID':particleID, 'hit_particleIDLocal':particleIDLocal,\
                                 'hit_pdg':pdgHit, 'hit_vertexID':interactionIndex, 'hit_segmentID':trackID }
             else:
-                other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'charge':hits_Q, 'E':hits_E }
+                other_dict = {  'x':hits_x, 'y':hits_y, 'z':hits_z, 'ts':hits_ts, 'io_group':hits_io_group, 'charge':hits_Q, 'E':hits_E }
 
             max_entries=0
             for key in other_dict.keys():
