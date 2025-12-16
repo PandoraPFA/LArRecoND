@@ -41,6 +41,7 @@ void rootToRootConversion(
     Float_t in_ts[MaxDepthArray];
     Float_t in_charge[MaxDepthArray];
     ULong_t  in_io_group[MaxDepthArray];
+    ULong_t  in_io_channel[MaxDepthArray];
     Float_t in_E[MaxDepthArray];
 
     // Hit truth
@@ -110,6 +111,7 @@ void rootToRootConversion(
     tr->SetBranchAddress("z",&in_z);
     tr->SetBranchAddress("ts",&in_ts);
     tr->SetBranchAddress("io_group",&in_io_group);
+    tr->SetBranchAddress("io_channel",&in_io_channel);
     tr->SetBranchAddress("charge",&in_charge);
     tr->SetBranchAddress("E",&in_E);
 
@@ -169,6 +171,7 @@ void rootToRootConversion(
     std::vector<float> z;
     std::vector<float> ts;
     std::vector<uint8_t> io_group;
+    std::vector<uint8_t> io_channel;
     std::vector<float> E;
     std::vector<float> charge;
   
@@ -228,6 +231,7 @@ void rootToRootConversion(
     outgoingTree->Branch("z", &z);
     outgoingTree->Branch("ts", &ts);
     outgoingTree->Branch("io_group", &io_group);
+    outgoingTree->Branch("io_channel", &io_channel);
     outgoingTree->Branch("E", &E);
     outgoingTree->Branch("charge", &charge);
     if ( isMC ) {
@@ -437,6 +441,7 @@ void rootToRootConversion(
             z.push_back(in_z[idxHit]);
             ts.push_back(in_ts[idxHit]);
             io_group.push_back(in_io_group[idxHit]);
+            io_channel.push_back(in_io_channel[idxHit]);
             E.push_back(in_E[idxHit]);
             charge.push_back(in_charge[idxHit]);
             if ( isMC ) {
