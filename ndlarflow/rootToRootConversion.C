@@ -40,10 +40,10 @@ void rootToRootConversion(
     Float_t in_z[MaxDepthArray];
     Float_t in_ts[MaxDepthArray];
     Float_t in_charge[MaxDepthArray];
-    ULong_t in_io_group[MaxDepthArray];
-    ULong_t in_io_channel[MaxDepthArray];
-    ULong_t in_chip_id[MaxDepthArray];
-    ULong_t in_channel_id[MaxDepthArray];
+    uint8_t in_io_group[MaxDepthArray];
+    uint8_t in_io_channel[MaxDepthArray];
+    uint8_t in_chip_id[MaxDepthArray];
+    uint8_t in_channel_id[MaxDepthArray];
     Float_t in_E[MaxDepthArray];
 
     // Hit truth
@@ -377,6 +377,10 @@ void rootToRootConversion(
 	    x.clear();
             y.clear();
             z.clear();
+            io_group.clear();
+            io_channel.clear();
+            chip_id.clear();
+            channel_id.clear();
             ts.clear();
             E.clear();
             charge.clear();
