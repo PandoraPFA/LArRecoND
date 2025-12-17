@@ -15,6 +15,12 @@
     <ShouldVoxelizeZ>true</ShouldVoxelizeZ>
     <VoxelZHalfWidth>0.95</VoxelZHalfWidth>
     <UseVoxelizedStartStop>true</UseVoxelizedStartStop>
+    <!-- Shower fitter settings -->
+    <ShowerStartLength>5</ShowerStartLength>
+    <ShowerStartWidth>4</ShowerStartWidth>
+    <SigmaLength>2</SigmaLength>
+    <ProximityHitsThreshold>10</ProximityHitsThreshold>
+    <ProximityHitsRadius>4</ProximityHitsRadius>
     <!-- Calorimetry -->
     <!-- Using default density, efield, birksA, birksK, eLifetime, eSpeed -->
     <!-- Leaving the Calibration Fudge Factor as is for now, pinned to 2 MeV/cm -->
