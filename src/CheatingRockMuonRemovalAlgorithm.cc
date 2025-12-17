@@ -42,8 +42,6 @@ StatusCode CheatingRockMuonRemovalAlgorithm::Run()
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*this, pCaloHitList, m_inputCaloHitListName));
 
     const MCParticleList *pMCParticleList = NULL;
-    PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*this, pMCParticleList, m_inputMCParticleListName));
-
     // Create the output lists
     CaloHitList pRockMuonCaloHitList;
     CaloHitList pNeutrinoCaloHitList;

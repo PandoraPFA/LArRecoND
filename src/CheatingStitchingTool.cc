@@ -23,8 +23,8 @@ CheatingStitchingTool::CheatingStitchingTool()
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const PfoList *const /*pMultiPfoList*/, PfoToLArTPCMap &pfoToLArTPCMap,
-    PfoToFloatMap &/*stitchedPfosToX0Map*/)
+void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const PfoList *const /*pMultiPfoList*/,
+    PfoToLArTPCMap &pfoToLArTPCMap, PfoToFloatMap & /*stitchedPfosToX0Map*/)
 {
     if (PandoraContentApi::GetSettings(*pAlgorithm)->ShouldDisplayAlgorithmInfo())
         std::cout << "----> Running Algorithm Tool: " << this->GetInstanceName() << ", " << this->GetType() << std::endl;
@@ -35,8 +35,6 @@ void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const P
     if (pfoToLArTPCMap.empty())
         throw StatusCodeException(STATUS_CODE_NOT_FOUND);
 
-    const MCParticleList *pMCParticleList{nullptr};
-    PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*pAlgorithm, pMCParticleList));
     const PfoList *pPfoList{nullptr};
     PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*pAlgorithm, pPfoList));
 
@@ -51,14 +49,20 @@ void CheatingStitchingTool::Run(const MasterAlgorithm *const pAlgorithm, const P
 
         for (const CaloHit *const pCaloHit : allHits)
         {
-            MCParticleVector mcParticleVector;
-            for (const auto &weightMapEntry : pCaloHit->GetMCParticleWeightMap())
-                mcParticleVector.push_back(weightMapEntry.first);
-            std::sort(mcParticleVector.begin(), mcParticleVector.end(), LArMCParticleHelper::SortByMomentum);
+            float maxWeight{std::numeric_limits<float>::lowest()};
+            const MCParticle *pMainMC{nullptr};
+            for (const auto &[pMC, weight] : pCaloHit->GetMCParticleWeightMap())
+            {
+                if (weight > maxWeight)
+                {
+                    pMainMC = pMC;
+                    maxWeight = weight;
+                }
+            }
 
-            // Consider only the primary MCParticle associated to this hit
-            if (!mcParticleVector.empty())
-                ++mcParticleToHitCountMap[mcParticleVector.front()];
+            // Consider only the MCParticle with the most weight associated to this hit
+            if (pMainMC)
+                ++mcParticleToHitCountMap[pMainMC];
         }
 
         // Find the MCParticle with the most hits associated to this PFO
