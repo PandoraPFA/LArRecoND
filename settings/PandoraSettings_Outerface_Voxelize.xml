@@ -2,9 +2,9 @@
     <!-- PANDORA OUTERFACE SETTINGS -->
     <Verbosity>0</Verbosity>
     <!-- Command switches -->
-    <ShouldRunTrackFit>false</ShouldRunTrackFit>
+    <ShouldRunTrackFit>true</ShouldRunTrackFit>
     <ShouldRunShowerFit>true</ShouldRunShowerFit>
-    <TrackScoreCut>-1.0</TrackScoreCut>
+    <TrackScoreCut>.5</TrackScoreCut>
     <!-- Track fitter settings -->
     <!-- 2x2 -->
     <Detector>0</Detector>
@@ -21,14 +21,16 @@
     <SigmaLength>2</SigmaLength>
     <ProximityHitsThreshold>10</ProximityHitsThreshold>
     <ProximityHitsRadius>4</ProximityHitsRadius>
+    <EnergyRecombinationShower>1.587</EnergyRecombinationShower>
+    <CorrectionFactorShower>1.67</CorrectionFactorShower>
     <!-- Calorimetry -->
     <!-- Using default density, efield, birksA, birksK, eLifetime, eSpeed -->
     <!-- Leaving the Calibration Fudge Factor as is for now, pinned to 2 MeV/cm -->
     <ShouldCorrectLifetime>true</ShouldCorrectLifetime>
-    <ShouldCorrectRecombination>false</ShouldCorrectRecombination>
+    <ShouldCorrectRecombination>true</ShouldCorrectRecombination>
     <FlowStyleRecombination>true</FlowStyleRecombination>
-    <BoxRecombination>true</BoxRecombination>
-    <BirksRecombination>false</BirksRecombination>    
+    <BoxRecombination>false</BoxRecombination>
+    <BirksRecombination>true</BirksRecombination>    
     <!-- PID -->
     <!-- Using nominal dEdx Res Template file in larsoft_data repo on CVMFS -->
     <ShouldRunPID>false</ShouldRunPID>

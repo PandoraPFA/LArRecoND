@@ -195,7 +195,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
   // Create the class where we'll store the output info
   //
-  NDRecoOutputData fOut( parameters.outfileName, parameters.runTrackFit, parameters.runShowerFit, parameters.fShouldRunPID);
+  NDRecoOutputData fOut( parameters.outfileName);
 
   // Loop events
   for ( long entryIdx = 0; entryIdx < nEntries; ++entryIdx ) {
@@ -222,15 +222,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
     std::vector<float> shwrCentroidX, shwrCentroidY, shwrCentroidZ, shwrStartX, shwrStartY, shwrStartZ;
     std::vector<float> shwrDirX, shwrDirY, shwrDirZ;
     std::vector<float> shwrLen;
-
     std::vector<int> shwrSliceId, shwrClusterId;
-    
-    std::vector<float> shwrStartPointsX, shwrStartPointsY, shwrStartPointsZ;
     std::vector<double> shwrdEdx;
     std::vector<float> shwrEnergy;
-    std::vector<int> shwrStartPointsRecoId;
-    std::vector<float> shwrStartHitPositionX, shwrStartHitPositionY, shwrStartHitPositionZ;
-    std::vector<float> shwrEnergyLifetimeCorrected;
     std::vector<float> shwrEndX, shwrEndY, shwrEndZ;
 
     // Loop particles in the event
@@ -283,6 +277,30 @@ void ProcessPostReco(const ParameterStruct &parameters)
       } // loop hits
 
       // Fit it as a track?
+if ( !parameters.runTrackFit || (parameters.trackScoreCut > 0. && trackScore < parameters.trackScoreCut) ) {
+        // if we aren't running the track fit, then fill defaults for the track parameters we expect for every reco particle
+        //  // track values
+    trkStartX.push_back(-9999.);
+    trkStartY.push_back(-9999.);
+    trkStartZ.push_back(-9999.);
+    trkStartDirX.push_back(1.);
+    trkStartDirY.push_back(0.);
+    trkStartDirZ.push_back(0.);
+    trkEndX.push_back(-9999.);
+    trkEndY.push_back(-9999.);
+    trkEndZ.push_back(-9999.);
+    trkEndDirX.push_back(1.);
+    trkEndDirY.push_back(0.);
+    trkEndDirZ.push_back(0.);
+    trkLen.push_back(0.);
+    // track PID info
+    pid_pdg.push_back(0);
+    pid_ndf.push_back(0);
+    pid_muScore.push_back(-5.);
+    pid_piScore.push_back(-5.);
+    pid_kScore.push_back(-5.);
+    pid_proScore.push_back(-5.);
+    }
       if ( parameters.runTrackFit && (parameters.trackScoreCut < 0. || trackScore >= parameters.trackScoreCut) ) {
 	// Run the track fit info:
 	// TODO: Make the MinTrajectoryPoints(default=2) and SlidingFitHalfWindow(20) configurable
@@ -714,192 +732,210 @@ void ProcessPostReco(const ParameterStruct &parameters)
 	}
       } // TRACK FIT
 
+      if( !parameters.runShowerFit || (parameters.trackScoreCut > 0. && trackScore >= parameters.trackScoreCut)){
+   
+          shwrCentroidX.push_back(-9999.);
+          shwrCentroidY.push_back(-9999.);
+          shwrCentroidZ.push_back(-9999.);
+          shwrStartX.push_back(-9999.);
+          shwrStartY.push_back(-9999.);
+          shwrStartZ.push_back(-9999.);
+          shwrDirX.push_back(-9999.);
+          shwrDirY.push_back(-9999.);
+          shwrDirZ.push_back(-9999.);
+          shwrLen.push_back(-9999.);
+          shwrSliceId.push_back(-9999.);
+          shwrClusterId.push_back(-9999.);
+          shwrdEdx.push_back(-9999.);
+          shwrEnergy.push_back(-9999.);
+          shwrEndX.push_back(-9999.);
+          shwrEndY.push_back(-9999.);
+          shwrEndZ.push_back(-9999.);
+      
+      }
+
       if ( parameters.runShowerFit && (parameters.trackScoreCut < 0. || trackScore < parameters.trackScoreCut) ) {
- //         std::cout << "I would have fit this as a shower..." << std::endl;
-	//Begin Defining Shower Direction Through a PCA      
+
+	    //Save Slice and Cluster ID      
         shwrSliceId.push_back(sliceID);
         shwrClusterId.push_back(clusterID);
 
         
+        //Begin Defining Shower Direction Through a PCA
         CartesianVector centroid(0.f, 0.f, 0.f);
         lar_content::LArPcaHelper::EigenVectors eigenVecs;
         lar_content::LArPcaHelper::EigenValues eigenValues(0.f, 0.f, 0.f);
         lar_content::LArPcaHelper::RunPca(caloHitList, centroid, eigenValues, eigenVecs);
 	
-	//Define directions to be positive
-	const CartesianVector axisDirection(eigenVecs.at(0).GetZ() > 0.f ? eigenVecs.at(0) : eigenVecs.at(0) * -1.f);
+	    //Define directions to be positive
+	    const CartesianVector axisDirection(eigenVecs.at(0).GetZ() > 0.f ? eigenVecs.at(0) : eigenVecs.at(0) * -1.f);
 
-    shwrCentroidX.push_back(centroid.GetX());
-    shwrCentroidY.push_back(centroid.GetY());
-    shwrCentroidZ.push_back(centroid.GetZ());
+        shwrCentroidX.push_back(centroid.GetX());
+        shwrCentroidY.push_back(centroid.GetY());
+        shwrCentroidZ.push_back(centroid.GetZ());
 
 
-	//Define Shower Length
-	float NSigma = parameters.sigmaLength;
-	float primaryEigenValue = eigenValues.GetX();
-	float showerLength = std::sqrt(primaryEigenValue) * 2 * NSigma;
+	    //Define Shower Length
+	    float NSigma = parameters.sigmaLength;
+	    float primaryEigenValue = eigenValues.GetX();
+	    float showerLength = std::sqrt(primaryEigenValue) * 2 * NSigma;
 	
-    shwrLen.push_back(showerLength);
+        shwrLen.push_back(showerLength);
 
-	//Define the shower start position
-	//loop over the caloHitList 
-	double projection;
-	std::map<double, CartesianVector> projectionMap;
-    std::vector<double> projectionValues;
+	    //Define the shower start position
+	    //loop over the caloHitList
+        
+        float projection;
+	    std::map<double, CartesianVector> projectionMap;
+	    CartesianVector hitPosition(0.f, 0.f, 0.f);
 
-	CartesianVector hitPosition(0.f, 0.f, 0.f);
+        //Find projections for each hit along the primary axis and save them into a map from least to greatest	
 
-    //Find projections for each hit along the primary axis and save them into a map from least to greatest	
+	    for (const CaloHit *const pCaloHit3D : caloHitList){
 
-	for (const CaloHit *const pCaloHit3D : caloHitList){
+		    projection = axisDirection.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid); 
+            hitPosition = pCaloHit3D->GetPositionVector();
+		    projectionMap.insert({projection, hitPosition});	
 
-		projection = axisDirection.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid); 
-        hitPosition = pCaloHit3D->GetPositionVector();
-		projectionMap.insert({projection, hitPosition});	
-	    projectionValues.push_back(projection);
-    }
+        }
     
 
 
-    // constants for looping through projection
-	//Define a proximity radius and proximity threshold
+        // constants for looping through projection
+	    //Define a proximity radius and proximity threshold
 	
 
-    CartesianVector showerStartHitPos(0.f, 0.f, 0.f);
-    float showerStartHitProjectionValue(9999);
+        CartesianVector showerStartHitPos(0.f, 0.f, 0.f);
+        float showerStartHitProjectionValue(9999);
 
-    CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f, 0.f, 0.f);
-    float hit_i_proj(9999);
+        CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f, 0.f, 0.f);
+        float hit_i_proj(9999);
 
-    int hitProximityRadius = parameters.proximityHitsRadius;
-    int proximityHitsCounter;
-    float hit_i_j_dist;
-    int proximityHitsThreshold = parameters.proximityHitsThreshold;
+        int hitProximityRadius = parameters.proximityHitsRadius;
+        int proximityHitsCounter;
+        float hit_i_j_dist;
+        int proximityHitsThreshold = parameters.proximityHitsThreshold;
 
-    for(auto iMapEntry: projectionMap){
-        proximityHitsCounter = 0;
-        hit_i_pos = iMapEntry.second;
-        hit_i_proj = iMapEntry.first;
+        for(auto iMapEntry: projectionMap){
+            proximityHitsCounter = 0;
+            hit_i_pos = iMapEntry.second;
+            hit_i_proj = iMapEntry.first;
         
-        for(auto jMapEntry : projectionMap){ 
-            hit_j_pos = jMapEntry.second;
-            if(hit_j_pos == hit_i_pos){
-                continue;
-            }
+            for(auto jMapEntry : projectionMap){ 
+                
+                hit_j_pos = jMapEntry.second;
+                if(hit_j_pos == hit_i_pos){
+                    continue;
+                }
 
             hit_i_j_dist = std::sqrt(hit_i_pos.GetDistanceSquared(hit_j_pos));
         
-            if(hit_i_j_dist <= hitProximityRadius){
-            proximityHitsCounter ++;
-         //   std::cout << "Distance: " << hit_i_j_dist << std::endl;
-            
-            }
-            //std::cout << "Hits COunter: " << proximityHitsCounter << std::endl;
+                if(hit_i_j_dist <= hitProximityRadius){
+                    proximityHitsCounter ++;
+         
+                }
 
             if(proximityHitsCounter > proximityHitsThreshold){
                 showerStartHitPos = hit_i_pos;
                 showerStartHitProjectionValue = hit_i_proj;
                 break;
-            }    
-        }   
+                }    
+            }  
+            
         if(proximityHitsCounter > proximityHitsThreshold){
             break;
+            }
         }
-    }
     
     
-    if(showerStartHitProjectionValue == 9999){
-        showerStartHitPos = projectionMap.begin()->second;
-        showerStartHitProjectionValue = projectionMap.begin()->first;
-    }
+        if(showerStartHitProjectionValue == 9999){
+            showerStartHitPos = projectionMap.begin()->second;
+            showerStartHitProjectionValue = projectionMap.begin()->first;
+        }
   
 
-    CartesianVector showerStartPosition = centroid + axisDirection*showerStartHitProjectionValue;   
-
-      //end shower start point calculation     	
-
-	float showerStartX, showerStartY, showerStartZ;
-
-	float showerStartLength = parameters.showerStartLength;
-	int showerStartWidth = parameters.showerStartWidth;
+        CartesianVector showerStartPosition = centroid + axisDirection*showerStartHitProjectionValue;   
 
 
-	showerStartX = showerStartHitPos.GetX();
-	showerStartY = showerStartHitPos.GetY();
-	showerStartZ = showerStartHitPos.GetZ();
+	   
 
-    //Define shower direction as a vector passing through both the start point and the centroid
+	    float showerStartLength = parameters.showerStartLength;
+	    int showerStartWidth = parameters.showerStartWidth;
 
-    CartesianVector showerDirection = (centroid - showerStartHitPos);
-    showerDirection = showerDirection.GetUnitVector();
+        //Define shower direction as a vector passing through both the start point and the centroid
 
-    //Check if shower start point and direction are in the right direction
+        CartesianVector showerDirection = (centroid - showerStartHitPos);
+        showerDirection = showerDirection.GetUnitVector();
+
+        //Check if shower start point and direction are in the right direction
  
    
-    std::vector<double> perp_dist_vec;
-    std::vector<double> proj_vec;
+        std::vector<double> perp_dist_vec;
+        std::vector<double> proj_vec;
 
-    for( auto iMapEntry : projectionMap){
-       CartesianVector start_to_hit_dir = (iMapEntry.second - showerStartHitPos);
-       double proj = start_to_hit_dir.GetDotProduct(showerDirection);
-       CartesianVector perp_vec = start_to_hit_dir - showerDirection*proj;
-       double perp_dist = perp_vec.GetMagnitude();
-       proj_vec.push_back(proj);
-       perp_dist_vec.push_back(perp_dist);
-    }
-    float median = TMath::Median(proj_vec.size(), &proj_vec[0]);
-    std::vector<double> perp_dist_low, perp_dist_high;
-
-    for(unsigned int iHit = 0; iHit < proj_vec.size(); iHit ++){
-    
-    if(proj_vec[iHit] < median){
-        perp_dist_low.push_back(perp_dist_vec[iHit]);
-    }
-    if(proj_vec[iHit] >= median){
-        perp_dist_high.push_back(perp_dist_vec[iHit]);
-    }
-
-    
-    }
-    double avg_low = TMath::Mean(perp_dist_low.size(), &perp_dist_low[0]);
-    double avg_high = TMath::Mean(perp_dist_high.size(), &perp_dist_high[0]);
- 
-    if(avg_low > avg_high){
-        //flip PCA axis and clear necessary elements
-        CartesianVector axisDirectionFlipped(-axisDirection.GetX(), -axisDirection.GetY(), -axisDirection.GetZ()); 
-        projectionMap.clear();
-
-        for(const CaloHit *const pCaloHit3D : caloHitList){ 
-        projection = axisDirectionFlipped.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid);
-        hitPosition = pCaloHit3D->GetPositionVector();
-        projectionMap.insert({projection, hitPosition});
+        for( auto iMapEntry : projectionMap){
+            CartesianVector start_to_hit_dir = (iMapEntry.second - showerStartHitPos);
+            double proj = start_to_hit_dir.GetDotProduct(showerDirection);
+            CartesianVector perp_vec = start_to_hit_dir - showerDirection*proj;
+            double perp_dist = perp_vec.GetMagnitude();
+            proj_vec.push_back(proj);
+            perp_dist_vec.push_back(perp_dist);
         }
         
-        for(auto iMapEntry: projectionMap){
-            proximityHitsCounter = 0;
-            hit_i_pos = iMapEntry.second;
-            hit_i_proj = iMapEntry.first;
+        float median = TMath::Median(proj_vec.size(), &proj_vec[0]);
+        std::vector<double> perp_dist_low, perp_dist_high;
 
-            for(auto jMapEntry : projectionMap){
-                hit_j_pos = jMapEntry.second;
-                if(hit_j_pos == hit_i_pos){
-                    continue;
-                }
-                hit_i_j_dist = std::sqrt(hit_i_pos.GetDistanceSquared(hit_j_pos));
-                if(hit_i_j_dist <= hitProximityRadius){
-                    proximityHitsCounter ++;
-                }
-                if(proximityHitsCounter > proximityHitsThreshold){
-                    showerStartHitPos = hit_i_pos;
-                    showerStartHitProjectionValue = hit_i_proj;
-                    break;
-                }
+        for(unsigned int iHit = 0; iHit < proj_vec.size(); iHit ++){
+    
+            if(proj_vec[iHit] < median){
+                perp_dist_low.push_back(perp_dist_vec[iHit]);
             }
+            if(proj_vec[iHit] >= median){
+                perp_dist_high.push_back(perp_dist_vec[iHit]);
+            }
+        }
+    
+        double avg_low = TMath::Mean(perp_dist_low.size(), &perp_dist_low[0]);
+        double avg_high = TMath::Mean(perp_dist_high.size(), &perp_dist_high[0]);
+ 
+        if(avg_low > avg_high){
+            //flip PCA axis and clear necessary elements
+            CartesianVector axisDirectionFlipped(-axisDirection.GetX(), -axisDirection.GetY(), -axisDirection.GetZ()); 
+            projectionMap.clear();
+
+            for(const CaloHit *const pCaloHit3D : caloHitList){ 
+                projection = axisDirectionFlipped.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid);
+                hitPosition = pCaloHit3D->GetPositionVector();
+                projectionMap.insert({projection, hitPosition});
+            }
+        
+            for(auto iMapEntry: projectionMap){
+                proximityHitsCounter = 0;
+                hit_i_pos = iMapEntry.second;
+                hit_i_proj = iMapEntry.first;
+
+                for(auto jMapEntry : projectionMap){
+                    hit_j_pos = jMapEntry.second;
+                    if(hit_j_pos == hit_i_pos){
+                        continue;
+                    }
+                hit_i_j_dist = std::sqrt(hit_i_pos.GetDistanceSquared(hit_j_pos));
+                    if(hit_i_j_dist <= hitProximityRadius){
+                        proximityHitsCounter ++;
+                    }
+                    if(proximityHitsCounter > proximityHitsThreshold){
+                        showerStartHitPos = hit_i_pos;
+                        showerStartHitProjectionValue = hit_i_proj;
+                        break;
+                    }
+                }
         
             if(proximityHitsCounter > proximityHitsThreshold){
                 break;    
             }
          }  
+        
+        //Redefine showerstart and direction 
         showerStartPosition = centroid + axisDirectionFlipped*showerStartHitProjectionValue;
         showerDirection = (centroid - showerStartHitPos);
         showerDirection = showerDirection.GetUnitVector();
@@ -908,107 +944,90 @@ void ProcessPostReco(const ParameterStruct &parameters)
     
     
     
-    shwrDirX.push_back(showerDirection.GetX());
-    shwrDirY.push_back(showerDirection.GetY());
-    shwrDirZ.push_back(showerDirection.GetZ());
+        shwrDirX.push_back(showerDirection.GetX());
+        shwrDirY.push_back(showerDirection.GetY());
+        shwrDirZ.push_back(showerDirection.GetZ());
 
-    
-    shwrStartX.push_back(showerStartX);
-    shwrStartY.push_back(showerStartY);
-    shwrStartZ.push_back(showerStartZ);
-
-    shwrStartHitPositionX.push_back(showerStartHitPos.GetX());
-    shwrStartHitPositionY.push_back(showerStartHitPos.GetY());
-    shwrStartHitPositionZ.push_back(showerStartHitPos.GetZ());
+        shwrStartX.push_back(showerStartHitPos.GetX());
+        shwrStartY.push_back(showerStartHitPos.GetY());
+        shwrStartZ.push_back(showerStartHitPos.GetZ());
    
-    CartesianVector endPoint(0.f, 0.f, 0.f);
+        CartesianVector endPoint(0.f, 0.f, 0.f);
 
-    endPoint = showerStartHitPos + showerDirection*showerLength;
+        endPoint = showerStartHitPos + showerDirection*showerLength;
     
-    shwrEndX.push_back(endPoint.GetX());
-    shwrEndY.push_back(endPoint.GetY());
-    shwrEndZ.push_back(endPoint.GetZ());
+        shwrEndX.push_back(endPoint.GetX());
+        shwrEndY.push_back(endPoint.GetY());
+        shwrEndZ.push_back(endPoint.GetZ());
 
-    //Define dE/dx of the shower
+        //Define dE/dx of the shower
 	
-	float distanceFromShowerStart;	
+	    float distanceFromShowerStart;	
 	
-	float hitPCAOpeningAngle, hitPositionAlongAxis, hitPositionFromAxis;
-	float totalQ = 0;
-    float totalQ_corrected = 0;
-    float chargeStartPoints = 0;
+	    float hitPCAOpeningAngle, hitPositionAlongAxis, hitPositionFromAxis;
+	    float totalCharge = 0;
+        float chargeStartPoints = 0;
 
-	CartesianVector showerStartCurrentHit(0.f, 0.f, 0.f);
-	CartesianVector showerStartPCAProjection(0.f, 0.f, 0.f);
-	CaloHitList showerStartCaloHitList;	
-	CartesianVector hitProjectedPosition(0.f, 0.f, 0.f);
+	    CartesianVector showerStartCurrentHit(0.f, 0.f, 0.f);
+	    CartesianVector showerStartPCAProjection(0.f, 0.f, 0.f);
+	    CaloHitList showerStartCaloHitList;	
+	    CartesianVector hitProjectedPosition(0.f, 0.f, 0.f);
 
     
 	
-    int caloHitIndex = 0;
+        int caloHitIndex = 0;
 
-    showerStartCaloHitList.clear();
+        showerStartCaloHitList.clear();
 
-	for(const CaloHit *const pShowerStartCaloHit3D : caloHitList){
-		showerStartPCAProjection = centroid + ( showerDirection * showerStartHitProjectionValue);
-        showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
-        totalQ_corrected += (pShowerStartCaloHit3D->GetInputEnergy())*LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
-		totalQ += pShowerStartCaloHit3D->GetInputEnergy();
-        if(showerStartPCAProjection == showerStartCurrentHit){
-            continue;
+	    for(const CaloHit *const pShowerStartCaloHit3D : caloHitList){
+		    showerStartPCAProjection = centroid + ( showerDirection * showerStartHitProjectionValue);
+            showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
+            totalCharge += (pShowerStartCaloHit3D->GetInputEnergy())*LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
+            if(showerStartPCAProjection == showerStartCurrentHit){
+                continue;
 			}
-        else{
-        CartesianVector input = showerStartCurrentHit - showerStartPCAProjection;
-            if(input.GetMagnitude() < 0.001){
+            else{
+            CartesianVector input = showerStartCurrentHit - showerStartPCAProjection;
+                if(input.GetMagnitude() < 0.001){
                continue;
+                }
+		    hitPCAOpeningAngle = showerDirection.GetOpeningAngle(showerStartCurrentHit - showerStartPCAProjection);
+		    distanceFromShowerStart = std::sqrt(showerStartCurrentHit.GetDistanceSquared(showerStartPCAProjection));
+		    hitPositionAlongAxis = distanceFromShowerStart * (std::cos(hitPCAOpeningAngle));
+            hitPositionFromAxis = distanceFromShowerStart * std::sin(hitPCAOpeningAngle);		
             }
-		hitPCAOpeningAngle = showerDirection.GetOpeningAngle(showerStartCurrentHit - showerStartPCAProjection);
-		distanceFromShowerStart = std::sqrt(showerStartCurrentHit.GetDistanceSquared(showerStartPCAProjection));
-		hitPositionAlongAxis = distanceFromShowerStart * (std::cos(hitPCAOpeningAngle));
-        hitPositionFromAxis = distanceFromShowerStart * std::sin(hitPCAOpeningAngle);		
-        }
 
-        if(hitPositionAlongAxis > 0 && hitPositionAlongAxis < showerStartLength && hitPositionFromAxis < showerStartWidth){
-			showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
-            shwrStartPointsRecoId.push_back(clusterID);
-            chargeStartPoints += pShowerStartCaloHit3D->GetInputEnergy()*LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
+            if(hitPositionAlongAxis > 0 && hitPositionAlongAxis < showerStartLength && hitPositionFromAxis < showerStartWidth){
+			    showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
+                chargeStartPoints += pShowerStartCaloHit3D->GetInputEnergy()*LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
 	       //Add positions of hits to a branch to look at later
-			shwrStartPointsX.push_back(showerStartCurrentHit.GetX());
-            shwrStartPointsY.push_back(showerStartCurrentHit.GetY());
-            shwrStartPointsZ.push_back(showerStartCurrentHit.GetZ());
-	        caloHitIndex++;		
-            } 
+		
+	            caloHitIndex++;
+             } 
 
-		else{
-			continue;
+		    else{
+			    continue;
 			}	
 
-	}
+	    }
     
-    float energyStartPoints = (2.8)*dEdxWithRecombination(parameters, chargeStartPoints);
-    float energyTotal = (2.8)*dEdxWithRecombination(parameters, totalQ_corrected);
-    std::cout << "dEdx: " << energyStartPoints/showerStartLength << std::endl;
-    std::cout << "Total Energy: " << energyTotal << std::endl;
-
-	shwrEnergy.push_back(totalQ);
-    shwrEnergyLifetimeCorrected.push_back(energyTotal);
-    shwrdEdx.push_back(energyStartPoints/showerStartLength);
+        float energyStartPoints = chargeStartPoints*(parameters.energyRecombinationShower)*(parameters.correctionFactorShower);
+        float energyTotal = totalCharge*(parameters.energyRecombinationShower)*(parameters.correctionFactorShower);
+	    shwrEnergy.push_back(energyTotal);
+        shwrdEdx.push_back(energyStartPoints/showerStartLength);
 
 	 } // SHOWER FIT
 
 
 }
 
-    if ( parameters.runTrackFit ) {
+ 
       fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen);
       fOut.FillTrackCaloBranches(trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
-      if ( parameters.fShouldRunPID ) fOut.FillTrackPID(pid_pdg,pid_ndf,pid_muScore,pid_piScore,pid_kScore,pid_proScore);
-    }
-   if ( parameters.runShowerFit){
-     fOut.FillShowerBranches(shwrCentroidX,shwrCentroidY,shwrCentroidZ,shwrStartX, shwrStartY, shwrStartZ, shwrDirX, shwrDirY, shwrDirZ, shwrLen, 
-             shwrSliceId, shwrClusterId,shwrStartPointsX, shwrStartPointsY, shwrStartPointsZ, shwrdEdx, shwrEnergy, shwrStartPointsRecoId,
-             shwrStartHitPositionX, shwrStartHitPositionY, shwrStartHitPositionZ, shwrEnergyLifetimeCorrected, shwrEndX, shwrEndY, shwrEndZ );
-}
+      fOut.FillTrackPID(pid_pdg,pid_ndf,pid_muScore,pid_piScore,pid_kScore,pid_proScore);
+    
+      fOut.FillShowerBranches(shwrCentroidX,shwrCentroidY,shwrCentroidZ,shwrStartX, shwrStartY, shwrStartZ, shwrDirX, shwrDirY, shwrDirZ, shwrLen, shwrSliceId, shwrClusterId,shwrdEdx, shwrEnergy, shwrEndX, shwrEndY, shwrEndZ );
+
 
 
     // Write our branches to the output tree
@@ -1096,6 +1115,8 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "SigmaLength", parameters.sigmaLength) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ProximityHitsThreshold", parameters.proximityHitsThreshold) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ProximityHitsRadius", parameters.proximityHitsRadius) );
+PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EnergyRecombinationShower", parameters.energyRecombinationShower) );
+PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "CorrectionFactorShower", parameters.correctionFactorShower) );
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Detector", parameters.fDetector) );
 
