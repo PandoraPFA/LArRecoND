@@ -1214,7 +1214,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
     // Fill track branches: this will fill per particle values with default values if track fit is not run or is skipped
     fOut.FillTrackBranches(trkStartX,trkStartY,trkStartZ,trkStartDirX,trkStartDirY,trkStartDirZ,trkEndX,trkEndY,trkEndZ,trkEndDirX,trkEndDirY,trkEndDirZ,trkLen,trkContained,trkWallDistance,
 			   trk_KEFromLength_muon,trk_KEFromLength_proton,trk_pFromLength_muon,trk_pFromLength_proton);
-    fOut.FillTrackCaloBranches(trackFitTrackCaloE,trackFitVisE,trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
+    fOut.FillTrackCaloBranches(parameters,trackFitTrackCaloE,trackFitVisE,trackFitSliceId,trackFitPfoId,trackFitX,trackFitY,trackFitZ,trackFitQ,trackFitRR,trackFitdx,trackFitdQdx,trackFitdEdx);
     fOut.FillTrackPID(pid_pdg,pid_ndf,pid_muScore,pid_piScore,pid_kScore,pid_proScore);
  
     fOut.FillShowerBranches(shwrCentroidX,shwrCentroidY,shwrCentroidZ,shwrStartX, shwrStartY, shwrStartZ, shwrDirX, shwrDirY, shwrDirZ, shwrLen, shwrSliceId, shwrClusterId,shwrdEdx, shwrEnergy, shwrEndX, shwrEndY, shwrEndZ );
@@ -1291,7 +1291,6 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "TrackScoreCut", parameters.trackScoreCut) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "PixelPitch", parameters.pixelPitch) );
 
-    
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldApplyHitThreshold", parameters.applyThreshold) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ChargeThreshold", parameters.thresholdVal) );
 
@@ -1304,14 +1303,15 @@ bool ReadSettings(ParameterStruct &parameters)
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "SigmaLength", parameters.sigmaLength) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ProximityHitsThreshold", parameters.proximityHitsThreshold) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ProximityHitsRadius", parameters.proximityHitsRadius) );
-PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EnergyRecombinationShower", parameters.energyRecombinationShower) );
-PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "CorrectionFactorShower", parameters.correctionFactorShower) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "EnergyRecombinationShower", parameters.energyRecombinationShower) );
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "CorrectionFactorShower", parameters.correctionFactorShower) );
 
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "Detector", parameters.fDetector) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.ContainDistX) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistY", parameters.ContainDistY) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ContainDistZ", parameters.ContainDistZ) );
 
+    PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldSaveCaloPoints", parameters.fShouldSaveCaloPoints) )
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldCorrectLifetime", parameters.fShouldCorrectLifetime) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ElectronLifetime", parameters.fElectronLifetime) );
     PANDORA_RETURN_RESULT_IF_AND_IF( pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ElectronDriftSpeed", parameters.fElectronDriftSpeed) );

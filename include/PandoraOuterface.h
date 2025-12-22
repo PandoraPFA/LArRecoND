@@ -63,6 +63,7 @@ struct ParameterStruct
   float correctionFactorShower = 1.6;
 
   // Calorimetry
+  bool fShouldSaveCaloPoints = false;
   bool fShouldCorrectLifetime = true;
   float fElectronLifetime = 2.2e3; // us
   float fElectronDriftSpeed = 0.1648; // cm/us
@@ -221,7 +222,8 @@ class NDRecoOutputData
 			  const std::vector<float> &length, const std::vector<bool> &trkCont, const std::vector<float> &trkWallDist,
 			  const std::vector<float> &keFromRangeMu, const std::vector<float> &keFromRangeP,
 			  const std::vector<float> &pFromRangeMu, const std::vector<float> &pFromRangeP ); ///< Fill the track fit result branches
-  void FillTrackCaloBranches( const std::vector<float> &tfCaloE, const std::vector<float> &tfVisE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
+  void FillTrackCaloBranches( const ParameterStruct &parameters,
+			      const std::vector<float> &tfCaloE, const std::vector<float> &tfVisE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
 			      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
 			      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx, const std::vector<float> &tfiEdx );
   void FillTrackPID( const std::vector<int> &pidPDG, const std::vector<int> &pidNDF, const std::vector<float> &pidMu, const std::vector<float> &pidPi,
@@ -866,7 +868,8 @@ class NDRecoOutputData
    m_out_pFromLengthProton.insert( m_out_pFromLengthProton.end(), pFromRangeP.begin(), pFromRangeP.end() );
  }
 
-void NDRecoOutputData::FillTrackCaloBranches( const std::vector<float> &tfCaloE, const std::vector<float> &tfVisE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
+void NDRecoOutputData::FillTrackCaloBranches( const ParameterStruct &parameters,
+					      const std::vector<float> &tfCaloE, const std::vector<float> &tfVisE, const std::vector<int> &tfSliceId, const std::vector<int> &tfPfoId,
 					      const std::vector<float> &tfX, const std::vector<float> &tfY, const std::vector<float> &tfZ, const std::vector<float> &tfQ,
 					      const std::vector<float> &tfRR, const std::vector<float> &tfdx, const std::vector<float> &tfdQdx, const std::vector<float> &tfdEdx )
 {
@@ -874,16 +877,18 @@ void NDRecoOutputData::FillTrackCaloBranches( const std::vector<float> &tfCaloE,
   m_out_trkfitTrackCaloE.insert( m_out_trkfitTrackCaloE.end(), tfCaloE.begin(), tfCaloE.end() );
   m_out_trkfitVisE.insert( m_out_trkfitVisE.end(), tfVisE.begin(), tfVisE.end() );
   // one per point
-  m_out_trkfitSliceId.insert( m_out_trkfitSliceId.end(), tfSliceId.begin(), tfSliceId.end() );
-  m_out_trkfitPfoId.insert( m_out_trkfitPfoId.end(), tfPfoId.begin(), tfPfoId.end() );
-  m_out_trkfitX.insert( m_out_trkfitX.end(), tfX.begin(), tfX.end() );
-  m_out_trkfitY.insert( m_out_trkfitY.end(), tfY.begin(), tfY.end() );
-  m_out_trkfitZ.insert( m_out_trkfitZ.end(), tfZ.begin(), tfZ.end() );
-  m_out_trkfitQ.insert( m_out_trkfitQ.end(), tfQ.begin(), tfQ.end() );
-  m_out_trkfitRR.insert( m_out_trkfitRR.end(), tfRR.begin(), tfRR.end() );
-  m_out_trkfitdx.insert( m_out_trkfitdx.end(), tfdx.begin(), tfdx.end() );
-  m_out_trkfitdQdx.insert( m_out_trkfitdQdx.end(), tfdQdx.begin(), tfdQdx.end() );
-  m_out_trkfitdEdx.insert( m_out_trkfitdEdx.end(), tfdEdx.begin(), tfdEdx.end() );
+  if ( parameters.fShouldSaveCaloPoints ) {
+    m_out_trkfitSliceId.insert( m_out_trkfitSliceId.end(), tfSliceId.begin(), tfSliceId.end() );
+    m_out_trkfitPfoId.insert( m_out_trkfitPfoId.end(), tfPfoId.begin(), tfPfoId.end() );
+    m_out_trkfitX.insert( m_out_trkfitX.end(), tfX.begin(), tfX.end() );
+    m_out_trkfitY.insert( m_out_trkfitY.end(), tfY.begin(), tfY.end() );
+    m_out_trkfitZ.insert( m_out_trkfitZ.end(), tfZ.begin(), tfZ.end() );
+    m_out_trkfitQ.insert( m_out_trkfitQ.end(), tfQ.begin(), tfQ.end() );
+    m_out_trkfitRR.insert( m_out_trkfitRR.end(), tfRR.begin(), tfRR.end() );
+    m_out_trkfitdx.insert( m_out_trkfitdx.end(), tfdx.begin(), tfdx.end() );
+    m_out_trkfitdQdx.insert( m_out_trkfitdQdx.end(), tfdQdx.begin(), tfdQdx.end() );
+    m_out_trkfitdEdx.insert( m_out_trkfitdEdx.end(), tfdEdx.begin(), tfdEdx.end() );
+  }
 }
 
 void NDRecoOutputData::FillTrackPID(const std::vector<int> &pidPDG, const std::vector<int> &pidNDF, const std::vector<float> &pidMu, const std::vector<float> &pidPi,
