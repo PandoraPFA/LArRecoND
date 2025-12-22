@@ -3,30 +3,38 @@
     <Verbosity>0</Verbosity>
     <!-- Command switches -->
     <ShouldRunTrackFit>true</ShouldRunTrackFit>
-    <ShouldRunShowerFit>false</ShouldRunShowerFit>
-    <TrackScoreCut>-1</TrackScoreCut>
+    <ShouldRunShowerFit>true</ShouldRunShowerFit>
+    <TrackScoreCut>.5</TrackScoreCut>
     <!-- Track fitter settings -->
     <!-- 2x2 -->
-    <Detector>1</Detector>
-    <PixelPitch>0.44</PixelPitch>
+    <Detector>0</Detector>
+    <PixelPitch>0.38</PixelPitch>
     <!-- More complicated options on refining algs -->
     <ShouldApplyThreshold>false</ShouldApplyThreshold>
     <ChargeThreshold>0.</ChargeThreshold>
     <ShouldVoxelizeZ>true</ShouldVoxelizeZ>
     <VoxelZHalfWidth>0.95</VoxelZHalfWidth>
     <UseVoxelizedStartStop>true</UseVoxelizedStartStop>
+    <!-- Shower fitter settings -->
+    <ShowerStartLength>5</ShowerStartLength>
+    <ShowerStartWidth>4</ShowerStartWidth>
+    <SigmaLength>2</SigmaLength>
+    <ProximityHitsThreshold>10</ProximityHitsThreshold>
+    <ProximityHitsRadius>4</ProximityHitsRadius>
+    <EnergyRecombinationShower>1.587</EnergyRecombinationShower>
+    <CorrectionFactorShower>1.67</CorrectionFactorShower>
     <!-- Calorimetry -->
     <!-- Using default density, efield, birksA, birksK, eLifetime, eSpeed -->
     <!-- Leaving the Calibration Fudge Factor as is for now, pinned to 2 MeV/cm -->
     <ShouldCorrectLifetime>true</ShouldCorrectLifetime>
     <ShouldCorrectRecombination>true</ShouldCorrectRecombination>
-    <FlowStyleRecombination>false</FlowStyleRecombination>
+    <FlowStyleRecombination>true</FlowStyleRecombination>
     <BoxRecombination>false</BoxRecombination>
     <BirksRecombination>true</BirksRecombination>    
     <!-- PID -->
     <!-- Using nominal dEdx Res Template file in larsoft_data repo on CVMFS -->
-    <ShouldRunPID>true</ShouldRunPID>
-    <PIDAlgChi2PID>true</PIDAlgChi2PID>
+    <ShouldRunPID>false</ShouldRunPID>
+    <PIDAlgChi2PID>false</PIDAlgChi2PID>
     <!-- And try a run with the dx restriction on -->
     <Chi2RestrictDX>true</Chi2RestrictDX>
 </pandora>
