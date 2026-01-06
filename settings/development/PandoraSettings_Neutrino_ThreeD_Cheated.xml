@@ -14,10 +14,12 @@
         <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
     </algorithm>
 
-    <!-- <algorithm type = "LArVisualMonitoring">
+    <!-- EVENT DISPLAY
+    <algorithm type = "LArVisualMonitoring">
         <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV CaloHitList3D</CaloHitListNames>
         <ShowDetector>true</ShowDetector>
-    </algorithm> -->
+    </algorithm>
+    -->
 
     <!-- 2D neutrino reconstruction, U View -->
     <algorithm type = "LArClusteringParent">
@@ -95,11 +97,13 @@
         <OutputVertexListName>NDaughterVertices3D</OutputVertexListName>
     </algorithm>
 
-    <!-- <algorithm type = "LArVisualMonitoring">
+    <!-- EVENT DISPLAY
+    <algorithm type = "LArVisualMonitoring">
         <PfoListNames>NeutrinoParticles3D NParticles3D</PfoListNames>
         <VertexListNames>NVertices NDaughterVertices3D</VertexListNames>
         <ShowDetector>true</ShowDetector>
-    </algorithm> -->
+    </algorithm>
+    -->
 
     <!-- Output list management -->
     <algorithm type = "LArPostProcessing">

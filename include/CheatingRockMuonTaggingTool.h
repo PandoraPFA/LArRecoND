@@ -25,6 +25,13 @@ public:
      */
     CheatingRockMuonTaggingTool();
 
+    /**
+     *  @brief  Find and remove out of fiducial volume rock muon pfos from the input pfo list.
+     *
+     *  @param  parentRockMuonPfos the input list of rock muon pfos
+     *  @param  ambiguousPfos to receive the list of ambiguous rock muon pfos
+     *  @param  pAlgorithm address of the calling algorithm
+     */
     void FindAmbiguousPfos(const pandora::PfoList &parentRockMuonPfos, pandora::PfoList &ambiguousPfos, const MasterAlgorithm *const pAlgorithm);
 
 private:

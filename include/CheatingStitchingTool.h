@@ -25,6 +25,14 @@ public:
      */
     CheatingStitchingTool();
 
+    /**
+     *  @brief  Run the cheating stitching tool, stitching together pfos from different LArTPCs based on MCParticle associations.
+     *
+     *  @param  pAlgorithm address of the calling algorithm
+     *  @param  pMultiPfoList the input pfo list to be stitched (unused)
+     *  @param  pfoToLArTPCMap to receive the map from pfos to LArTPCs
+     *  @param  stitchedPfosToX0Map to receive the map from stitched pfos to X0 positions (unused)
+     */
     void Run(const MasterAlgorithm *const pAlgorithm, const pandora::PfoList *const pMultiPfoList, PfoToLArTPCMap &pfoToLArTPCMap,
         PfoToFloatMap &stitchedPfosToX0Map);
 

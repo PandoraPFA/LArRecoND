@@ -14,10 +14,12 @@
         <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
     </algorithm>
 
+    <!-- EVENT DISPLAY
     <algorithm type = "LArVisualMonitoring">
         <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList3D</CaloHitListNames>
         <ShowDetector>true</ShowDetector>
     </algorithm>
+    -->
 
     <algorithm type = "LArMasterThreeD">
         <CRSettingsFile>PandoraSettings_LArRecoND_RockMuon_Cheat.xml</CRSettingsFile>
@@ -49,7 +51,7 @@
     </algorithm>
     -->
 
-    <!-- <algorithm type = "LArHierarchyAnalysis">
+    <algorithm type = "LArHierarchyAnalysis">
         <EventFileName>LArRecoNDInput.root</EventFileName>
         <EventTreeName>events</EventTreeName>
         <EventLeafName>event</EventLeafName>
@@ -77,10 +79,10 @@
         <MinRecoGoodViews>2</MinRecoGoodViews>
         <RemoveRecoNeutrons>true</RemoveRecoNeutrons>
         <SelectRecoHits>true</SelectRecoHits>
-    </algorithm> -->
+    </algorithm>
 
 <!-- LArContent hierarchy tools MC and event-level information-->
-    <!-- <algorithm type = "LArHierarchyValidation">
+    <algorithm type = "LArHierarchyValidation">
         <CaloHitListName>CaloHitList2D</CaloHitListName>
         <PfoListName>RecreatedPfos</PfoListName>
         <Detector>dune_nd</Detector>
@@ -92,7 +94,9 @@
         <WriteEventTree>true</WriteEventTree>
         <EventFileName>EventHierarchy.root</EventFileName>
         <EventTreeName>Events</EventTreeName>
-        <FoldToPrimaries>true</FoldToPrimaries>
+        <FoldToPrimaries>false</FoldToPrimaries>
+        <FoldToLeadingShowers>true</FoldToLeadingShowers>
+        <FoldDynamic>false</FoldDynamic>
         <MinPurity>0.5</MinPurity>
         <MinCompleteness>0.1</MinCompleteness>
         <MinRecoHits>15</MinRecoHits>
@@ -100,25 +104,13 @@
         <MinRecoGoodViews>2</MinRecoGoodViews>
         <RemoveRecoNeutrons>true</RemoveRecoNeutrons>
         <SelectRecoHits>true</SelectRecoHits>
-    </algorithm> -->
-
-<!-- Use old single neutrino event validation
-    <algorithm type = "LArNeutrinoEventValidation">
-        <CaloHitListName>CaloHitList2D</CaloHitListName>
-        <MCParticleListName>Input</MCParticleListName>
-        <PfoListName>RecreatedPfos</PfoListName>
-        <UseTrueNeutrinosOnly>true</UseTrueNeutrinosOnly>
-        <PrintAllToScreen>true</PrintAllToScreen>
-        <PrintMatchingToScreen>true</PrintMatchingToScreen>
-        <WriteToTree>true</WriteToTree>
-        <OutputTree>Validation</OutputTree>
-        <OutputFile>Validation.root</OutputFile>
     </algorithm>
--->
 
+    <!-- EVENT DISPLAY
     <algorithm type = "LArVisualMonitoring">
         <ShowCurrentPfos>true</ShowCurrentPfos>
         <ShowDetector>true</ShowDetector>
     </algorithm>
+    -->
 
 </pandora>
