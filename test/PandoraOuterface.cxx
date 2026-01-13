@@ -1353,7 +1353,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 }
 
                 float energyStartPoints = chargeStartPoints * (parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
-                float energyTotal = totalCharge * (parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
+                float energyTotal = totalCharge*(23.6/1e6)*(parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
                 shwrEnergy.push_back(energyTotal);
                 shwrdEdx.push_back(energyStartPoints / showerStartLength);
 
