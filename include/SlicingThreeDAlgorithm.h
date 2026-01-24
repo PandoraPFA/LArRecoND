@@ -38,7 +38,7 @@ private:
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
 
     EventSlicingThreeDBaseTool *m_pEventSlicingTool; ///< The address of the event slicing tool
-    std::string m_slicingListDeletionAlgorithm;  ///< The name of the slicing list deletion algorithm
+    std::string m_slicingListDeletionAlgorithm;      ///< The name of the slicing list deletion algorithm
 
     HitTypeToNameMap m_caloHitListNames; ///< The hit type to calo hit list name map
     HitTypeToNameMap m_clusterListNames; ///< The hit type to cluster list name map

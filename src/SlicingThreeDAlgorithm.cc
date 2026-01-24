@@ -10,8 +10,8 @@
 
 #include "Pandora/AlgorithmHeaders.h"
 
-#include "EventSlicingThreeDTool.h"
 #include "CheatingEventSlicingThreeDTool.h"
+#include "EventSlicingThreeDTool.h"
 #include "SlicingThreeDAlgorithm.h"
 
 using namespace pandora;
@@ -19,7 +19,8 @@ using namespace pandora;
 namespace lar_content
 {
 
-SlicingThreeDAlgorithm::SlicingThreeDAlgorithm() : m_pEventSlicingTool(nullptr)
+SlicingThreeDAlgorithm::SlicingThreeDAlgorithm() :
+    m_pEventSlicingTool(nullptr)
 {
 }
 

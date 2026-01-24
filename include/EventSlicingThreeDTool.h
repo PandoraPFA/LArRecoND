@@ -11,9 +11,9 @@
 #include "Pandora/Algorithm.h"
 #include "Pandora/AlgorithmTool.h"
 
+#include "EventSlicingThreeDBaseTool.h"
 #include "LArSlice3D.h"
 #include "SlicingThreeDAlgorithm.h"
-#include "EventSlicingThreeDBaseTool.h"
 
 #include "larpandoracontent/LArObjects/LArPointingCluster.h"
 #include "larpandoracontent/LArObjects/LArThreeDSlidingConeFitResult.h"
