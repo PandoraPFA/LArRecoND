@@ -310,7 +310,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
     // Loop events
     for (long entryIdx = 0; entryIdx < nEntries; ++entryIdx)
     {
-        pandoraIn->GetEntry(entryIdx);
+        int getEntryCheck = pandoraIn->GetEntry(entryIdx);
+	if ( getEntryCheck == 0 ) {
+	  std::cout << "Found pandoraIn->GetEntry(" << entryIdx << ") to have return 0. Skipping." << std::endl;
+	  continue;
+	}
 
         // Fill up the branches of basic output
         fOut.FillBasicBranches(pandoraIn);
