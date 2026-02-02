@@ -10,6 +10,7 @@
 
 #include "Pandora/AlgorithmHeaders.h"
 
+#include "CheatingEventSlicingThreeDTool.h"
 #include "EventSlicingThreeDTool.h"
 #include "SlicingThreeDAlgorithm.h"
 
@@ -18,7 +19,8 @@ using namespace pandora;
 namespace lar_content
 {
 
-SlicingThreeDAlgorithm::SlicingThreeDAlgorithm() : m_pEventSlicingTool(nullptr)
+SlicingThreeDAlgorithm::SlicingThreeDAlgorithm() :
+    m_pEventSlicingTool(nullptr)
 {
 }
 
@@ -100,7 +102,7 @@ StatusCode SlicingThreeDAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
 {
     AlgorithmTool *pAlgorithmTool(nullptr);
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::ProcessAlgorithmTool(*this, xmlHandle, "SliceCreation", pAlgorithmTool));
-    m_pEventSlicingTool = dynamic_cast<EventSlicingThreeDTool *>(pAlgorithmTool);
+    m_pEventSlicingTool = dynamic_cast<EventSlicingThreeDBaseTool *>(pAlgorithmTool);
 
     if (!m_pEventSlicingTool)
         return STATUS_CODE_INVALID_PARAMETER;

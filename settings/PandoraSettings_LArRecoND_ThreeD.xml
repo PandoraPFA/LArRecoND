@@ -68,8 +68,8 @@
 	<PfoListName>RecreatedPfos</PfoListName>
         <AnalysisFileName>LArRecoND.root</AnalysisFileName>
         <AnalysisTreeName>LArRecoND</AnalysisTreeName>
-        <FoldToPrimaries>false</FoldToPrimaries>
-        <FoldToLeadingShowers>true</FoldToLeadingShowers>
+        <FoldToPrimaries>true</FoldToPrimaries>
+        <FoldToLeadingShowers>false</FoldToLeadingShowers>
 	<FoldDynamic>false</FoldDynamic>
         <MinPurity>0.5</MinPurity>
         <MinCompleteness>0.1</MinCompleteness>
@@ -94,6 +94,8 @@
         <EventFileName>EventHierarchy.root</EventFileName>
         <EventTreeName>Events</EventTreeName>
         <FoldToPrimaries>true</FoldToPrimaries>
+        <FoldToLeadingShowers>false</FoldToLeadingShowers>
+	<FoldDynamic>false</FoldDynamic>
         <MinPurity>0.5</MinPurity>
         <MinCompleteness>0.1</MinCompleteness>
         <MinRecoHits>15</MinRecoHits>

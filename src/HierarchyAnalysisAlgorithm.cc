@@ -262,7 +262,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
 
                 // Make sure the cluster has some hits
                 const int n3DHits(pCluster3D->GetNCaloHits());
-                if (n3DHits == 0)
+                if (n3DHits <= 1)
                     continue;
 
                 // Increment clusterId

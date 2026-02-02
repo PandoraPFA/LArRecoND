@@ -11,6 +11,7 @@
 #include "Pandora/Algorithm.h"
 #include "Pandora/AlgorithmTool.h"
 
+#include "EventSlicingThreeDBaseTool.h"
 #include "LArSlice3D.h"
 #include "SlicingThreeDAlgorithm.h"
 
@@ -34,7 +35,7 @@ class SimpleCone;
 /**
  *  @brief  EventSlicingThreeDTool class
  */
-class EventSlicingThreeDTool : public pandora::AlgorithmTool
+class EventSlicingThreeDTool : public EventSlicingThreeDBaseTool
 {
 public:
     /**

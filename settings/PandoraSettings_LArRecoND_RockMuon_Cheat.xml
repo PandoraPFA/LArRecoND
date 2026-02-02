@@ -1,0 +1,100 @@
+<pandora>
+    <!-- GLOBAL SETTINGS -->
+    <IsMonitoringEnabled>true</IsMonitoringEnabled>
+    <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
+    <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
+
+    <!-- ALGORITHM SETTINGS -->
+    <algorithm type = "LArCheatingRockMuonRemoval">
+        <InputCaloHitListName>Input</InputCaloHitListName>
+        <RockMuonCaloHitListName>RockMuonCaloHitList</RockMuonCaloHitListName>
+        <NeutrinoCaloHitListName>NeutrinoCaloHitList</NeutrinoCaloHitListName>
+        <MCParticleListName>Input</MCParticleListName>
+    </algorithm>
+
+    <algorithm type = "LArPreProcessingThreeD">
+        <InputCaloHitListName>RockMuonCaloHitList</InputCaloHitListName>
+        <OutputCaloHitListNameU>CaloHitListU</OutputCaloHitListNameU>
+        <OutputCaloHitListNameV>CaloHitListV</OutputCaloHitListNameV>
+        <OutputCaloHitListNameW>CaloHitListW</OutputCaloHitListNameW>
+        <OutputCaloHitListName3D>CaloHitList3D</OutputCaloHitListName3D>
+        <FilteredCaloHitListName>CaloHitList2D</FilteredCaloHitListName>
+        <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
+    </algorithm>
+
+    <!-- <algorithm type = "LArVisualMonitoring">
+        <CaloHitListNames>CaloHitListW CaloHitListU CaloHitListV CaloHitList3D</CaloHitListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm> -->
+
+    <!-- 2D rock muon reconstruction, U View -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <MCParticleListName>Input</MCParticleListName>
+        </algorithm>
+        <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
+        <ClusterListName>ClustersU </ClusterListName>
+        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+
+    <!-- 2D rock muon reconstruction, V View -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <MCParticleListName>Input</MCParticleListName>
+        </algorithm>
+        <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
+        <ClusterListName>ClustersV</ClusterListName>
+        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+
+    <!-- 2D rock muon reconstruction, W View -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <MCParticleListName>Input</MCParticleListName>
+        </algorithm>
+        <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
+        <ClusterListName>ClustersW</ClusterListName>
+        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+
+    <!-- 3D rock muon reconstruction -->
+    <algorithm type = "LArClusteringParent">
+        <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
+            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <MCParticleListName>Input</MCParticleListName>
+        </algorithm>
+        <InputCaloHitListName>CaloHitList3D</InputCaloHitListName>
+        <ClusterListName>Clusters3D</ClusterListName>
+        <ReplaceCurrentCaloHitList>false</ReplaceCurrentCaloHitList>
+        <ReplaceCurrentClusterList>true</ReplaceCurrentClusterList>
+    </algorithm>
+
+    <!-- 3D rock muon reconstruction -->
+    <algorithm type = "LArCheatingPfoCreation">
+        <InputClusterListNames>ClustersU ClustersV ClustersW Clusters3D</InputClusterListNames>
+        <OutputPfoListName>Particles3D</OutputPfoListName>
+        <OutputVertexListName>Vertices3D</OutputVertexListName>
+        <MCParticleListName>Input</MCParticleListName>
+        <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+    </algorithm>
+
+    <!-- <algorithm type = "LArVisualMonitoring">
+        <PfoListNames>Particles3D</PfoListNames>
+        <ShowDetector>true</ShowDetector>
+    </algorithm> -->
+
+    <!-- Output list management -->
+    <algorithm type = "LArPostProcessing">
+        <PfoListNames>Particles3D</PfoListNames>
+        <VertexListNames>Vertices3D</VertexListNames>
+        <ClusterListNames>ClustersU ClustersV ClustersW Clusters3D</ClusterListNames>
+        <CaloHitListNames>RockMuonCaloHitList NeutrinoCaloHitList CaloHitListU CaloHitListV CaloHitListW CaloHitList2D CaloHitList3D</CaloHitListNames>
+        <CurrentPfoListReplacement>Particles3D</CurrentPfoListReplacement>
+    </algorithm>
+</pandora>

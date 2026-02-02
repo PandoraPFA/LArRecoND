@@ -269,8 +269,9 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
     {
         const LineGap *const pLineGap(dynamic_cast<const LineGap *>(pGap));
 
-        if (pLineGap && (((pLineGap->GetLineEndX() >= tpcMinX) && (pLineGap->GetLineEndX() <= tpcMaxX)) ||
-                            ((pLineGap->GetLineStartX() >= tpcMinX) && (pLineGap->GetLineStartX() <= tpcMaxX))))
+        if (pLineGap &&
+            (((pLineGap->GetLineEndX() >= tpcMinX) && (pLineGap->GetLineEndX() <= tpcMaxX)) ||
+                ((pLineGap->GetLineStartX() >= tpcMinX) && (pLineGap->GetLineStartX() <= tpcMaxX))))
         {
             PandoraApi::Geometry::LineGap::Parameters lineGapParameters;
             const LineGapType lineGapType(pLineGap->GetLineGapType());

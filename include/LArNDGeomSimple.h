@@ -48,7 +48,14 @@ public:
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline LArNDTPCSimple::LArNDTPCSimple() : m_x_min{0.}, m_x_max{0.}, m_y_min{0.}, m_y_max{0.}, m_z_min{0.}, m_z_max{0.}, m_TPC_ID{-1}
+inline LArNDTPCSimple::LArNDTPCSimple() :
+    m_x_min{0.},
+    m_x_max{0.},
+    m_y_min{0.},
+    m_y_max{0.},
+    m_z_min{0.},
+    m_z_max{0.},
+    m_TPC_ID{-1}
 {
 }
 

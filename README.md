@@ -112,20 +112,16 @@ source buildEDepSimDLVtx.sh
 
 Various neutrino algorithms need to use MicroBooNE/SBND and DUNE training files from the
 [LArMachineLearningData](https://github.com/PandoraPFA/LArMachineLearningData) package. These need to be
-downloaded from Google Drive using the
+downloaded from CERNBox using the
 [download.sh](https://github.com/PandoraPFA/LArMachineLearningData/blob/master/download.sh) script:
 
 ```Shell
 cd $MY_TEST_AREA/LArMachineLearningData
+source download.sh uboone
 source download.sh sbnd
 source download.sh dune
 source download.sh dunend
 ```
-
-This should only be done once for each new data set, since repeated attempts to download them will eventually fail,
-owing to automatic download bandwidth restrictions imposed by Google Drive. If download problems do occur, then you
-will need to wait up to 1 day (12 to 24 hours) before trying again.
-
 
 ## Running LArRecoND
 
@@ -206,7 +202,7 @@ This hdf5-to-ROOT conversion works as follows:
 python h5_to_root_ndlarflow.py FileList IsData IsFinalHits OutName
 -- Parameters
 FileList    [REQUIRED]:                                         comma separated set of files to convert - note it will be one output
-IsData      [OPTIONAL, DEFAULT = 0, is MC]:                     1 = Data, otherwise = MC
+IsData      [OPTIONAL, DEFAULT = 0, is MC]:                     1 = Data, otherwise = MC (Monte Carlo simulation)
 IsFinalHits [OPTIONAL, DEFAULT = 0, prompt hits]:               1 = use "final" hits, otherwise = "prompt"
 OutName     [OPTIONAL, DEFAULT = input[0]+"_hits_uproot.root"]: string for an output file name if you want to override. Note that default writes to current directory.
 ```
@@ -307,6 +303,16 @@ is the location of the output directory which will store the equivalent ROOT fil
 
 To use deep learning vertexing (DLVtx), make sure LArRecoND and LArContent is first built with LibTorch enabled, then use
 the [PandoraSettings_LArRecoND_ThreeD_DLVtx.xml](settings/PandoraSettings_LArRecoND_ThreeD_DLVtx.xml) settings file.
+
+### Cheating
+
+It is possible to cheat various steps of the reconstruction, in which MC truth information is used to create "perfectly" reconstructed objects.
+These can then be compared with the full reconstruction objects to see which algorithms need further improvement.
+There are two cheating workflows available: fully-cheated and partially-cheated reconstruction. The fully-cheated workflow is enabled using
+the [PandoraSettings_LArRecoND_ThreeD_Cheated.xml](settings/PandoraSettings_LArRecoND_ThreeD_Cheated.xml) settings file, while the
+partially-cheated workflow that only cheats rock muon tracks can be run using
+[PandoraSettings_LArRecoND_ThreeD_PartialCheated.xml](settings/PandoraSettings_LArRecoND_ThreeD_PartialCheated.xml).
+These workflows require the `SPMC` input format, since all the MC information needs to be available; they won't work for the data `SP` format.
 
 ### edep-sim
 
