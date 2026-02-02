@@ -16,13 +16,7 @@
 
     <!-- Use 3D hits to make the 2D clusters -->
     <algorithm type = "LArSimpleClusterCreationThreeD">
-        <!-- <InputCaloHitListNameU>CaloHitListU</InputCaloHitListNameU> -->
-        <!-- <InputCaloHitListNameV>CaloHitListV</InputCaloHitListNameV> -->
-        <!-- <InputCaloHitListNameW>CaloHitListW</InputCaloHitListNameW> -->
         <InputCaloHitListName3D>CaloHitList3D</InputCaloHitListName3D>
-        <!-- <OutputClusterListNameU>ClustersU</OutputClusterListNameU> -->
-        <!-- <OutputClusterListNameV>ClustersV</OutputClusterListNameV> -->
-        <!-- <OutputClusterListNameW>ClustersW</OutputClusterListNameW> -->
         <OutputClusterListName3D>Clusters3D</OutputClusterListName3D>
     </algorithm>
 
