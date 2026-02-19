@@ -117,14 +117,17 @@ float eVisWithRecombination(const ParameterStruct &parameters, const float input
     // MIP Recombination with the Q->E calculation as in FLOW file
     // see e.g. https://github.com/DUNE/ndlar_flow/blob/develop/src/proto_nd_flow/reco/charge/calib_prompt_hits.py#L289
     float recomb = 1.;
-    if (parameters.fBoxRecombination)
+    if (parameters.fShouldCorrectRecomb)
     {
-        float csi = parameters.fBoxBeta * dEdx_use / (parameters.fEField * parameters.fDensity);
-        recomb = TMath::Log(parameters.fBoxAlpha + csi) / csi;
-    }
-    else if (parameters.fBirksRecombination)
-    {
-        recomb = parameters.fBirksA / (1. + parameters.fBirksK * dEdx_use / (parameters.fEField * parameters.fDensity));
+        if (parameters.fBoxRecombination)
+	{
+	    float csi = parameters.fBoxBeta * dEdx_use / (parameters.fEField * parameters.fDensity);
+	    recomb = TMath::Log(parameters.fBoxAlpha + csi) / csi;
+	}
+	else if (parameters.fBirksRecombination)
+	{
+	    recomb = parameters.fBirksA / (1. + parameters.fBirksK * dEdx_use / (parameters.fEField * parameters.fDensity));
+	}
     }
 
     return inputQ * wIon / recomb;
