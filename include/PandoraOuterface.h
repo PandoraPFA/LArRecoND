@@ -126,7 +126,7 @@ float LifetimeCorrectionFactor(const std::vector<float> &detAnodes, const float 
  *
  *  @param  the set of parameters (const)
  *  @param  hit dQ/dx (const)
- *  @param  input dE/dx to assume in recombination correction (if using "flow-style" recombination corrections
+ *  @param  input dE/dx to assume in recombination correction (if using "flow-style" recombination corrections)
  *
  *  @return the resulting dE/dx from dQ/dx
  */
@@ -139,7 +139,7 @@ float eVisWithRecombination(const ParameterStruct &parameters, const float input
  *
  *  @param  the set of parameters (const)
  *  @param  hit dQ/dx (const)
- *  @param  input dE/dx to assume in recombination correction (if using "flow-style" recombination corrections 
+ *  @param  input dE/dx to assume in recombination correction (if using "flow-style" recombination corrections)
  *
  *  @return the resulting dE/dx from dQ/dx
  */
