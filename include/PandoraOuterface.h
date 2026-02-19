@@ -148,6 +148,12 @@ float dEdxWithRecombination(const ParameterStruct &parameters, const float input
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 /**
+ *  @brief Helper function for the KE with the range to sixth power for protons (based on LArSoft stopping proton KE calculation)
+ *
+ **/
+float KEFromRange_proton_calc(const float inputRange);
+
+/**
  *  @brief Helper function for |p| from range for protons
  *
  **/

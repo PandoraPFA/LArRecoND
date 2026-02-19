@@ -181,23 +181,42 @@ float dEdxWithRecombination(const ParameterStruct &parameters, const float input
     return dEdx_val;
 }
 
-float pFromRange_proton(const float inputRange)
+float KEFromRange_proton_calc(const float inputRange)
 {
-    /// Set up the necessary pieces for proton momentum vs range spline: CSDA
-    /// Result from LArSoft -> LArReco -> TrackMomentumCalculator (v09_26_02)
-    float KE = 0.;
-    if (inputRange > 0 && inputRange <= 80)
-        KE = 29.9317 * std::pow(inputRange, 0.586304);
-    else if (inputRange > 80 && inputRange <= 3.022E3)
+    /*
+        Result from LArSoft -> LArReco -> RecoAlg -> TrackMomentumCalculator (v09_26_02)
+
         KE = 149.904 + (3.34146 * inputRange) + (-0.00318856 * inputRange * inputRange) +
              (4.34587E-6 * inputRange * inputRange * inputRange) + (-3.18146E-9 * inputRange * inputRange * inputRange * inputRange) +
              (1.17854E-12 * inputRange * inputRange * inputRange * inputRange * inputRange) +
              (-1.71763E-16 * inputRange * inputRange * inputRange * inputRange * inputRange * inputRange);
+     */
+
+    const std::vector<float> magicNumbers = { 149.904, 3.34146, -0.00318856, 4.34587E-6, -3.18146E-9, 1.17854E-12, -1.71763E-16 };
+    float KE = 0.;
+
+    for ( unsigned int rOrder=0; rOrder<=6; ++rOrder )
+    {
+        KE += (magicNumbers[rOrder] * std::pow(inputRange,rOrder));
+    }
+
+    return KE;
+}
+
+float pFromRange_proton(const float inputRange)
+{
+    /// Set up the necessary pieces for proton momentum vs range spline: CSDA
+    /// Result from LArSoft -> LArReco -> RecoAlg -> TrackMomentumCalculator (v09_26_02)
+    float KE = 0.;
+    if (inputRange > 0 && inputRange <= 80)
+        KE = 29.9317 * std::pow(inputRange, 0.586304);
+    else if (inputRange > 80 && inputRange <= 3.022E3)
+        KE = KEFromRange_proton_calc(inputRange);
     else
         KE = -999;
 
     // convert KE to Momentum
-    float massProton = 938.272;
+    constexpr float massProton = 938.272;
 
     if (KE < 0)
         return 0.f;
@@ -211,16 +230,32 @@ float KEFromRange_proton(const float inputRange)
     if (inputRange > 0 && inputRange <= 80)
         KE = 29.9317 * std::pow(inputRange, 0.586304);
     else if (inputRange > 80 && inputRange <= 3.022E3)
-        KE = 149.904 + (3.34146 * inputRange) + (-0.00318856 * inputRange * inputRange) +
-             (4.34587E-6 * inputRange * inputRange * inputRange) + (-3.18146E-9 * inputRange * inputRange * inputRange * inputRange) +
-             (1.17854E-12 * inputRange * inputRange * inputRange * inputRange * inputRange) +
-             (-1.71763E-16 * inputRange * inputRange * inputRange * inputRange * inputRange * inputRange);
+        KE = KEFromRange_proton_calc(inputRange);
     else
         KE = -999;
 
     if (KE < 0)
         return 0.f;
     return KE / 1000.;
+}
+
+constexpr std::array<float, 29> csda_range_converted_cm_muon()
+{
+    /// copied from LArSoft -> LArReco -> RecoAlg -> TrackMomentumCalculator
+    ///   v09_26_02
+    /// Per that code (copy-pasted comment):
+    ///    Muon range-momentum tables from CSDA (Argon density = 1.4 g/cm^3)
+    ///    website:
+    ///    http://pdg.lbl.gov/2012/AtomicNuclearProperties/MUON_ELOSS_TABLES/muonloss_289.pdf
+    std::array<float, 29> Range_grampercm2{{9.833E-1, 1.786E0, 3.321E0, 6.598E0, 1.058E1, 3.084E1, 4.250E1, 6.732E1, 1.063E2, 1.725E2,
+	  2.385E2, 4.934E2, 6.163E2, 8.552E2, 1.202E3, 1.758E3, 2.297E3, 4.359E3, 5.354E3, 7.298E3, 1.013E4, 1.469E4, 1.910E4, 3.558E4,
+	  4.326E4, 5.768E4, 7.734E4, 1.060E5, 1.307E5}};
+    for (float &value : Range_grampercm2)
+    {
+        value /= 1.396; // convert to cm
+    }
+
+    return Range_grampercm2;
 }
 
 void ProcessPostReco(const ParameterStruct &parameters)
@@ -267,18 +302,16 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
     /////////////////////////////////////////////////////////
     /// Set up the necessary pieces for muon momentum vs range spline: CSDA
-    /// copied from LArSoft -> LArReco -> TrackMomentumCalculator
+    /// copied from LArSoft -> LArReco -> RecoAlg -> TrackMomentumCalculator
     ///   v09_26_02
-    std::array<float, 29> Range_grampercm2{{9.833E-1, 1.786E0, 3.321E0, 6.598E0, 1.058E1, 3.084E1, 4.250E1, 6.732E1, 1.063E2, 1.725E2,
-        2.385E2, 4.934E2, 6.163E2, 8.552E2, 1.202E3, 1.758E3, 2.297E3, 4.359E3, 5.354E3, 7.298E3, 1.013E4, 1.469E4, 1.910E4, 3.558E4,
-        4.326E4, 5.768E4, 7.734E4, 1.060E5, 1.307E5}};
-    for (float &value : Range_grampercm2)
-    {
-        value /= 1.396; // convert to cm
-    }
+    /// Per that code (copy-pasted comment):
+    ///    Muon range-momentum tables from CSDA (Argon density = 1.4 g/cm^3)
+    ///    website:
+    ///    http://pdg.lbl.gov/2012/AtomicNuclearProperties/MUON_ELOSS_TABLES/muonloss_289.pdf
+    constexpr std::array<float, 29> Range_muon_csda = csda_range_converted_cm_muon();
     constexpr std::array<float, 29> KE_MeV{{10, 14, 20, 30, 40, 80, 100, 140, 200, 300, 400, 800, 1000, 1400, 2000, 3000, 4000, 8000, 10000,
         14000, 20000, 30000, 40000, 80000, 100000, 140000, 200000, 300000, 400000}};
-    TGraph const KEvsR{29, Range_grampercm2.data(), KE_MeV.data()};
+    TGraph const KEvsR{29, Range_muon_csda.data(), KE_MeV.data()};
     TSpline3 const KEvsR_spline3_muon{"KEvsRS", &KEvsR};
 
     /////////////////////////////////////////////////////////
