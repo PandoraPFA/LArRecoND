@@ -43,7 +43,7 @@ struct ParameterStruct
 {
     bool runTrackFit = false;
     bool runShowerFit = false;
-    float pixelPitch = 0.4;
+    float pixelPitch = 0.4; // cm
     float trackScoreCut = 0.5;
 
     bool applyThreshold = false;
@@ -70,8 +70,8 @@ struct ParameterStruct
     bool fShouldCorrectRecomb = true;
     bool fFlowStyleRecombination = false;
     bool fBoxRecombination = false;
-    float fBoxBeta = 0.207; // ndlar_flow
-    float fBoxAlpha = 0.93; // ndlar_flow
+    float fBoxBeta = 0.207; // box beta as taken from ndlar_flow
+    float fBoxAlpha = 0.93; // box beta as taken from ndlar_flow
     bool fBirksRecombination = true;
     float fBirksA = 0.8;                       // proto_nd_flow/resources/lar_data.py
     float fBirksK = 0.0486;                    // g/cm2/MeV, proto_nd_flow/resources/lar_data.py
@@ -85,18 +85,18 @@ struct ParameterStruct
     bool fShouldRunPID = true;
     bool fPIDAlgChi2PID = true;
     bool fChi2RestrictDX = false;
-    float fChi2RestrictDXLo = 0.35;
-    float fChi2RestrictDXHi = 0.55;
-    float fChi2RestrictDEDXLo = 0.; // default basically no threshold (just require it to be positive)
+    float fChi2RestrictDXLo = 0.35; // dx value restriction to use the info, cm
+    float fChi2RestrictDXHi = 0.55; // dx value restriction to use the info, cm
+    float fChi2RestrictDEDXLo = 0.; // default basically no threshold (just require it to be positive), MeV/cm
     std::string fdEdxResTempFile = "/cvmfs/larsoft.opensciencegrid.org/products/larsoft_data/v1_02_02/ParticleIdentification/dEdxrestemplates.root";
     std::map<std::string, TProfile *> templatesdEdxRR;
 
     unsigned int fDetector = 0; // 0=NDLAr, 1=2x2
 
     // Containment volumes
-    float ContainDistX = 5.f;
-    float ContainDistY = 5.f;
-    float ContainDistZ = 5.f;
+    float ContainDistX = 5.f; // cm
+    float ContainDistY = 5.f; // cm
+    float ContainDistZ = 5.f; // cm
 
     int verbosity = 0;
 
