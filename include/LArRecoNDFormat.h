@@ -208,12 +208,8 @@ LArRecoNDFormat::LArRecoNDFormat(TTree *tree) : m_fChain(nullptr)
     // used to generate this class and read the Tree.
     if (tree == nullptr)
     {
-        TFile *f = dynamic_cast<TFile *>(gROOT->GetListOfFiles()->FindObject("MiniRun3_1E19_RHC.flow_v3.00000.FLOWunMergedhits_withTruth.root"));
-        if (!f || !f->IsOpen())
-        {
-            f = new TFile("MiniRun3_1E19_RHC.flow_v3.00000.FLOWunMergedhits_withTruth.root");
-        }
-        f->GetObject("events", tree);
+        std::cout << "You are trying to instantiate LArRecoND format with a nullptr tree." << std::endl;
+        std::abort();
     }
     Init(tree);
 }
