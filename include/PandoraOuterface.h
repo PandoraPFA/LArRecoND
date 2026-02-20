@@ -39,13 +39,6 @@ class Pandora;
 namespace lar_nd_postreco
 {
 
-enum DetectorType
-{
-    kNotADetector = -1,
-    kNearDetector,
-    kPrototype2x2
-};
-
 struct ParameterStruct
 {
     bool runTrackFit = false;
@@ -98,8 +91,10 @@ struct ParameterStruct
     std::string fdEdxResTempFile = "/cvmfs/larsoft.opensciencegrid.org/products/larsoft_data/v1_02_02/ParticleIdentification/dEdxrestemplates.root";
     std::map<std::string, TProfile *> templatesdEdxRR;
 
-    DetectorType fDetectorType = DetectorType::kNotADetector;
-    unsigned int fDetector = 0; // 0=NDLAr, 1=2x2
+    // Detector and geometry
+    std::string fGeoFileName = "";
+    std::string fGeoManagerName = "";
+    std::string fGeoVolumeName = "";
 
     // Containment volumes
     float ContainDistX = 5.f; // cm
@@ -112,6 +107,28 @@ struct ParameterStruct
     std::string fileName = "";
     std::string outfileName = "LArRecoND_outerface_test.root";
 };
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ *  @brief Recursive geometry search, as in PandoraInterface
+ */
+
+
+/**
+ *  @brief Get the Geometry bounds
+ *
+ *  @param the set of parameters (const)
+ *  @param the anode positions - to be set
+ *  @param the minimum x - to be set
+ *  @param the maximum x - to be set
+ *  @param the minimum y - to be set
+ *  @param the maximum y - to be set
+ *  @param the minimum z - to be set
+ *  @param the maximum z - to be set
+ *
+ */
+void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &anodePositions, float &xMin, float &xMax, float &yMin, float &yMax, float &zMin, float &zMax);
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -286,7 +303,6 @@ private:
     float parChi2RestrictDXLo;
     float parChi2RestrictDXHi;
     float parChi2RestrictDEDXLo;
-    int parDetector;
 
     // treeOut branches
     Int_t m_out_event;
@@ -459,7 +475,6 @@ NDRecoOutputData::NDRecoOutputData(const std::string filename)
     m_treeMeta->Branch("fChi2RestrictDXLo", &parChi2RestrictDXLo);
     m_treeMeta->Branch("fChi2RestrictDXHi", &parChi2RestrictDXHi);
     m_treeMeta->Branch("fChi2RestrictDEDXLo", &parChi2RestrictDEDXLo);
-    m_treeMeta->Branch("fDetector", &parDetector);
 
     // Output tree: Set the branches
     m_treeOut->Branch("event", &m_out_event);
@@ -772,7 +787,6 @@ void NDRecoOutputData::FillMetadata(const ParameterStruct &parameters)
     parChi2RestrictDXLo = parameters.fChi2RestrictDXLo;
     parChi2RestrictDXHi = parameters.fChi2RestrictDXHi;
     parChi2RestrictDEDXLo = parameters.fChi2RestrictDEDXLo;
-    parDetector = parameters.fDetector;
 
     m_treeMeta->Fill();
 }

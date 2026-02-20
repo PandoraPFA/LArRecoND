@@ -97,6 +97,141 @@ int main(int argc, char *argv[])
 namespace lar_nd_postreco
 {
 
+void RecursiveGeometrySearch(TGeoManager *pSimGeom, const std::string &targetName, std::vector<std::vector<unsigned int>> &nodePaths,
+			     std::vector<unsigned int> &currentPath)
+{
+    const std::string nodeName{pSimGeom->GetCurrentNode()->GetName()};
+    if (nodeName.find(targetName) != std::string::npos)
+    {
+        nodePaths.emplace_back(currentPath);
+    }
+    else
+    {
+        for (unsigned int i = 0; i < pSimGeom->GetCurrentNode()->GetNdaughters(); ++i)
+	{
+            pSimGeom->CdDown(i);
+            currentPath.emplace_back(i);
+            RecursiveGeometrySearch(pSimGeom, targetName, nodePaths, currentPath);
+            pSimGeom->CdUp();
+            currentPath.pop_back();
+	}
+    }
+    return;
+}
+
+void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &anodePositions, float &xMin, float &xMax, float &yMin, float &yMax, float &zMin, float &zMax)
+{
+    // Heavily copies the geometry code in PandoraInterface
+    TFile *fileSource = TFile::Open(parameters.fGeoFileName.c_str(), "READ");
+    if (!fileSource)
+    {
+        std::cout << "Error in CreateGeometry(): can't open file " << parameters.fGeoFileName << std::endl;
+        return;
+    }
+
+    TGeoManager *pSimGeom = dynamic_cast<TGeoManager *>(fileSource->Get(parameters.fGeoManagerName.c_str()));
+    if (!pSimGeom)
+    {
+        std::cout << "Could not find the geometry manager named " << parameters.fGeoManagerName << std::endl;
+	fileSource->Close();
+	return;
+    }
+
+    // Go through the geometry and find the paths to the nodes we are interested in
+    std::vector<std::vector<unsigned int>> nodePaths; // Store the daughter indices in the path to the node
+    std::vector<unsigned int> currentPath;
+    RecursiveGeometrySearch(pSimGeom, parameters.fGeoVolumeName, nodePaths, currentPath);
+
+    // Now we've got the Geometry, let's fill up what we need by looping through the nodes
+    std::set<float> uniqueBoundariesX;
+    for (unsigned int n = 0; n < nodePaths.size(); ++n)
+    {
+        const TGeoNode *pTopNode = pSimGeom->GetCurrentNode();
+        // We have to multiply together matrices at each depth to convert local coordinates to the world volume
+	std::unique_ptr<TGeoHMatrix> pVolMatrix = std::make_unique<TGeoHMatrix>(*pTopNode->GetMatrix());
+        for (unsigned int d = 0; d < nodePaths.at(n).size(); ++d)
+	{
+            pSimGeom->CdDown(nodePaths.at(n).at(d));
+            const TGeoNode *pNode = pSimGeom->GetCurrentNode();
+	    std::unique_ptr<TGeoHMatrix> pMatrix = std::make_unique<TGeoHMatrix>(*pNode->GetMatrix());
+            pVolMatrix->Multiply(pMatrix.get());
+	}
+        const TGeoNode *pTargetNode = pSimGeom->GetCurrentNode();
+
+	// This next bit comes from MakePandoraTPC in PandoraInterface with some alterations
+	// Get the BBox dimensions from the placement volume, which is assumed to be a cube
+	TGeoVolume *pCurrentVol = pTargetNode->GetVolume();
+	TGeoShape *pCurrentShape = pCurrentVol->GetShape();
+	TGeoBBox *pBox = dynamic_cast<TGeoBBox *>(pCurrentShape);
+
+	// Now can get origin/width data from the BBox
+	const double dx = pBox->GetDX(); // Note these are the half widths
+	const double dy = pBox->GetDY();
+	const double dz = pBox->GetDZ();
+	const double *pOrigin = pBox->GetOrigin();
+
+	// Translate local origin to global coordinates
+	double level1[3] = {0.0, 0.0, 0.0};
+	pTargetNode->LocalToMasterVect(pOrigin, level1);
+
+	// Get the needed geometry bits from this
+        const double *pVolTrans = pVolMatrix->GetTranslation();
+        const double centreX = (level1[0] + pVolTrans[0]);
+        const double centreY = (level1[1] + pVolTrans[1]);
+        const double centreZ = (level1[2] + pVolTrans[2]);
+
+	if (n==0)
+	{
+	  // First node, set the meaningful numbers
+	  xMin = centreX - dx;
+	  xMax = centreX + dx;
+	  yMin = centreY - dy;
+	  yMax = centreY + dy;
+	  zMin = centreZ - dz;
+	  zMax = centreZ + dz;
+	}
+	else
+	{
+	  // Not first node, check if these numbers are more appropriate
+	  if ( centreX - dx < xMin ) xMin = centreX - dx;
+	  if ( centreX + dx > xMax ) xMax = centreX + dx;
+	  if ( centreY - dy < yMin ) yMin = centreY - dy;
+          if ( centreY + dy > yMax ) yMax = centreY + dy;
+	  if ( centreZ - dz < zMin ) zMin = centreZ - dz;
+          if ( centreZ + dz > zMax ) zMax = centreZ + dz;
+	}
+	uniqueBoundariesX.insert( centreX - dx );
+	uniqueBoundariesX.insert( centreX + dx );
+	// end the bit grabbed from MakeTPC
+        for (const unsigned int &daughter : nodePaths.at(n))
+	{
+            (void)daughter;
+            pSimGeom->CdUp();
+	}
+    }
+    std::cout << "Inspected " << nodePaths.size() << " TPCs" << std::endl;
+
+    // Outer x boundaries are always anodes -- start there and step inward by the appropriate amount to enumerate the anodes
+    // Structure is Anode - Cathode - Cathode - Anode
+    auto itBoundary = uniqueBoundariesX.begin();
+    while ( itBoundary != uniqueBoundariesX.end() )
+    {
+      // Anode
+      anodePositions.push_back( *itBoundary );
+      // Cathode
+      itBoundary++;
+      // Cathode
+      itBoundary++;
+      // Anode
+      itBoundary++;
+      anodePositions.push_back( *itBoundary );
+      // Next module
+      itBoundary++;
+    }
+
+    fileSource->Close();
+}
+
 float LifetimeCorrectionFactor(const std::vector<float> &detAnodes, const float inputPos, const float lifetime, const float driftSpeed)
 {
     float driftDist = std::numeric_limits<float>::max();
@@ -260,45 +395,18 @@ constexpr std::array<float, 29> csda_range_converted_cm_muon()
 
 void ProcessPostReco(const ParameterStruct &parameters)
 {
+    //////////// TEST
+    float detX0(0.), detX1(0.), detY0(0.), detY1(0.),detZ0(0.), detZ1(0.);
     std::vector<float> posAnodes;
-    std::vector<float> xBoundaries;
-    std::vector<float> yBoundaries;
-    std::vector<float> zBoundaries;
-    if (parameters.fDetectorType == DetectorType::kNearDetector)
-    {
-        // NDLAr anodes -- these are approximately the mid points of each anode. Could try to use each side of this a few cm apart instead.
-        posAnodes.push_back(-50.);
-        posAnodes.push_back(-150.);
-        posAnodes.push_back(-250.);
-        posAnodes.push_back(-350.);
-        posAnodes.push_back(50.);
-        posAnodes.push_back(150.);
-        posAnodes.push_back(250.);
-        posAnodes.push_back(350.);
-        // NDLAr edges -- these are approximate and based on MicroProd N3p4 hit positions with 0.5 cm bins
-        xBoundaries.push_back(-347.);
-        xBoundaries.push_back(347.);
-        zBoundaries.push_back(418.);
-        zBoundaries.push_back(913.5);
-        yBoundaries.push_back(-215.5);
-        yBoundaries.push_back(82.);
-    }
-    else if (parameters.fDetectorType == DetectorType::kPrototype2x2)
-    {
-        // 2x2 anodes
-        posAnodes.push_back(3.0652);
-        posAnodes.push_back(63.9273);
-        posAnodes.push_back(-3.0652);
-        posAnodes.push_back(-63.9273);
-        // 2x2 edges
-        xBoundaries.push_back(-63.9273);
-        xBoundaries.push_back(63.9273);
-        // Y and Z boundaries from looking at hit positions in MiniRun 6.4 with 0.5 cm bins
-        zBoundaries.push_back(-64.5);
-        zBoundaries.push_back(64.5);
-        yBoundaries.push_back(-62.0);
-        yBoundaries.push_back(62.0);
-    }
+    GetDetectorBounds( parameters, posAnodes, detX0, detX1, detY0, detY1, detZ0, detZ1 );
+
+    std::vector<float> xBoundaries = {detX0, detX1};
+    std::vector<float> yBoundaries = {detY0, detY1};
+    std::vector<float> zBoundaries = {detZ0, detZ1};
+
+    //std::cout << "Boundaries min=(" << detX0 << ", " << detY0 << ", " << detZ0 << ") and max=(" << detX1 << ", " << detY1 << ", " << detZ1 << ")" << std::endl;
+    //std::cout << "Anodes:" << std::endl;
+    //for ( auto const& detAnodeX : detAnodes ) std::cout << detAnodeX << std::endl;
 
     /////////////////////////////////////////////////////////
     /// Set up the necessary pieces for muon momentum vs range spline: CSDA
@@ -1515,15 +1623,12 @@ bool ReadSettings(ParameterStruct &parameters)
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "CorrectionFactorShower", parameters.correctionFactorShower));
 
-        PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
-            XmlHelper::ReadValue(xmlHandle, "Detector", parameters.fDetector));
-	// set the enum based on this:
-	if ( parameters.fDetector == 0 )      parameters.fDetectorType = DetectorType::kNearDetector;
-	else if ( parameters.fDetector == 1 ) parameters.fDetectorType = DetectorType::kPrototype2x2;
-	else {
-	  std::cout << "You have not set a valid detector type with the Detector xml parameter." << std::endl;
-	  return false;
-	}
+	PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+	    XmlHelper::ReadValue(xmlHandle, "GeoFileName", parameters.fGeoFileName));
+	PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+	    XmlHelper::ReadValue(xmlHandle, "GeoManagerName", parameters.fGeoManagerName));
+	PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+	    XmlHelper::ReadValue(xmlHandle, "GeoVolumeName", parameters.fGeoVolumeName));
 
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.ContainDistX));
