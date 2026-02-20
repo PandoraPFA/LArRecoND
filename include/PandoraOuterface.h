@@ -39,6 +39,13 @@ class Pandora;
 namespace lar_nd_postreco
 {
 
+enum DetectorType
+{
+    kNotADetector = -1,
+    kNearDetector,
+    kPrototype2x2
+};
+
 struct ParameterStruct
 {
     bool runTrackFit = false;
@@ -91,6 +98,7 @@ struct ParameterStruct
     std::string fdEdxResTempFile = "/cvmfs/larsoft.opensciencegrid.org/products/larsoft_data/v1_02_02/ParticleIdentification/dEdxrestemplates.root";
     std::map<std::string, TProfile *> templatesdEdxRR;
 
+    DetectorType fDetectorType = DetectorType::kNotADetector;
     unsigned int fDetector = 0; // 0=NDLAr, 1=2x2
 
     // Containment volumes

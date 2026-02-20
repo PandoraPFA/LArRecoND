@@ -264,7 +264,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
     std::vector<float> xBoundaries;
     std::vector<float> yBoundaries;
     std::vector<float> zBoundaries;
-    if (parameters.fDetector == 0)
+    if (parameters.fDetectorType == DetectorType::kNearDetector)
     {
         // NDLAr anodes -- these are approximately the mid points of each anode. Could try to use each side of this a few cm apart instead.
         posAnodes.push_back(-50.);
@@ -283,7 +283,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
         yBoundaries.push_back(-215.5);
         yBoundaries.push_back(82.);
     }
-    else if (parameters.fDetector == 1)
+    else if (parameters.fDetectorType == DetectorType::kPrototype2x2)
     {
         // 2x2 anodes
         posAnodes.push_back(3.0652);
@@ -1517,6 +1517,14 @@ bool ReadSettings(ParameterStruct &parameters)
 
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "Detector", parameters.fDetector));
+	// set the enum based on this:
+	if ( parameters.fDetector == 0 )      parameters.fDetectorType = DetectorType::kNearDetector;
+	else if ( parameters.fDetector == 1 ) parameters.fDetectorType = DetectorType::kPrototype2x2;
+	else {
+	  std::cout << "You have not set a valid detector type with the Detector xml parameter." << std::endl;
+	  return false;
+	}
+
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.ContainDistX));
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
