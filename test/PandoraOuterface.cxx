@@ -1707,6 +1707,11 @@ bool ReadSettings(ParameterStruct &parameters)
         {
             // Following scheme as in LArSoft larana/ParticleIdentification/Chi2PIDAlg.cxx
             TFile *tempFile = TFile::Open(parameters.fdEdxResTempFile.c_str());
+	    if (!tempFile || !tempFile->IsOpen())
+	    {
+	        std::cout << "dEdx vs. residual range templates file not opened." << std::endl;
+		return false;
+	    }
             parameters.templatesdEdxRR["muon"] = (TProfile *)tempFile->Get("dedx_range_mu");
             parameters.templatesdEdxRR["pion"] = (TProfile *)tempFile->Get("dedx_range_pi");
             parameters.templatesdEdxRR["proton"] = (TProfile *)tempFile->Get("dedx_range_pro");
