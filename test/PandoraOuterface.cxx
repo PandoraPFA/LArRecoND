@@ -1272,8 +1272,6 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 {
 
                     projection = axisDirection.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid);
-                    //hitPosition = pCaloHit3D->GetPositionVector();
-                    //projectionMap.insert({projection, hitPosition});
                     projectionMap.insert({projection, pCaloHit3D->GetPositionVector()});
                 }
 
@@ -1281,20 +1279,16 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 //Define a proximity radius and proximity threshold
 
                 CartesianVector showerStartHitPos(0.f, 0.f, 0.f);
-                //float showerStartHitProjectionValue(9999);
                 float showerStartHitProjectionValue = std::numeric_limits<float>::max();
-                //CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f, 0.f, 0.f);
+                
                 float hit_i_proj(9999);
 
                 int hitProximityRadius = parameters.proximityHitsRadius;
                 int proximityHitsCounter;
-                //float hit_i_j_dist;
+              
                 int proximityHitsThreshold = parameters.proximityHitsThreshold;
                 
-                //for(const auto &iMapEntry : projectionMap){
-              //  std::cout << "Projection: " << iMapEntry.first << "Hit: " << iMapEntry.second << std::endl;
-
-               // }
+       
                 for (const auto &iMapEntry : projectionMap)
                 {
                     float hit_i_j_dist;
@@ -1302,7 +1296,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     proximityHitsCounter = 0;
                     hit_i_pos = iMapEntry.second;
                     hit_i_proj = iMapEntry.first;
-                    //std::cout<< "Map projection: " << hit_i_proj << "Map Position: " << hit_i_pos << std::endl;
+                  
 
                     for (const auto &jMapEntry : projectionMap)
                     {
@@ -1318,7 +1312,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                         if (hit_i_j_dist <= hitProximityRadius)
                         {
                             proximityHitsCounter++;
-                     //   }
+                     
 
                             if (proximityHitsCounter > proximityHitsThreshold)
                             {
@@ -1335,7 +1329,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     }
                 }
 
-                //if (showerStartHitProjectionValue == 9999)
+               
                 if ( fabs(showerStartHitProjectionValue - std::numeric_limits<float>::max()) < std::numeric_limits<float>::epsilon() )
                 {
                     showerStartHitPos = projectionMap.begin()->second;
@@ -1400,20 +1394,17 @@ void ProcessPostReco(const ParameterStruct &parameters)
                         projectionMap.insert({projection, hitPosition});
                     }
                     
-                    //for (auto iMapEntry = projectionMap.rbegin(); iMapEntry != projectionMap.rend(); ++iMapEntry)
-                    for(auto iMapEntry : projectionMap)
-                    {
+                    for (auto iMapEntry = projectionMap.rbegin(); iMapEntry != projectionMap.rend(); ++iMapEntry){
                         float hit_i_j_dist;
                         CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f,0.f,0.f);
                         proximityHitsCounter = 0;
-                        hit_i_pos = iMapEntry.second;
-                        hit_i_proj =  iMapEntry.first;
-//                        std::cout << "Flipped map projection (should be negative): " << hit_i_proj << " Flipped map position: " << hit_i_pos << std::endl;
+                        hit_i_pos = iMapEntry->second;
+                        hit_i_proj =  -iMapEntry->first;
 
-                        for (const auto &jMapEntry : projectionMap)
-                        //for(auto jMapEntry = projectionMap.rbegin(); jMapEntry != projectionMap.rend(); ++jMapEntry)
+                      
+                        for(auto jMapEntry = projectionMap.rbegin(); jMapEntry != projectionMap.rend(); ++jMapEntry)
                         {
-                            hit_j_pos = jMapEntry.second;
+                            hit_j_pos = jMapEntry->second;
                        
                             if (hit_j_pos == hit_i_pos)
                             {
@@ -1517,8 +1508,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     }
                 }
 
-                float energyStartPoints = chargeStartPoints * (parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
-                float energyTotal = totalCharge*(23.6/1e6)*(parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
+                float energyStartPoints = chargeStartPoints *(1000)*(23.6/1e6)* (parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
+                float energyTotal = totalCharge*(1000)*(23.6/1e6)*(parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
                 shwrEnergy.push_back(energyTotal);
                 shwrdEdx.push_back(energyStartPoints / showerStartLength);
 
