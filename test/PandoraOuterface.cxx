@@ -1384,15 +1384,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 {
                     //flip PCA axis and clear necessary elements
                     CartesianVector axisDirectionFlipped(-axisDirection.GetX(), -axisDirection.GetY(), -axisDirection.GetZ());
-                    projectionMap.clear();
+                   
 
                     
-                    for (const CaloHit *const pCaloHit3D : caloHitList)
-                    {
-                        projection = axisDirectionFlipped.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid);
-                        hitPosition = pCaloHit3D->GetPositionVector();
-                        projectionMap.insert({projection, hitPosition});
-                    }
                     
                     for (auto iMapEntry = projectionMap.rbegin(); iMapEntry != projectionMap.rend(); ++iMapEntry){
                         float hit_i_j_dist;
