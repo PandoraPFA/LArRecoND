@@ -1252,7 +1252,10 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 shwrCentroidY.push_back(centroid.GetY());
                 shwrCentroidZ.push_back(centroid.GetZ());
 
-                //Define Shower Length
+                //Define Shower Length in cm
+                //Taken from far detector tool 
+                //https://github.com/PandoraPFA/larpandora/blob/develop/larpandora/LArPandoraEventBuilding/LArPandoraShower/Tools/ShowerPCAEigenvalueLength_tool.cc
+            
                 float NSigma = parameters.sigmaLength;
                 float primaryEigenValue = eigenValues.GetX();
                 float showerLength = std::sqrt(primaryEigenValue) * 2 * NSigma;
@@ -1263,7 +1266,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 //loop over the caloHitList
 
                 float projection;
-                std::multimap<float, CartesianVector> projectionMap;
+                std::multimap<float,CartesianVector> projectionMap;
                 CartesianVector hitPosition(0.f, 0.f, 0.f);
 
                 //Find projections for each hit along the primary axis and save them into a map from least to greatest
@@ -1347,6 +1350,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 showerDirection = showerDirection.GetUnitVector();
 
                 //Check if shower start point and direction are in the right direction
+                //Check the spread of hits on each side of the centroid, if the spread is greater on the 
+                //side closest to the start position it will flip the direction
 
                 std::vector<float> perp_dist_vec;
                 std::vector<float> proj_vec;
@@ -1428,7 +1433,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     showerDirection = (centroid - showerStartHitPos);
                     showerDirection = showerDirection.GetUnitVector();
                 }
-
+                
+                //Shower direction is a unit vector
                 shwrDirX.push_back(showerDirection.GetX());
                 shwrDirY.push_back(showerDirection.GetY());
                 shwrDirZ.push_back(showerDirection.GetZ());
@@ -1445,7 +1451,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 shwrEndY.push_back(endPoint.GetY());
                 shwrEndZ.push_back(endPoint.GetZ());
 
-                //Define dE/dx of the shower
+                //Define dE/dx of the shower in MeV/cm
+                //
 
                 float distanceFromShowerStart;
 
@@ -1468,6 +1475,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
                     totalCharge += (pShowerStartCaloHit3D->GetInputEnergy()) * LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(),
                                                                                    parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
+                 
+
                     if (showerStartPCAProjection == showerStartCurrentHit)
                     {
                         continue;
@@ -1491,8 +1500,6 @@ void ProcessPostReco(const ParameterStruct &parameters)
                         chargeStartPoints +=
                             pShowerStartCaloHit3D->GetInputEnergy() * LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(),
                                                                           parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
-                        //Add positions of hits to a branch to look at later
-
                         caloHitIndex++;
                     }
 
@@ -1501,12 +1508,14 @@ void ProcessPostReco(const ParameterStruct &parameters)
                         continue;
                     }
                 }
+                //Total energy in MeV
 
-                float energyStartPoints = chargeStartPoints *(1000)*(23.6/1e6)* (parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
+                float energyStartPoints = chargeStartPoints *(1000)*(23.6/1e6)*(parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
                 float energyTotal = totalCharge*(1000)*(23.6/1e6)*(parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
                 shwrEnergy.push_back(energyTotal);
                 shwrdEdx.push_back(energyStartPoints / showerStartLength);
 
+                
             } // SHOWER FIT
         }
 
