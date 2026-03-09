@@ -1750,9 +1750,11 @@ bool ReadSettings(ParameterStruct &parameters)
 bool PrintOptions()
 {
     std::cout << std::endl
-              << "./bin/PandoraOuterface -f [file name] -o [out name] -p [pixel pitch] -c [track score cut] -t -s" << std::endl
-              << "    -t = run track fit" << std::endl
-              << "    -s = run shower fit" << std::endl;
+              << "./bin/PandoraOuterface -x [path/file] -f [path/file] -o [out name]" << std::endl;
+    std::cout << "    -x = mandatory, path and name of XML settings file" << std::endl;
+    std::cout << "    -f = mandatory, path and name of input ROOT file" << std::endl;
+    std::cout << "    -o = optional, path and name of output ROOT file." << std::endl;
+    std::cout << "         Default: LArRecoND_outerface_test.root" << std::endl;
 
     return false;
 }
