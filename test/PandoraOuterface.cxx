@@ -1266,8 +1266,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 //loop over the caloHitList
 
                 float projection;
-                std::multimap<float,CartesianVector> projectionMap;
-                CartesianVector hitPosition(0.f, 0.f, 0.f);
+                std::multimap<float,const pandora::CaloHit*> projectionMap;
 
                 //Find projections for each hit along the primary axis and save them into a map from least to greatest
 
@@ -1275,7 +1274,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 {
 
                     projection = axisDirection.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid);
-                    projectionMap.insert({projection, pCaloHit3D->GetPositionVector()});
+                    projectionMap.insert({projection, pCaloHit3D});
                 }
 
                 // constants for looping through projection
@@ -1291,24 +1290,27 @@ void ProcessPostReco(const ParameterStruct &parameters)
               
                 int proximityHitsThreshold = parameters.proximityHitsThreshold;
                 
-       
+                CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f, 0.f, 0.f);
+                
                 for (const auto &iMapEntry : projectionMap)
                 {
                     float hit_i_j_dist;
-                    CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f, 0.f, 0.f);
+                    hit_i_pos.SetValues(0.f, 0.f, 0.f); 
+                    hit_j_pos.SetValues(0.f, 0.f, 0.f);
+                        
                     proximityHitsCounter = 0;
-                    hit_i_pos = iMapEntry.second;
                     hit_i_proj = iMapEntry.first;
                   
 
                     for (const auto &jMapEntry : projectionMap)
                     {
 
-                        hit_j_pos = jMapEntry.second;
-                        if (hit_j_pos == hit_i_pos)
+                        if (iMapEntry.second == jMapEntry.second)
                         {
                             continue;
                         }
+                        hit_i_pos = iMapEntry.second->GetPositionVector();
+                        hit_j_pos = jMapEntry.second->GetPositionVector();
 
                         hit_i_j_dist = std::sqrt(hit_i_pos.GetDistanceSquared(hit_j_pos));
 
@@ -1335,7 +1337,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                
                 if ( fabs(showerStartHitProjectionValue - std::numeric_limits<float>::max()) < std::numeric_limits<float>::epsilon() )
                 {
-                    showerStartHitPos = projectionMap.begin()->second;
+                    showerStartHitPos = projectionMap.begin()->second->GetPositionVector();
                     showerStartHitProjectionValue = projectionMap.begin()->first;
                 }
 
@@ -1358,7 +1360,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
                 for (const auto &iMapEntry : projectionMap)
                 {
-                    CartesianVector start_to_hit_dir = (iMapEntry.second - showerStartHitPos);
+                    CartesianVector start_to_hit_dir = (iMapEntry.second->GetPositionVector() - showerStartHitPos);
                     float proj = start_to_hit_dir.GetDotProduct(showerDirection);
                     CartesianVector perp_vec = start_to_hit_dir - showerDirection * proj;
                     float perp_dist = perp_vec.GetMagnitude();
@@ -1390,25 +1392,23 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     //flip PCA axis and clear necessary elements
                     CartesianVector axisDirectionFlipped(-axisDirection.GetX(), -axisDirection.GetY(), -axisDirection.GetZ());
                    
-
-                    
-                    
                     for (auto iMapEntry = projectionMap.rbegin(); iMapEntry != projectionMap.rend(); ++iMapEntry){
                         float hit_i_j_dist;
-                        CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f,0.f,0.f);
                         proximityHitsCounter = 0;
-                        hit_i_pos = iMapEntry->second;
                         hit_i_proj =  -iMapEntry->first;
-
+                        hit_i_pos.SetValues(0.f,0.f,0.f);
+                        hit_j_pos.SetValues(0.f,0.f,0.f);
                       
                         for(auto jMapEntry = projectionMap.rbegin(); jMapEntry != projectionMap.rend(); ++jMapEntry)
                         {
-                            hit_j_pos = jMapEntry->second;
                        
-                            if (hit_j_pos == hit_i_pos)
+                            if (iMapEntry->second == jMapEntry->second)
                             {
                                 continue;
                             }
+                            hit_i_pos = iMapEntry->second->GetPositionVector();
+                            hit_j_pos = jMapEntry->second->GetPositionVector();
+
                             hit_i_j_dist = std::sqrt(hit_i_pos.GetDistanceSquared(hit_j_pos));
                             if (hit_i_j_dist <= hitProximityRadius)
                             {
