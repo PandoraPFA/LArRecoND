@@ -1068,9 +1068,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
                         } // loop points
                         // And now that we have dE/dx for all points, we can use the sum of that all to get the track calo E
-                        trackFitTrackCaloE.push_back(summedTrkE);
+                        trackFitTrackCaloE.push_back(summedTrkE/1000.);
                         // And calculate the total VisE for the track:
-                        trackFitVisE.push_back(eVisWithRecombination(parameters, summedQinTrk));
+                        trackFitVisE.push_back(eVisWithRecombination(parameters, summedQinTrk)/1000.);
 
                         // Particle ID here
                         if (parameters.fShouldRunPID)
