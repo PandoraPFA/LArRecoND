@@ -92,8 +92,11 @@ struct ParameterStruct
     std::map<std::string, TProfile *> templatesdEdxRR;
 
     // Detector and geometry
+    bool fGeoFileSetCmdLine = false;
     std::string fGeoFileName = "";
+    bool fGeoManagerSetCmdLine = false;
     std::string fGeoManagerName = "";
+    bool fGeoVolumeSetCmdLine = false;
     std::string fGeoVolumeName = "";
 
     // Containment volumes

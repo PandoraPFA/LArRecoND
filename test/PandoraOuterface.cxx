@@ -1552,7 +1552,7 @@ bool ParseCommandLine(int argc, char *argv[], ParameterStruct &parameters)
     bool hasInputFile = false;
     bool hasXmlFile = false;
 
-    while ((cOpt = getopt(argc, argv, "x:f:o:h")) != -1)
+    while ((cOpt = getopt(argc, argv, "x:f:o:g:t:v:h")) != -1)
     {
         switch (cOpt)
         {
@@ -1567,6 +1567,18 @@ bool ParseCommandLine(int argc, char *argv[], ParameterStruct &parameters)
             case 'o':
                 parameters.outfileName = optarg;
                 break;
+	    case 'g':
+	        parameters.fGeoFileName = optarg;
+	        parameters.fGeoFileSetCmdLine = true;
+		break;
+	    case 't':
+	        parameters.fGeoManagerName = optarg;
+		parameters.fGeoManagerSetCmdLine = true;
+		break;
+	    case 'v':
+	        parameters.fGeoVolumeName= optarg;
+		parameters.fGeoVolumeSetCmdLine = true;
+		break;
             case 'h':
             default:
                 return PrintOptions();
@@ -1634,12 +1646,15 @@ bool ReadSettings(ParameterStruct &parameters)
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "CorrectionFactorShower", parameters.correctionFactorShower));
 
-	PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
-	    XmlHelper::ReadValue(xmlHandle, "GeoFileName", parameters.fGeoFileName));
-	PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
-	    XmlHelper::ReadValue(xmlHandle, "GeoManagerName", parameters.fGeoManagerName));
-	PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
-	    XmlHelper::ReadValue(xmlHandle, "GeoVolumeName", parameters.fGeoVolumeName));
+	if ( !parameters.fGeoFileSetCmdLine )
+	    PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+	        XmlHelper::ReadValue(xmlHandle, "GeoFileName", parameters.fGeoFileName));
+	if ( !parameters.fGeoManagerSetCmdLine )
+	    PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+		XmlHelper::ReadValue(xmlHandle, "GeoManagerName", parameters.fGeoManagerName));
+	if ( !parameters.fGeoVolumeSetCmdLine )
+	    PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+	        XmlHelper::ReadValue(xmlHandle, "GeoVolumeName", parameters.fGeoVolumeName));
 
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.ContainDistX));
@@ -1761,11 +1776,17 @@ bool ReadSettings(ParameterStruct &parameters)
 bool PrintOptions()
 {
     std::cout << std::endl
-              << "./bin/PandoraOuterface -x [path/file] -f [path/file] -o [out name]" << std::endl;
+              << "./bin/PandoraOuterface -x [path/file] -f [path/file] -o [out name] -g [geom file] -t [geom manager] -v [geom volume]" << std::endl;
     std::cout << "    -x = mandatory, path and name of XML settings file" << std::endl;
     std::cout << "    -f = mandatory, path and name of input ROOT file" << std::endl;
     std::cout << "    -o = optional, path and name of output ROOT file." << std::endl;
     std::cout << "         Default: LArRecoND_outerface_test.root" << std::endl;
+    std::cout << "    -g = 'optional' - sets geometery (ROOT) file name." << std::endl;
+    std::cout << "         Default: empty. If not set here, should be specified in XML" << std::endl;
+    std::cout << "    -t = 'optional' - sets geometery manager name." << std::endl;
+    std::cout << "         Default: empty. If not set here, should be specified in XML" <<std::endl;
+    std::cout << "    -v = 'optional' - sets geometery volume name." << std::endl;
+    std::cout << "         Default: empty. If not set here, should be specified in XML" <<std::endl;
 
     return false;
 }
