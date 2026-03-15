@@ -310,9 +310,6 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 const Cluster *pClusterW = this->GetCluster(pPfo, TPC_VIEW_W);
                 const int nWHits = (pClusterW != nullptr) ? pClusterW->GetNCaloHits() : 0;
 
-                // Find best-matched MC particle for this reconstructed cluster
-                const HierarchyAnalysisAlgorithm::RecoMCMatch bestMatch = GetRecoMCMatch(pRecoNode, matchInfo, rootMCParticles);
-
                 // Store quantities in the vectors
                 sliceIdVect.emplace_back(sliceId);
                 // Neutrino reco vertex
@@ -396,6 +393,9 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                         recoHitEVect.emplace_back(hitE);
                     }
                 }
+
+                // Find best-matched MC particle for this reconstructed PFO cluster
+                const HierarchyAnalysisAlgorithm::RecoMCMatch bestMatch = GetRecoMCMatch(pPfo, pRecoNode, matchInfo, rootMCParticles);
 
                 // Best matched MC particle
                 const MCParticle *pLeadingMC = bestMatch.m_pLeadingMC;
@@ -568,7 +568,7 @@ const Cluster *HierarchyAnalysisAlgorithm::GetCluster(const ParticleFlowObject *
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-const HierarchyAnalysisAlgorithm::RecoMCMatch HierarchyAnalysisAlgorithm::GetRecoMCMatch(
+const HierarchyAnalysisAlgorithm::RecoMCMatch HierarchyAnalysisAlgorithm::GetRecoMCMatch(const pandora::ParticleFlowObject *pPfo,
     const LArHierarchyHelper::RecoHierarchy::Node *pRecoNode, const LArHierarchyHelper::MatchInfo &matchInfo, MCParticleList &rootMCParticles) const
 {
     int nSharedHits{0};
@@ -605,10 +605,44 @@ const HierarchyAnalysisAlgorithm::RecoMCMatch HierarchyAnalysisAlgorithm::GetRec
                 pRootNu = pMCRoot;
                 // Best matched leading MC particle
                 pLeadingMC = pMCNode->GetLeadingMCParticle();
-                // Match quality
-                nSharedHits = match.GetSharedHits(pRecoNode);
-                completeness = match.GetCompleteness(pRecoNode);
-                purity = match.GetPurity(pRecoNode);
+
+                // The MC matching uses nodes which can have more than 1 folded particle/PFO.
+                // The PFO passed to this function will be part of the matched reco node
+                // once the code reaches here, but this reco node can have more than 1 PFO via folding.
+                // For completeness & purity, only use the required PFO hits and not all hits from
+                // the reco node (which will include other PFOs if they are present).
+                // Copies and adapts code from GetSharedHits(), GetCompleteness() & GetPurity() from
+                // LArHierarchyHelper::MCMatches to avoid duplicate shared hits, completeness & purities
+                // for the case when reco nodes have more than 1 PFO. Otherwise each PFO from
+                // the same reco node will always return the same match quantities
+
+                // Get hits for this best matched MC node
+                CaloHitList mcHits = pMCNode->GetCaloHits();
+
+                // Get all the reco hits for the passed PFO only, not the whole reco node
+                CaloHitList pfoHits;
+                LArPfoHelper::GetAllCaloHits(pPfo, pfoHits);
+
+                // Get the selected hits of the reco node, such that each reco hit has a corresponding MC hit
+                CaloHitList selectedRecoHits = match.GetSelectedRecoHits(pRecoNode);
+
+                // Sort the hit lists
+                mcHits.sort();
+                pfoHits.sort();
+                selectedRecoHits.sort();
+
+                // Get the PFO reco hits that are also part of the selected reco list (such that each reco hit has a corresponding MC hit)
+                CaloHitVector selectedPfoHits;
+                std::set_intersection(
+                    pfoHits.begin(), pfoHits.end(), selectedRecoHits.begin(), selectedRecoHits.end(), std::back_inserter(selectedPfoHits));
+
+                // Find the overlap of these MC & selected PFO reco hit lists
+                CaloHitVector intersection;
+                std::set_intersection(mcHits.begin(), mcHits.end(), selectedPfoHits.begin(), selectedPfoHits.end(), std::back_inserter(intersection));
+
+                nSharedHits = intersection.size();
+                completeness = (mcHits.size() > 0) ? nSharedHits / static_cast<float>(mcHits.size()) : 0.0;
+                purity = (selectedPfoHits.size() > 0) ? nSharedHits / static_cast<float>(selectedPfoHits.size()) : 0.0;
 
                 break;
 
