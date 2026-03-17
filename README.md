@@ -117,10 +117,9 @@ downloaded from CERNBox using the
 
 ```Shell
 cd $MY_TEST_AREA/LArMachineLearningData
-source download.sh uboone
-source download.sh sbnd
-source download.sh dune
 source download.sh dunend
+source download.sh dune lbl
+source download.sh uboone
 ```
 
 ## Running LArRecoND

@@ -66,9 +66,9 @@ cd $MY_TEST_AREA
 git clone https://github.com/PandoraPFA/LArMachineLearningData.git
 cd LArMachineLearningData
 git checkout $PANDORA_LAR_MLDATA_VERSION
-# Download training files: only do this once to avoid google drive's access restrictions (up to 24 hrs wait)
-#. download.sh sbnd
-#. download.sh dune
+# Download training files from CERNBox
 #. download.sh dunend
+#. download.sh dune lbl
+#. download.sh uboone
 
 cd $MY_TEST_AREA
