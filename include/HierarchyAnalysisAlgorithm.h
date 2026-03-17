@@ -91,13 +91,14 @@ private:
     /**
      *  @brief  Find the best MC match for the given reco node
      *
+     *  @param  pPfo The PFO pointer
      *  @param  pRecoNode The reco node
      *  @param  matchInfo The object storing all of the MC match hierarchy
      *  @param  rootMCParticles The root MC particles
      *
      *  @return A summary of the match info
      */
-    const RecoMCMatch GetRecoMCMatch(const LArHierarchyHelper::RecoHierarchy::Node *pRecoNode,
+    const RecoMCMatch GetRecoMCMatch(const pandora::ParticleFlowObject *pPfo, const LArHierarchyHelper::RecoHierarchy::Node *pRecoNode,
         const LArHierarchyHelper::MatchInfo &matchInfo, pandora::MCParticleList &rootMCParticles) const;
 
     int m_count;                        ///< The number of times the Run() function has been called
