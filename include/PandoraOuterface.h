@@ -117,7 +117,6 @@ struct ParameterStruct
  *  @brief Recursive geometry search, as in PandoraInterface
  */
 
-
 /**
  *  @brief Get the Geometry bounds
  *
@@ -131,7 +130,8 @@ struct ParameterStruct
  *  @param the maximum z - to be set
  *
  */
-void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &anodePositions, float &xMin, float &xMax, float &yMin, float &yMax, float &zMin, float &zMax);
+void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &anodePositions, float &xMin, float &xMax, float &yMin,
+    float &yMax, float &zMin, float &zMax);
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 

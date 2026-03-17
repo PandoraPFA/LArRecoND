@@ -202,7 +202,8 @@ public:
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-LArRecoNDFormat::LArRecoNDFormat(TTree *tree) : m_fChain(nullptr)
+LArRecoNDFormat::LArRecoNDFormat(TTree *tree) :
+    m_fChain(nullptr)
 {
     // if parameter tree is not specified (or zero), connect the file
     // used to generate this class and read the Tree.

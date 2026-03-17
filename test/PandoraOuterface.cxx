@@ -98,7 +98,7 @@ namespace lar_nd_postreco
 {
 
 void RecursiveGeometrySearch(TGeoManager *pSimGeom, const std::string &targetName, std::vector<std::vector<unsigned int>> &nodePaths,
-			     std::vector<unsigned int> &currentPath)
+    std::vector<unsigned int> &currentPath)
 {
     const std::string nodeName{pSimGeom->GetCurrentNode()->GetName()};
     if (nodeName.find(targetName) != std::string::npos)
@@ -108,18 +108,19 @@ void RecursiveGeometrySearch(TGeoManager *pSimGeom, const std::string &targetNam
     else
     {
         for (unsigned int i = 0; i < pSimGeom->GetCurrentNode()->GetNdaughters(); ++i)
-	{
+        {
             pSimGeom->CdDown(i);
             currentPath.emplace_back(i);
             RecursiveGeometrySearch(pSimGeom, targetName, nodePaths, currentPath);
             pSimGeom->CdUp();
             currentPath.pop_back();
-	}
+        }
     }
     return;
 }
 
-void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &anodePositions, float &xMin, float &xMax, float &yMin, float &yMax, float &zMin, float &zMax)
+void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &anodePositions, float &xMin, float &xMax, float &yMin,
+    float &yMax, float &zMin, float &zMax)
 {
     // Heavily copies the geometry code in PandoraInterface
     TFile *fileSource = TFile::Open(parameters.fGeoFileName.c_str(), "READ");
@@ -133,8 +134,8 @@ void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &an
     if (!pSimGeom)
     {
         std::cout << "Could not find the geometry manager named " << parameters.fGeoManagerName << std::endl;
-	fileSource->Close();
-	return;
+        fileSource->Close();
+        return;
     }
 
     // Go through the geometry and find the paths to the nodes we are interested in
@@ -148,85 +149,91 @@ void GetDetectorBounds(const ParameterStruct &parameters, std::vector<float> &an
     {
         const TGeoNode *pTopNode = pSimGeom->GetCurrentNode();
         // We have to multiply together matrices at each depth to convert local coordinates to the world volume
-	std::unique_ptr<TGeoHMatrix> pVolMatrix = std::make_unique<TGeoHMatrix>(*pTopNode->GetMatrix());
+        std::unique_ptr<TGeoHMatrix> pVolMatrix = std::make_unique<TGeoHMatrix>(*pTopNode->GetMatrix());
         for (unsigned int d = 0; d < nodePaths.at(n).size(); ++d)
-	{
+        {
             pSimGeom->CdDown(nodePaths.at(n).at(d));
             const TGeoNode *pNode = pSimGeom->GetCurrentNode();
-	    std::unique_ptr<TGeoHMatrix> pMatrix = std::make_unique<TGeoHMatrix>(*pNode->GetMatrix());
+            std::unique_ptr<TGeoHMatrix> pMatrix = std::make_unique<TGeoHMatrix>(*pNode->GetMatrix());
             pVolMatrix->Multiply(pMatrix.get());
-	}
+        }
         const TGeoNode *pTargetNode = pSimGeom->GetCurrentNode();
 
-	// This next bit comes from MakePandoraTPC in PandoraInterface with some alterations
-	// Get the BBox dimensions from the placement volume, which is assumed to be a cube
-	TGeoVolume *pCurrentVol = pTargetNode->GetVolume();
-	TGeoShape *pCurrentShape = pCurrentVol->GetShape();
-	TGeoBBox *pBox = dynamic_cast<TGeoBBox *>(pCurrentShape);
+        // This next bit comes from MakePandoraTPC in PandoraInterface with some alterations
+        // Get the BBox dimensions from the placement volume, which is assumed to be a cube
+        TGeoVolume *pCurrentVol = pTargetNode->GetVolume();
+        TGeoShape *pCurrentShape = pCurrentVol->GetShape();
+        TGeoBBox *pBox = dynamic_cast<TGeoBBox *>(pCurrentShape);
 
-	// Now can get origin/width data from the BBox
-	const double dx = pBox->GetDX(); // Note these are the half widths
-	const double dy = pBox->GetDY();
-	const double dz = pBox->GetDZ();
-	const double *pOrigin = pBox->GetOrigin();
+        // Now can get origin/width data from the BBox
+        const double dx = pBox->GetDX(); // Note these are the half widths
+        const double dy = pBox->GetDY();
+        const double dz = pBox->GetDZ();
+        const double *pOrigin = pBox->GetOrigin();
 
-	// Translate local origin to global coordinates
-	double level1[3] = {0.0, 0.0, 0.0};
-	pTargetNode->LocalToMasterVect(pOrigin, level1);
+        // Translate local origin to global coordinates
+        double level1[3] = {0.0, 0.0, 0.0};
+        pTargetNode->LocalToMasterVect(pOrigin, level1);
 
-	// Get the needed geometry bits from this
+        // Get the needed geometry bits from this
         const double *pVolTrans = pVolMatrix->GetTranslation();
         const double centreX = (level1[0] + pVolTrans[0]);
         const double centreY = (level1[1] + pVolTrans[1]);
         const double centreZ = (level1[2] + pVolTrans[2]);
 
-	if (n==0)
-	{
-	  // First node, set the meaningful numbers
-	  xMin = centreX - dx;
-	  xMax = centreX + dx;
-	  yMin = centreY - dy;
-	  yMax = centreY + dy;
-	  zMin = centreZ - dz;
-	  zMax = centreZ + dz;
-	}
-	else
-	{
-	  // Not first node, check if these numbers are more appropriate
-	  if ( centreX - dx < xMin ) xMin = centreX - dx;
-	  if ( centreX + dx > xMax ) xMax = centreX + dx;
-	  if ( centreY - dy < yMin ) yMin = centreY - dy;
-          if ( centreY + dy > yMax ) yMax = centreY + dy;
-	  if ( centreZ - dz < zMin ) zMin = centreZ - dz;
-          if ( centreZ + dz > zMax ) zMax = centreZ + dz;
-	}
-	uniqueBoundariesX.insert( centreX - dx );
-	uniqueBoundariesX.insert( centreX + dx );
-	// end the bit grabbed from MakeTPC
+        if (n == 0)
+        {
+            // First node, set the meaningful numbers
+            xMin = centreX - dx;
+            xMax = centreX + dx;
+            yMin = centreY - dy;
+            yMax = centreY + dy;
+            zMin = centreZ - dz;
+            zMax = centreZ + dz;
+        }
+        else
+        {
+            // Not first node, check if these numbers are more appropriate
+            if (centreX - dx < xMin)
+                xMin = centreX - dx;
+            if (centreX + dx > xMax)
+                xMax = centreX + dx;
+            if (centreY - dy < yMin)
+                yMin = centreY - dy;
+            if (centreY + dy > yMax)
+                yMax = centreY + dy;
+            if (centreZ - dz < zMin)
+                zMin = centreZ - dz;
+            if (centreZ + dz > zMax)
+                zMax = centreZ + dz;
+        }
+        uniqueBoundariesX.insert(centreX - dx);
+        uniqueBoundariesX.insert(centreX + dx);
+        // end the bit grabbed from MakeTPC
         for (const unsigned int &daughter : nodePaths.at(n))
-	{
+        {
             (void)daughter;
             pSimGeom->CdUp();
-	}
+        }
     }
     std::cout << "Inspected " << nodePaths.size() << " TPCs" << std::endl;
 
     // Outer x boundaries are always anodes -- start there and step inward by the appropriate amount to enumerate the anodes
     // Structure is Anode - Cathode - Cathode - Anode
     auto itBoundary = uniqueBoundariesX.begin();
-    while ( itBoundary != uniqueBoundariesX.end() )
+    while (itBoundary != uniqueBoundariesX.end())
     {
-      // Anode
-      anodePositions.push_back( *itBoundary );
-      // Cathode
-      itBoundary++;
-      // Cathode
-      itBoundary++;
-      // Anode
-      itBoundary++;
-      anodePositions.push_back( *itBoundary );
-      // Next module
-      itBoundary++;
+        // Anode
+        anodePositions.push_back(*itBoundary);
+        // Cathode
+        itBoundary++;
+        // Cathode
+        itBoundary++;
+        // Anode
+        itBoundary++;
+        anodePositions.push_back(*itBoundary);
+        // Next module
+        itBoundary++;
     }
 
     fileSource->Close();
@@ -255,14 +262,14 @@ float eVisWithRecombination(const ParameterStruct &parameters, const float input
     if (parameters.fShouldCorrectRecomb)
     {
         if (parameters.fBoxRecombination)
-	{
-	    float csi = parameters.fBoxBeta * dEdx_use / (parameters.fEField * parameters.fDensity);
-	    recomb = TMath::Log(parameters.fBoxAlpha + csi) / csi;
-	}
-	else if (parameters.fBirksRecombination)
-	{
-	    recomb = parameters.fBirksA / (1. + parameters.fBirksK * dEdx_use / (parameters.fEField * parameters.fDensity));
-	}
+        {
+            float csi = parameters.fBoxBeta * dEdx_use / (parameters.fEField * parameters.fDensity);
+            recomb = TMath::Log(parameters.fBoxAlpha + csi) / csi;
+        }
+        else if (parameters.fBirksRecombination)
+        {
+            recomb = parameters.fBirksA / (1. + parameters.fBirksK * dEdx_use / (parameters.fEField * parameters.fDensity));
+        }
     }
 
     return inputQ * wIon / recomb;
@@ -327,12 +334,12 @@ float KEFromRange_proton_calc(const float inputRange)
              (-1.71763E-16 * inputRange * inputRange * inputRange * inputRange * inputRange * inputRange);
      */
 
-    const std::vector<float> magicNumbers = { 149.904, 3.34146, -0.00318856, 4.34587E-6, -3.18146E-9, 1.17854E-12, -1.71763E-16 };
+    const std::vector<float> magicNumbers = {149.904, 3.34146, -0.00318856, 4.34587E-6, -3.18146E-9, 1.17854E-12, -1.71763E-16};
     float KE = 0.;
 
-    for ( unsigned int rOrder=0; rOrder<=6; ++rOrder )
+    for (unsigned int rOrder = 0; rOrder <= 6; ++rOrder)
     {
-        KE += (magicNumbers[rOrder] * std::pow(inputRange,rOrder));
+        KE += (magicNumbers[rOrder] * std::pow(inputRange, rOrder));
     }
 
     return KE;
@@ -383,8 +390,8 @@ constexpr std::array<float, 29> csda_range_converted_cm_muon()
     ///    website:
     ///    http://pdg.lbl.gov/2012/AtomicNuclearProperties/MUON_ELOSS_TABLES/muonloss_289.pdf
     std::array<float, 29> Range_grampercm2{{9.833E-1, 1.786E0, 3.321E0, 6.598E0, 1.058E1, 3.084E1, 4.250E1, 6.732E1, 1.063E2, 1.725E2,
-	  2.385E2, 4.934E2, 6.163E2, 8.552E2, 1.202E3, 1.758E3, 2.297E3, 4.359E3, 5.354E3, 7.298E3, 1.013E4, 1.469E4, 1.910E4, 3.558E4,
-	  4.326E4, 5.768E4, 7.734E4, 1.060E5, 1.307E5}};
+        2.385E2, 4.934E2, 6.163E2, 8.552E2, 1.202E3, 1.758E3, 2.297E3, 4.359E3, 5.354E3, 7.298E3, 1.013E4, 1.469E4, 1.910E4, 3.558E4,
+        4.326E4, 5.768E4, 7.734E4, 1.060E5, 1.307E5}};
     for (float &value : Range_grampercm2)
     {
         value /= 1.396; // convert to cm
@@ -396,9 +403,9 @@ constexpr std::array<float, 29> csda_range_converted_cm_muon()
 void ProcessPostReco(const ParameterStruct &parameters)
 {
     //////////// TEST
-    float detX0(0.), detX1(0.), detY0(0.), detY1(0.),detZ0(0.), detZ1(0.);
+    float detX0(0.), detX1(0.), detY0(0.), detY1(0.), detZ0(0.), detZ1(0.);
     std::vector<float> posAnodes;
-    GetDetectorBounds( parameters, posAnodes, detX0, detX1, detY0, detY1, detZ0, detZ1 );
+    GetDetectorBounds(parameters, posAnodes, detX0, detX1, detY0, detY1, detZ0, detZ1);
 
     std::vector<float> xBoundaries = {detX0, detX1};
     std::vector<float> yBoundaries = {detY0, detY1};
@@ -455,10 +462,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
     for (long entryIdx = 0; entryIdx < nEntries; ++entryIdx)
     {
         int getEntryCheck = pandoraIn->GetEntry(entryIdx);
-	if ( getEntryCheck == 0 ) {
-	  std::cout << "Found pandoraIn->GetEntry(" << entryIdx << ") to have return 0. Skipping." << std::endl;
-	  continue;
-	}
+        if (getEntryCheck == 0)
+        {
+            std::cout << "Found pandoraIn->GetEntry(" << entryIdx << ") to have return 0. Skipping." << std::endl;
+            continue;
+        }
 
         // Fill up the branches of basic output
         fOut.FillBasicBranches(pandoraIn);
@@ -816,7 +824,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                                                   << "          and caloHitList_v2 size is " << caloHitList_v2.size() << std::endl;
                                 }
                             } // Step 2-3
-                        }     // Steps 1-3
+                        } // Steps 1-3
                         // Step 4
                         if (parameters.verbosity >= 1)
                             std::cout << "    ----> DONE with the merging. Now running the new track fit." << std::endl;
@@ -866,8 +874,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 {
                     const lar_content::LArTrackState &trackStateStart =
                         (parameters.useVoxelizedStartStop && (trackStateSuccess_v2 && trackStateVector_out.size() >= minTrajectoryPoints))
-                            ? trackStateVector_out.front()
-                            : trackStateVector.front();
+                        ? trackStateVector_out.front()
+                        : trackStateVector.front();
                     trkStartX.push_back(trackStateStart.GetPosition().GetX());
                     trkStartY.push_back(trackStateStart.GetPosition().GetY());
                     trkStartZ.push_back(trackStateStart.GetPosition().GetZ());
@@ -876,8 +884,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     trkStartDirZ.push_back(trackStateStart.GetDirection().GetZ());
                     const lar_content::LArTrackState &trackStateEnd =
                         (parameters.useVoxelizedStartStop && (trackStateSuccess_v2 && trackStateVector_out.size() >= minTrajectoryPoints))
-                            ? trackStateVector_out.back()
-                            : trackStateVector.back();
+                        ? trackStateVector_out.back()
+                        : trackStateVector.back();
                     trkEndX.push_back(trackStateEnd.GetPosition().GetX());
                     trkEndY.push_back(trackStateEnd.GetPosition().GetY());
                     trkEndZ.push_back(trackStateEnd.GetPosition().GetZ());
@@ -1039,11 +1047,12 @@ void ProcessPostReco(const ParameterStruct &parameters)
                             // Lifetime correction
                             if (parameters.fShouldCorrectLifetime)
                             {
-                                hitdQdx *= (1000. * LifetimeCorrectionFactor(posAnodes, trackState.GetPosition().GetX(), parameters.fElectronLifetime,
-                                                        parameters.fElectronDriftSpeed)); // turn ke- to e- and do lifetime correction
+                                hitdQdx *= (1000. *
+                                    LifetimeCorrectionFactor(posAnodes, trackState.GetPosition().GetX(), parameters.fElectronLifetime,
+                                        parameters.fElectronDriftSpeed)); // turn ke- to e- and do lifetime correction
                                 summedQinTrk += (1000. * hitQ *
-                                                 LifetimeCorrectionFactor(posAnodes, trackState.GetPosition().GetX(),
-                                                     parameters.fElectronLifetime, parameters.fElectronDriftSpeed));
+                                    LifetimeCorrectionFactor(posAnodes, trackState.GetPosition().GetX(), parameters.fElectronLifetime,
+                                        parameters.fElectronDriftSpeed));
                             }
                             // Recombination correction
                             float hitdEdx = dEdxWithRecombination(parameters, hitdQdx);
@@ -1068,9 +1077,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
                         } // loop points
                         // And now that we have dE/dx for all points, we can use the sum of that all to get the track calo E
-                        trackFitTrackCaloE.push_back(summedTrkE/1000.);
+                        trackFitTrackCaloE.push_back(summedTrkE / 1000.);
                         // And calculate the total VisE for the track:
-                        trackFitVisE.push_back(eVisWithRecombination(parameters, summedQinTrk)/1000.);
+                        trackFitVisE.push_back(eVisWithRecombination(parameters, summedQinTrk) / 1000.);
 
                         // Particle ID here
                         if (parameters.fShouldRunPID)
@@ -1106,43 +1115,43 @@ void ProcessPostReco(const ParameterStruct &parameters)
                                         if (bincpro < 1e-6)
                                             bincpro = (parameters.templatesdEdxRR.at("proton")->GetBinContent(bin - 1) +
                                                           parameters.templatesdEdxRR.at("proton")->GetBinContent(bin + 1)) /
-                                                      2.;
+                                                2.;
                                         float bincka = parameters.templatesdEdxRR.at("kaon")->GetBinContent(bin);
                                         if (bincka < 1e-6)
                                             bincka = (parameters.templatesdEdxRR.at("kaon")->GetBinContent(bin - 1) +
                                                          parameters.templatesdEdxRR.at("kaon")->GetBinContent(bin + 1)) /
-                                                     2.;
+                                                2.;
                                         float bincpi = parameters.templatesdEdxRR.at("pion")->GetBinContent(bin);
                                         if (bincpi < 1e-6)
                                             bincpi = (parameters.templatesdEdxRR.at("pion")->GetBinContent(bin - 1) +
                                                          parameters.templatesdEdxRR.at("pion")->GetBinContent(bin + 1)) /
-                                                     2.;
+                                                2.;
                                         float bincmu = parameters.templatesdEdxRR.at("muon")->GetBinContent(bin);
                                         if (bincmu < 1e-6)
                                             bincmu = (parameters.templatesdEdxRR.at("muon")->GetBinContent(bin - 1) +
                                                          parameters.templatesdEdxRR.at("muon")->GetBinContent(bin + 1)) /
-                                                     2.;
+                                                2.;
                                         // Error
                                         float binepro = parameters.templatesdEdxRR.at("proton")->GetBinError(bin);
                                         if (binepro < 1e-6)
                                             binepro = (parameters.templatesdEdxRR.at("proton")->GetBinError(bin - 1) +
                                                           parameters.templatesdEdxRR.at("proton")->GetBinError(bin + 1)) /
-                                                      2.;
+                                                2.;
                                         float bineka = parameters.templatesdEdxRR.at("kaon")->GetBinError(bin);
                                         if (bineka < 1e-6)
                                             bineka = (parameters.templatesdEdxRR.at("kaon")->GetBinError(bin - 1) +
                                                          parameters.templatesdEdxRR.at("kaon")->GetBinError(bin + 1)) /
-                                                     2.;
+                                                2.;
                                         float binepi = parameters.templatesdEdxRR.at("pion")->GetBinError(bin);
                                         if (binepi < 1e-6)
                                             binepi = (parameters.templatesdEdxRR.at("pion")->GetBinError(bin - 1) +
                                                          parameters.templatesdEdxRR.at("pion")->GetBinError(bin + 1)) /
-                                                     2.;
+                                                2.;
                                         float binemu = parameters.templatesdEdxRR.at("muon")->GetBinError(bin);
                                         if (binemu < 1e-6)
                                             binemu = (parameters.templatesdEdxRR.at("muon")->GetBinError(bin - 1) +
                                                          parameters.templatesdEdxRR.at("muon")->GetBinError(bin + 1)) /
-                                                     2.;
+                                                2.;
                                         float errdedx = 0.04231 + 0.0001783 * trackVecDEDX[idxCaloPt] * trackVecDEDX[idxCaloPt];
                                         errdedx *= trackVecDEDX[idxCaloPt];
                                         float errdedx_square = errdedx * errdedx;
@@ -1156,7 +1165,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                                         chi2mu += std::pow(thisPointDEDX - bincmu, 2) / (binemu * binemu + errdedx_square);
                                         npts += 1;
                                     } // within bins
-                                }     // loop calo points
+                                } // loop calo points
 
                                 if (npts > 0)
                                 {
@@ -1192,11 +1201,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
                                     pid_proScore.push_back(chi2pro / npts);
                                 }
                             } // use Chi2PID
-                        }     // getting PID
-                              ///////////////////////
+                        } // getting PID
+                        ///////////////////////
 
                     } // if trackstate has stuff needed to do dEdx
-                }     // if we have a track state
+                } // if we have a track state
 
                 if (!filledPID)
                 {
@@ -1253,9 +1262,9 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 shwrCentroidZ.push_back(centroid.GetZ());
 
                 //Define Shower Length in cm
-                //Taken from far detector tool 
+                //Taken from far detector tool
                 //https://github.com/PandoraPFA/larpandora/blob/develop/larpandora/LArPandoraEventBuilding/LArPandoraShower/Tools/ShowerPCAEigenvalueLength_tool.cc
-            
+
                 float NSigma = parameters.sigmaLength;
                 float primaryEigenValue = eigenValues.GetX();
                 float showerLength = std::sqrt(primaryEigenValue) * 2 * NSigma;
@@ -1266,11 +1275,11 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 //loop over the caloHitList
 
                 float projection;
-                std::multimap<float,const pandora::CaloHit*> projectionMap;
+                std::multimap<float, const pandora::CaloHit *> projectionMap;
 
                 //Find projections for each hit along the primary axis and save them into a map from least to greatest
 
-                for ( const CaloHit * const pCaloHit3D : caloHitList)
+                for (const CaloHit *const pCaloHit3D : caloHitList)
                 {
 
                     projection = axisDirection.GetDotProduct(pCaloHit3D->GetPositionVector() - centroid);
@@ -1282,25 +1291,24 @@ void ProcessPostReco(const ParameterStruct &parameters)
 
                 CartesianVector showerStartHitPos(0.f, 0.f, 0.f);
                 float showerStartHitProjectionValue = std::numeric_limits<float>::max();
-                
+
                 float hit_i_proj(9999);
 
                 int hitProximityRadius = parameters.proximityHitsRadius;
                 int proximityHitsCounter;
-              
+
                 int proximityHitsThreshold = parameters.proximityHitsThreshold;
-                
+
                 CartesianVector hit_i_pos(0.f, 0.f, 0.f), hit_j_pos(0.f, 0.f, 0.f);
-                
+
                 for (const auto &iMapEntry : projectionMap)
                 {
                     float hit_i_j_dist;
-                    hit_i_pos.SetValues(0.f, 0.f, 0.f); 
+                    hit_i_pos.SetValues(0.f, 0.f, 0.f);
                     hit_j_pos.SetValues(0.f, 0.f, 0.f);
-                        
+
                     proximityHitsCounter = 0;
                     hit_i_proj = iMapEntry.first;
-                  
 
                     for (const auto &jMapEntry : projectionMap)
                     {
@@ -1317,7 +1325,6 @@ void ProcessPostReco(const ParameterStruct &parameters)
                         if (hit_i_j_dist <= hitProximityRadius)
                         {
                             proximityHitsCounter++;
-                     
 
                             if (proximityHitsCounter > proximityHitsThreshold)
                             {
@@ -1327,15 +1334,14 @@ void ProcessPostReco(const ParameterStruct &parameters)
                             }
                         }
                     }
-                    
+
                     if (proximityHitsCounter > proximityHitsThreshold)
                     {
                         break;
                     }
                 }
 
-               
-                if ( fabs(showerStartHitProjectionValue - std::numeric_limits<float>::max()) < std::numeric_limits<float>::epsilon() )
+                if (fabs(showerStartHitProjectionValue - std::numeric_limits<float>::max()) < std::numeric_limits<float>::epsilon())
                 {
                     showerStartHitPos = projectionMap.begin()->second->GetPositionVector();
                     showerStartHitProjectionValue = projectionMap.begin()->first;
@@ -1352,7 +1358,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 showerDirection = showerDirection.GetUnitVector();
 
                 //Check if shower start point and direction are in the right direction
-                //Check the spread of hits on each side of the centroid, if the spread is greater on the 
+                //Check the spread of hits on each side of the centroid, if the spread is greater on the
                 //side closest to the start position it will flip the direction
 
                 std::vector<float> perp_dist_vec;
@@ -1391,17 +1397,18 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 {
                     //flip PCA axis and clear necessary elements
                     CartesianVector axisDirectionFlipped(-axisDirection.GetX(), -axisDirection.GetY(), -axisDirection.GetZ());
-                   
-                    for (auto iMapEntry = projectionMap.rbegin(); iMapEntry != projectionMap.rend(); ++iMapEntry){
+
+                    for (auto iMapEntry = projectionMap.rbegin(); iMapEntry != projectionMap.rend(); ++iMapEntry)
+                    {
                         float hit_i_j_dist;
                         proximityHitsCounter = 0;
-                        hit_i_proj =  -iMapEntry->first;
-                        hit_i_pos.SetValues(0.f,0.f,0.f);
-                        hit_j_pos.SetValues(0.f,0.f,0.f);
-                      
-                        for(auto jMapEntry = projectionMap.rbegin(); jMapEntry != projectionMap.rend(); ++jMapEntry)
+                        hit_i_proj = -iMapEntry->first;
+                        hit_i_pos.SetValues(0.f, 0.f, 0.f);
+                        hit_j_pos.SetValues(0.f, 0.f, 0.f);
+
+                        for (auto jMapEntry = projectionMap.rbegin(); jMapEntry != projectionMap.rend(); ++jMapEntry)
                         {
-                       
+
                             if (iMapEntry->second == jMapEntry->second)
                             {
                                 continue;
@@ -1433,7 +1440,7 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     showerDirection = (centroid - showerStartHitPos);
                     showerDirection = showerDirection.GetUnitVector();
                 }
-                
+
                 //Shower direction is a unit vector
                 shwrDirX.push_back(showerDirection.GetX());
                 shwrDirY.push_back(showerDirection.GetY());
@@ -1473,9 +1480,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 {
                     showerStartPCAProjection = centroid + (showerDirection * showerStartHitProjectionValue);
                     showerStartCurrentHit = pShowerStartCaloHit3D->GetPositionVector();
-                    totalCharge += (pShowerStartCaloHit3D->GetInputEnergy()) * LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(),
-                                                                                   parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
-                 
+                    totalCharge += (pShowerStartCaloHit3D->GetInputEnergy()) *
+                        LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
 
                     if (showerStartPCAProjection == showerStartCurrentHit)
                     {
@@ -1497,9 +1503,8 @@ void ProcessPostReco(const ParameterStruct &parameters)
                     if (hitPositionAlongAxis > 0 && hitPositionAlongAxis < showerStartLength && hitPositionFromAxis < showerStartWidth)
                     {
                         showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
-                        chargeStartPoints +=
-                            pShowerStartCaloHit3D->GetInputEnergy() * LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(),
-                                                                          parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
+                        chargeStartPoints += pShowerStartCaloHit3D->GetInputEnergy() *
+                            LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
                         caloHitIndex++;
                     }
 
@@ -1510,12 +1515,12 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 }
                 //Total energy in MeV
 
-                float energyStartPoints = chargeStartPoints *(1000)*(23.6/1e6)*(parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
-                float energyTotal = totalCharge*(1000)*(23.6/1e6)*(parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
+                float energyStartPoints =
+                    chargeStartPoints * (1000) * (23.6 / 1e6) * (parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
+                float energyTotal = totalCharge * (1000) * (23.6 / 1e6) * (parameters.energyRecombinationShower) * (parameters.correctionFactorShower);
                 shwrEnergy.push_back(energyTotal);
                 shwrdEdx.push_back(energyStartPoints / showerStartLength);
 
-                
             } // SHOWER FIT
         }
 
@@ -1567,18 +1572,18 @@ bool ParseCommandLine(int argc, char *argv[], ParameterStruct &parameters)
             case 'o':
                 parameters.outfileName = optarg;
                 break;
-	    case 'g':
-	        parameters.fGeoFileName = optarg;
-	        parameters.fGeoFileSetCmdLine = true;
-		break;
-	    case 't':
-	        parameters.fGeoManagerName = optarg;
-		parameters.fGeoManagerSetCmdLine = true;
-		break;
-	    case 'v':
-	        parameters.fGeoVolumeName= optarg;
-		parameters.fGeoVolumeSetCmdLine = true;
-		break;
+            case 'g':
+                parameters.fGeoFileName = optarg;
+                parameters.fGeoFileSetCmdLine = true;
+                break;
+            case 't':
+                parameters.fGeoManagerName = optarg;
+                parameters.fGeoManagerSetCmdLine = true;
+                break;
+            case 'v':
+                parameters.fGeoVolumeName = optarg;
+                parameters.fGeoVolumeSetCmdLine = true;
+                break;
             case 'h':
             default:
                 return PrintOptions();
@@ -1646,15 +1651,15 @@ bool ReadSettings(ParameterStruct &parameters)
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "CorrectionFactorShower", parameters.correctionFactorShower));
 
-	if ( !parameters.fGeoFileSetCmdLine )
-	    PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
-	        XmlHelper::ReadValue(xmlHandle, "GeoFileName", parameters.fGeoFileName));
-	if ( !parameters.fGeoManagerSetCmdLine )
-	    PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
-		XmlHelper::ReadValue(xmlHandle, "GeoManagerName", parameters.fGeoManagerName));
-	if ( !parameters.fGeoVolumeSetCmdLine )
-	    PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
-	        XmlHelper::ReadValue(xmlHandle, "GeoVolumeName", parameters.fGeoVolumeName));
+        if (!parameters.fGeoFileSetCmdLine)
+            PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+                XmlHelper::ReadValue(xmlHandle, "GeoFileName", parameters.fGeoFileName));
+        if (!parameters.fGeoManagerSetCmdLine)
+            PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+                XmlHelper::ReadValue(xmlHandle, "GeoManagerName", parameters.fGeoManagerName));
+        if (!parameters.fGeoVolumeSetCmdLine)
+            PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
+                XmlHelper::ReadValue(xmlHandle, "GeoVolumeName", parameters.fGeoVolumeName));
 
         PANDORA_RETURN_RESULT_IF_AND_IF(pandora::STATUS_CODE_SUCCESS, pandora::STATUS_CODE_NOT_FOUND, !=,
             XmlHelper::ReadValue(xmlHandle, "ContainDistX", parameters.ContainDistX));
@@ -1733,11 +1738,11 @@ bool ReadSettings(ParameterStruct &parameters)
         {
             // Following scheme as in LArSoft larana/ParticleIdentification/Chi2PIDAlg.cxx
             TFile *tempFile = TFile::Open(parameters.fdEdxResTempFile.c_str());
-	    if (!tempFile || !tempFile->IsOpen())
-	    {
-	        std::cout << "dEdx vs. residual range templates file not opened." << std::endl;
-		return false;
-	    }
+            if (!tempFile || !tempFile->IsOpen())
+            {
+                std::cout << "dEdx vs. residual range templates file not opened." << std::endl;
+                return false;
+            }
             parameters.templatesdEdxRR["muon"] = (TProfile *)tempFile->Get("dedx_range_mu");
             parameters.templatesdEdxRR["pion"] = (TProfile *)tempFile->Get("dedx_range_pi");
             parameters.templatesdEdxRR["proton"] = (TProfile *)tempFile->Get("dedx_range_pro");
@@ -1776,7 +1781,8 @@ bool ReadSettings(ParameterStruct &parameters)
 bool PrintOptions()
 {
     std::cout << std::endl
-              << "./bin/PandoraOuterface -x [path/file] -f [path/file] -o [out name] -g [geom file] -t [geom manager] -v [geom volume]" << std::endl;
+              << "./bin/PandoraOuterface -x [path/file] -f [path/file] -o [out name] -g [geom file] -t [geom manager] -v [geom volume]"
+              << std::endl;
     std::cout << "    -x = mandatory, path and name of XML settings file" << std::endl;
     std::cout << "    -f = mandatory, path and name of input ROOT file" << std::endl;
     std::cout << "    -o = optional, path and name of output ROOT file." << std::endl;
@@ -1784,9 +1790,9 @@ bool PrintOptions()
     std::cout << "    -g = 'optional' - sets geometery (ROOT) file name." << std::endl;
     std::cout << "         Default: empty. If not set here, should be specified in XML" << std::endl;
     std::cout << "    -t = 'optional' - sets geometery manager name." << std::endl;
-    std::cout << "         Default: empty. If not set here, should be specified in XML" <<std::endl;
+    std::cout << "         Default: empty. If not set here, should be specified in XML" << std::endl;
     std::cout << "    -v = 'optional' - sets geometery volume name." << std::endl;
-    std::cout << "         Default: empty. If not set here, should be specified in XML" <<std::endl;
+    std::cout << "         Default: empty. If not set here, should be specified in XML" << std::endl;
 
     return false;
 }
