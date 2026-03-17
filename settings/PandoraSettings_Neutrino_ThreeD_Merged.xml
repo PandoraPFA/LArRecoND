@@ -313,10 +313,10 @@
         <MCParticleListName>Input</MCParticleListName>
         <CaloHitListName>CaloHitList2D</CaloHitListName>
         <UseThreeDInformation>true</UseThreeDInformation>
-        <MvaFileName>PandoraMVAData/PandoraBdt_PfoCharacterisation_ProtoDUNESP_v03_26_00.xml</MvaFileName>
-        <MvaName>PfoCharacterisation</MvaName>
-        <MvaFileNameNoChargeInfo>PandoraMVAData/PandoraBdt_PfoCharacterisation_ProtoDUNESP_v03_26_00.xml</MvaFileNameNoChargeInfo>
-        <MvaNameNoChargeInfo>PfoCharacterisationNoChargeInfo</MvaNameNoChargeInfo>
+        <MvaFileName>PandoraMVAData/PandoraBdt_PfoCharacterisation_DUNEND_LAR_v04_19_03.xml</MvaFileName>
+        <MvaName>PreHierarchy</MvaName>
+        <MvaFileNameNoChargeInfo>PandoraMVAData/PandoraBdt_PfoCharacterisation_DUNEND_LAR_v04_19_03.xml</MvaFileNameNoChargeInfo>
+        <MvaNameNoChargeInfo>PreHierarchy_NoChargeInfo</MvaNameNoChargeInfo>
         <TrainingSetMode>false</TrainingSetMode>
         <TrainingOutputFileName>training_output</TrainingOutputFileName>
         <FeatureTools>
@@ -408,10 +408,10 @@
         <MCParticleListName>Input</MCParticleListName>
         <CaloHitListName>CaloHitList2D</CaloHitListName>
         <UseThreeDInformation>true</UseThreeDInformation>
-        <MvaFileName>PandoraMVAData/PandoraBdt_PfoCharacterisation_ProtoDUNESP_v03_26_00.xml</MvaFileName>
-        <MvaName>PfoCharacterisation</MvaName>
-        <MvaFileNameNoChargeInfo>PandoraMVAData/PandoraBdt_PfoCharacterisation_ProtoDUNESP_v03_26_00.xml</MvaFileNameNoChargeInfo>
-        <MvaNameNoChargeInfo>PfoCharacterisationNoChargeInfo</MvaNameNoChargeInfo>
+        <MvaFileName>PandoraMVAData/PandoraBdt_PfoCharacterisation_DUNEND_LAR_v04_19_03.xml</MvaFileName>
+        <MvaName>PostHierarchy</MvaName>
+        <MvaFileNameNoChargeInfo>PandoraMVAData/PandoraBdt_PfoCharacterisation_DUNEND_LAR_v04_19_03.xml</MvaFileNameNoChargeInfo>
+        <MvaNameNoChargeInfo>PostHierarchy_NoChargeInfo</MvaNameNoChargeInfo>
         <TrainingSetMode>false</TrainingSetMode>
         <TrainingOutputFileName>training_output</TrainingOutputFileName>
         <FeatureTools>
