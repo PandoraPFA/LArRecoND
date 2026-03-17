@@ -95,9 +95,9 @@ struct ParameterStruct
     bool fGeoFileSetCmdLine = false;
     std::string fGeoFileName = "";
     bool fGeoManagerSetCmdLine = false;
-    std::string fGeoManagerName = "";
+    std::string fGeoManagerName = "Default";
     bool fGeoVolumeSetCmdLine = false;
-    std::string fGeoVolumeName = "";
+    std::string fGeoVolumeName = "volArgonCubeCryostat_PV";
 
     // Containment volumes
     float ContainDistX = 5.f; // cm

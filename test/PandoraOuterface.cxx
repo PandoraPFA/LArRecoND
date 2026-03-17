@@ -402,7 +402,6 @@ constexpr std::array<float, 29> csda_range_converted_cm_muon()
 
 void ProcessPostReco(const ParameterStruct &parameters)
 {
-    //////////// TEST
     float detX0(0.), detX1(0.), detY0(0.), detY1(0.), detZ0(0.), detZ1(0.);
     std::vector<float> posAnodes;
     GetDetectorBounds(parameters, posAnodes, detX0, detX1, detY0, detY1, detZ0, detZ1);
@@ -1787,12 +1786,12 @@ bool PrintOptions()
     std::cout << "    -f = mandatory, path and name of input ROOT file" << std::endl;
     std::cout << "    -o = optional, path and name of output ROOT file." << std::endl;
     std::cout << "         Default: LArRecoND_outerface_test.root" << std::endl;
-    std::cout << "    -g = 'optional' - sets geometery (ROOT) file name." << std::endl;
+    std::cout << "    -g = 'optional' - sets geometry (ROOT) file name." << std::endl;
     std::cout << "         Default: empty. If not set here, should be specified in XML" << std::endl;
-    std::cout << "    -t = 'optional' - sets geometery manager name." << std::endl;
-    std::cout << "         Default: empty. If not set here, should be specified in XML" << std::endl;
-    std::cout << "    -v = 'optional' - sets geometery volume name." << std::endl;
-    std::cout << "         Default: empty. If not set here, should be specified in XML" << std::endl;
+    std::cout << "    -t = 'optional' - sets geometry manager name." << std::endl;
+    std::cout << "         Default: Default. Can be set here or in XML" << std::endl;
+    std::cout << "    -v = 'optional' - sets geometry volume name." << std::endl;
+    std::cout << "         Default: volArgonCubeCryostat_PV. Can be set here or in XML" << std::endl;
 
     return false;
 }
