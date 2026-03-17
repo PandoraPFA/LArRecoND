@@ -1,0 +1,46 @@
+<pandora>
+    <!-- PANDORA OUTERFACE SETTINGS -->
+    <Verbosity>0</Verbosity>
+    <!-- Command switches -->
+    <ShouldRunTrackFit>true</ShouldRunTrackFit>
+    <ShouldRunShowerFit>true</ShouldRunShowerFit>
+    <TrackScoreCut>-1</TrackScoreCut>
+    <!-- Track fitter settings -->
+    <PixelPitch>0.38</PixelPitch>
+    <!-- More complicated options on refining algs -->
+    <ShouldApplyThreshold>false</ShouldApplyThreshold>
+    <ChargeThreshold>0.</ChargeThreshold>
+    <!-- Todo: the merge distances were not tuned. To be done. -->
+    <ShouldVoxelizeZ>true</ShouldVoxelizeZ>
+    <UseVoxelizedStartStop>true</UseVoxelizedStartStop>
+    <!-- Shower fitter settings -->
+    <ShowerStartLength>5</ShowerStartLength>
+    <ShowerStartWidth>4</ShowerStartWidth>
+    <SigmaLength>2</SigmaLength>
+    <ProximityHitsThreshold>10</ProximityHitsThreshold>
+    <ProximityHitsRadius>4</ProximityHitsRadius>
+    <EnergyRecombinationShower>1.587</EnergyRecombinationShower>
+    <CorrectionFactorShower>1.67</CorrectionFactorShower>
+    <!-- Calorimetry -->
+    <!-- Using default density, efield, birksA, birksK, eLifetime, eSpeed -->
+    <!-- Leaving the Calibration Fudge Factor as is for now -->
+    <ShouldCorrectLifetime>true</ShouldCorrectLifetime>
+    <ShouldCorrectRecombination>true</ShouldCorrectRecombination>
+    <FlowStyleRecombination>false</FlowStyleRecombination>
+    <BoxRecombination>false</BoxRecombination>
+    <BirksRecombination>true</BirksRecombination>
+    <!-- Applying the calibration fudge factor, here telling only to apply in PID -->
+    <ApplyCalibrationFudgeFactor>false</ApplyCalibrationFudgeFactor>
+    <ApplyCalibrationFudgeFactorPID>true</ApplyCalibrationFudgeFactorPID>
+    <!-- PID -->
+    <!-- Using nominal dEdx Res Template file in larsoft_data repo on CVMFS -->
+    <ShouldRunPID>true</ShouldRunPID>
+    <PIDAlgChi2PID>true</PIDAlgChi2PID>
+    <!-- And try a run with the dx restriction on -->
+    <Chi2RestrictDX>true</Chi2RestrictDX>
+    <!-- Todo: the restrictions below could be optimized as well -->
+    <Chi2RestrictDXLo>0.3</Chi2RestrictDXLo>
+    <Chi2RestrictDXHi>-1.</Chi2RestrictDXHi>
+    <Chi2RestrictDEDXLo>0.</Chi2RestrictDEDXLo>
+</pandora>
+
