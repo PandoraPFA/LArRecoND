@@ -1,0 +1,203 @@
+# Build LArRecoND against the full Pandora stack, standalone
+name: Build LArRecoND
+
+# Controls when the workflow will run
+on:
+  # Trigger the workflow on push to master, or any pull request.
+  # workflow_dispatch allows manual running through the GitHub UI.
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - "*"
+  workflow_dispatch:
+
+# Top level environment variables...
+env:
+  PRIMARY_COMPILER: gcc-13
+
+# Workflow with 1 stage: Build.
+# Each of the sub-stages in the build job run in parallel.
+jobs:
+  build:
+    # Use the latest ubuntu image: https://github.com/actions/runner-images
+    runs-on: ubuntu-24.04
+    name: LArRecoND - ${{ matrix.compiler.c }}
+
+    # Only run in the PandoraPFA repos.
+    if: github.repository_owner == 'PandoraPFA'
+
+    # Defines the build matrix, so what combinatorics of compiler etc. to test.
+    strategy:
+      fail-fast: false # Don't quit other jobs if one job fails.
+      matrix:
+        compiler: [{ cpp: g++-13, c: gcc-13 }, { cpp: clang++, c: clang }]
+
+    # Set the compiler env vars to ensure the correct compiler is used.
+    # Similarly, set all the URLs for external dependencies in one place.
+    env:
+      CC: ${{ matrix.compiler.c }}
+      CXX: ${{ matrix.compiler.cpp }}
+      ROOT_URL: "https://root.cern/download/root_v6.36.04.Linux-ubuntu24.04-x86_64-gcc13.3.tar.gz"
+      TORCH_URL: "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.1.1%2Bcpu.zip"
+      EIGEN_URL: "https://gitlab.com/libeigen/eigen/-/archive/3.3.5/eigen-3.3.5.tar.gz"
+
+    steps:
+      - name: Checkout LArRecoND Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Env
+        uses: ./.github/actions/setup-env
+
+      - name: Setup External Dependencies
+        uses: ./.github/actions/setup-externals
+        with:
+          root-url: ${{ env.ROOT_URL }}
+          torch-url: ${{ env.TORCH_URL }}
+          eigen-url: ${{ env.EIGEN_URL }}
+
+      - name: Build Pandora Software Stack
+        uses: ./.github/actions/build-pandora
+
+      - name: Archive Build Environment
+        uses: actions/upload-artifact@v4
+        if: matrix.compiler.c == '${{ env.PRIMARY_COMPILER }}'
+        with:
+          name: pandora-build-env-${{ matrix.compiler.c }}
+          path: /pandora
+          retention-days: 1
+
+  test:
+    needs: build
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        data_url:
+          [
+            "https://portal.nersc.gov/project/dune/data/2x2/simulation/productions/MiniRun6.5_1E19_RHC/MiniRun6.5_1E19_RHC.flow/FLOW/0000000/MiniRun6.5_1E19_RHC.flow.0000000.FLOW.hdf5",
+          ]
+        geometry_url:
+          [
+            "https://raw.githubusercontent.com/DUNE/2x2_sim/refs/heads/develop/geometry/Merged2x2MINERvA_v4/Merged2x2MINERvA_v4_withRock.gdml"
+          ]
+        name: ["2x2 MiniRun6.5"]
+
+    name: Test ${{ matrix.name }} Data
+
+    steps:
+      - name: Checkout LArRecoND Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Env
+        uses: ./.github/actions/setup-env
+
+      - name: Setup Python
+        uses: ./.github/actions/setup-python
+
+      - name: Download Build Environment
+        uses: actions/download-artifact@v4
+        with:
+          name: pandora-build-env-${{ env.PRIMARY_COMPILER }}
+          path: /pandora
+
+      - name: Setup Downloads
+        run: |
+          mkdir -p /pandora/data
+
+      - name: Generate URL Hash Key
+        id: url-key
+        shell: bash
+        run: echo "hash=$(echo -n '${{ matrix.data_url }}' | sha256sum | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+      - name: Cache Data Files
+        id: cache-data
+        uses: actions/cache@v4
+        with:
+          path: /pandora/data/
+          key: ${{ steps.url-key.outputs.hash }}
+
+      - name: Download Data Files
+        if: steps.cache-data.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          echo "Downloading data files..."
+          cd /pandora/data/
+          wget -q ${{ matrix.data_url }} -O input_data.hdf5
+          wget -q ${{ matrix.geometry_url }} -O geometry.gdml
+
+      - name: TEMP - Patch Processing Script (PR43)
+        shell: bash
+        run: |
+          echo "Patching processing script..."
+          cd /pandora/LArRecoND/ndlarflow
+          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/c35fd8173d2c24c3150054471b34cd3f58e590e0/ndlarflow/h5_to_root_ndlarflow.py -O h5_to_root_ndlarflow.py
+          wget https://raw.githubusercontent.com/brucehoward-physics/LArRecoND/c35fd8173d2c24c3150054471b34cd3f58e590e0/ndlarflow/rootToRootConversion.C -O rootToRootConversion.C
+
+      - name: Process Files With Python
+        shell: bash -l {0}
+        run: |
+          echo "Fixing data folder..."
+          sudo chmod -R +x /pandora
+
+          echo "Processing files with Python..."
+          cd /pandora/data/
+          python3 /pandora/LArRecoND/ndlarflow/h5_to_root_ndlarflow.py /pandora/data/input_data.hdf5 0 0 0 converted_flow.root
+
+          echo "Setting up environment for ROOT..."
+          source /pandora/setup.sh
+
+          echo "Converting processed file to ROOT..."
+          root -l -b -q /pandora/LArRecoND/ndlarflow/rootToRootConversion.C+\(true,\"converted_flow.root\",\"processed_output.root\"\)
+          ln -s processed_output.root /pandora/data/LArRecoNDInput.root
+
+          echo "Converting geometry GDML to ROOT..."
+          root -l -b <<EOF
+            TGeoManager::LockDefaultUnits(kFALSE);
+            TGeoManager::SetDefaultUnits(TGeoManager::kRootUnits);
+            TGeoManager::Import("/pandora/data/geometry.gdml");
+            gGeoManager->Export("/pandora/data/geometry.root");
+          EOF
+
+          echo "Data processing complete."
+          ls -lh /pandora/data/
+
+      - name: Run Binary Tests
+        run: |
+          source /pandora/setup.sh
+          cd /pandora/data/
+          /pandora/LArRecoND/bin/PandoraInterface -i /pandora/LArRecoND/settings/PandoraSettings_LArRecoND_ThreeD.xml \
+           -r AllHitsNu \
+           -e /pandora/data/processed_output.root \
+           -g /pandora/data/geometry.root \
+           -f SPMC \
+           -n 10 -N
+
+  cleanup:
+    name: Cleanup Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: always()
+    permissions:
+      actions: write
+
+    steps:
+      - name: Delete workflow artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching artifacts for this workflow run..."
+          # Use the GitHub CLI to list artifacts from this specific run
+          ARTIFACT_IDS=$(gh api /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts.[].id')
+
+          if [ -z "$ARTIFACT_IDS" ]; then
+            echo "No artifacts found to delete."
+            exit 0
+          fi
+
+          echo "Found artifact IDs: $ARTIFACT_IDS"
+          for ARTIFACT_ID in $ARTIFACT_IDS; do
+            echo "Deleting artifact with ID: $ARTIFACT_ID"
+            gh api --method DELETE /repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID
+          done
+          echo "Artifact cleanup complete."
