@@ -321,8 +321,18 @@ def main(argv=None):
                 # Truth-level info for hits
                 #######################################
                 if badEvt==False:
-                    backtrackHits=flow_out['charge/calib_'+promptKey+'_hits',\
-                                        'mc_truth/calib_'+promptKey+'_hit_backtrack',hits_ids[:]][:,0]
+                    charge_path = None
+                    truth_path = None
+
+                    if promptKey == 'merged':
+                        charge_path  = 'charge/calib_merged_hits'
+                        truth_path = 'mc_truth/calib_merged_hit_backtrack'
+                    else:
+                        charge_path  = 'charge/calib_prompt_hits'
+                        truth_path = 'mc_truth/calib_prompt_hit_backtrack'
+
+                    backtrackHits=flow_out[charge_path, truth_path, hits_ids[:]][:,0]
+
                     # Matches
                     backtrackMasked = np.ma.masked_equal( backtrackHits['fraction'].data, 0. )
                     backtrackMaskArr = np.ma.getmask(backtrackMasked)
@@ -334,7 +344,14 @@ def main(argv=None):
                     all_segments = f['mc_truth/segments/data']
                     all_segments = all_segments[ np.where(all_segments['event_id']==spillID) ]
                     all_segmentIDs = all_segments['segment_id']
-                    segments_where = np.array([np.where(all_segmentIDs==segmentIDs[i])[0][0] for i in range(len(segmentIDs))])
+
+                    lookup = {}
+                    for i, v in enumerate(all_segmentIDs):
+                        if v not in lookup:
+                            lookup[v] = i
+
+                    segments_where = np.array([lookup[s] for s in segmentIDs if s in lookup], dtype='int64')
+
                     pdgHit = all_segments['pdg_id'][segments_where].astype('int32')
                     trackID = all_segments['segment_id'][segments_where].astype('int64')
                     particleID = all_segments['file_traj_id'][segments_where].astype('int64')
