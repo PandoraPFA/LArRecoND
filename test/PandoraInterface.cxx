@@ -371,6 +371,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             const float voxelY = (*larsp->m_y)[isp];
             const float voxelZ = (*larsp->m_z)[isp];
             const float voxelE = (*larsp->m_charge)[isp];
+            const int voxel_io_group = (*larsp->m_io_group)[isp];
 
             // Skip this hit if its coordinates or energy are NaNs
             if (std::isnan(voxelX) || std::isnan(voxelY) || std::isnan(voxelZ) || std::isnan(voxelE))
@@ -383,7 +384,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             const pandora::CartesianVector voxelPos(voxelX, voxelY, voxelZ);
             const float MipE{0.00075};
             const float voxelMipEquivalentE = voxelE / MipE;
-            const int tpcID(geom.GetTPCNumber(voxelPos));
+            const int tpcID(voxel_io_group);
             lar_content::LArCaloHitParameters caloHitParameters;
             caloHitParameters.m_positionVector = voxelPos;
             caloHitParameters.m_expectedDirection = pandora::CartesianVector(0.f, 0.f, 1.f);
