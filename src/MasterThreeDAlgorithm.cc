@@ -300,7 +300,7 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
-    const LArTPCMap &larTPCMap, const DetectorGapList &gapList, const std::string &settingsFile, const std::string &name) const
+    const LArTPCMap &larTPCMap, const DetectorGapList &gapList, const std::string &settingsFile, const std::string &name, const unsigned int id = 0) const
 {
     if (larTPCMap.empty())
     {
@@ -343,8 +343,13 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
         parentMaxZ = std::max(parentMaxZ, pLArTPC->GetCenterZ() + 0.5f * pLArTPC->GetWidthZ());
     }
 
+    if (m_shouldRunRockMus_Xworkers)
+        std::cout << "building a columnar drift volume with boundaries X = (" << parentMinX << ", " << parentMaxX 
+                                                               << ") , Y = (" << parentMinY << ", " << parentMaxY 
+                                                               << ") , Z = (" << parentMinZ << ", " << parentMaxZ 
+                                                               << ")\n";
     PandoraApi::Geometry::LArTPC::Parameters larTPCParameters;
-    larTPCParameters.m_larTPCVolumeId = 0;
+    larTPCParameters.m_larTPCVolumeId = id;
     larTPCParameters.m_centerX = 0.5f * (parentMaxX + parentMinX);
     larTPCParameters.m_centerY = 0.5f * (parentMaxY + parentMinY);
     larTPCParameters.m_centerZ = 0.5f * (parentMaxZ + parentMinZ);
@@ -396,11 +401,46 @@ StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances()
         const LArTPCMap &larTPCMap(this->GetPandora().GetGeometry()->GetLArTPCMap());
         const DetectorGapList &gapList(this->GetPandora().GetGeometry()->GetDetectorGapList());
 
-        for (const LArTPCMap::value_type &mapEntry : larTPCMap)
-        {
+        if (m_shouldRunRockMus_Xworkers)
+        { // group TPCs that share the same XY coordinates in a unique worker instance 
+           std::map<std::pair<float, float>, LArTPCMap> XYgrouped;
+           for (const LArTPCMap::value_type &mapEntry : larTPCMap)
+           {
+             const LArTPC& tpc(*(mapEntry.second));
+             auto key = std::make_pair(tpc.GetCenterX(), tpc.GetCenterY());
+             auto it = XYgrouped.find(key);
+
+             if (it != XYgrouped.end())
+             {
+                LArTPCMap& tpcMap = it->second;
+                unsigned int current_max_id = tpcMap.empty() ? 0 : tpcMap.rbegin()->first + 1; 
+                XYgrouped[key].emplace(current_max_id, &tpc);
+             }
+             else
+             {
+               XYgrouped[key].emplace(0, &tpc);
+             }
+           }
+           // now that we have grouped drift volumes along xy in a map
+           // (x, y) <------> (drift_volume_1, drift_volume_2, ...)
+           // create a worker instance for each group
+           unsigned int worker_id = 0;
+           for (const auto& [xy, submap] : XYgrouped)
+           {
+             // const auto& [x, y] = xy;
+            m_crWorkerInstances.push_back(
+              this->CreateWorkerInstance(submap, gapList, m_crSettingsFile, "CRWorkerInstance" + std::to_string(worker_id), worker_id));
+            worker_id++;
+           }
+        }
+        else
+        { // dafault: crate 1 worker instance per drift volume
+          for (const LArTPCMap::value_type &mapEntry : larTPCMap)
+          {
             const unsigned int volumeId(mapEntry.second->GetLArTPCVolumeId());
             m_crWorkerInstances.push_back(
                 this->CreateWorkerInstance(*(mapEntry.second), gapList, m_crSettingsFile, "CRWorkerInstance" + std::to_string(volumeId)));
+          }
         }
 
         if (m_shouldRunSlicing)

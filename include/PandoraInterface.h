@@ -83,6 +83,7 @@ public:
     bool m_shouldRunSlicing;            ///< Whether to slice events into separate regions for processing
     bool m_shouldRunNeutrinoRecoOption; ///< Whether to run neutrino reconstruction for each slice
     bool m_shouldRunCosmicRecoOption;   ///< Whether to run cosmic-ray reconstruction for each slice
+    bool m_shouldRunRockMus_Xworkers;   ///< Whether to run rock muons reconstruction using a columnar X worker
     bool m_shouldPerformSliceId;        ///< Whether to identify slices and select most appropriate pfos
     bool m_printOverallRecoStatus;      ///< Whether to print current operation status messages
 
@@ -123,6 +124,7 @@ inline Parameters::Parameters() :
     m_shouldRunSlicing(true),
     m_shouldRunNeutrinoRecoOption(true),
     m_shouldRunCosmicRecoOption(true),
+    m_shouldRunRockMus_Xworkers(true), 
     m_shouldPerformSliceId(true),
     m_printOverallRecoStatus(false),
     m_nEventsToSkip(0),

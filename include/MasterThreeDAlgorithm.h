@@ -83,11 +83,12 @@ protected:
      *  @param  gapList the gap list
      *  @param  settingsFile the pandora settings file
      *  @param  name the pandora instance name
+     *  @param  id for the created worker instance (i.e. larTPCParameters.m_larTPCVolumeId)   
      *
      *  @return the address of the pandora instance
      */
     const pandora::Pandora *CreateWorkerInstance(const pandora::LArTPCMap &larTPCMap, const pandora::DetectorGapList &gapList,
-        const std::string &settingsFile, const std::string &name) const;
+        const std::string &settingsFile, const std::string &name, const unsigned int id) const;
 
     /**
      *  @brief  Initialize pandora worker instances
