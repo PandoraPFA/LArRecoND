@@ -253,7 +253,7 @@ void MakePandoraTPC(const pandora::Pandora *const pPrimaryPandora, const Paramet
 
         geom.AddTPC(centreX - dx, centreX + dx, centreY - dy, centreY + dy, centreZ - dz, centreZ + dz, tpcNumber);
 
-        std::cout << "Creating TPC: " << centreX - dx << ", " << centreX + dx << ", " << centreY - dy << ", " << centreY + dy << ", "
+        std::cout << "Creating TPC "<<tpcNumber << ": " << centreX - dx << ", " << centreX + dx << ", " << centreY - dy << ", " << centreY + dy << ", "
                   << centreZ - dz << ", " << centreZ + dz << std::endl;
     }
     catch (const pandora::StatusCodeException &)
@@ -394,7 +394,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             }
             else 
             {
-              tpcID = voxel_io_group;
+              tpcID = ioGroup2tcpIDMap_2x2[voxel_io_group];
             }
             lar_content::LArCaloHitParameters caloHitParameters;
             caloHitParameters.m_positionVector = voxelPos;

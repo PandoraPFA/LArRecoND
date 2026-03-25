@@ -37,6 +37,9 @@ namespace lar_nd_reco
 
 typedef std::map<int, float> MCParticleEnergyMap;
 typedef std::vector<LArVoxel> LArVoxelList;
+std::map<int, int> ioGroup2tcpIDMap_2x2 = {
+      {1,7}, {2,6}, {3,5}, {4,4}, {5,3}, {6,2}, {7,1}, {8,0}
+    };
 
 /**
  *  @brief  Parameters class

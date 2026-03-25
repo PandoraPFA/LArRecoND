@@ -92,8 +92,10 @@ protected:
 
     /**
      *  @brief  Initialize pandora worker instances
+     *
+     *  @param workerToLArTPCMap to map each worker instance to the list of TPCs it acts on
      */
-    pandora::StatusCode InitializeWorkerInstances();
+    pandora::StatusCode InitializeWorkerInstances(WorkerToLArTPCMap& workerToLArTPCMap);
 
     /**
      *  @brief  Get the mapping from lar tpc volume id to lists of all hits, and truncated hits

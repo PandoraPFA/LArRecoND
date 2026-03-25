@@ -43,8 +43,9 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Reset());
 
+    WorkerToLArTPCMap workerToLArTPCMap;
     if (!m_workerInstancesInitialized)
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->InitializeWorkerInstances());
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->InitializeWorkerInstances(workerToLArTPCMap));
 
     if (m_passMCParticlesToWorkerInstances)
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->CopyMCParticles());
@@ -55,7 +56,7 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     if (m_shouldRunAllHitsCosmicReco)
     {
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayReconstruction(volumeIdToHitListMap));
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayReconstruction(volumeIdToHitListMap, workerToLArTPCMap));
 
         PfoToLArTPCMap pfoToLArTPCMap;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RecreateCosmicRayPfos(pfoToLArTPCMap));
@@ -343,11 +344,10 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
         parentMaxZ = std::max(parentMaxZ, pLArTPC->GetCenterZ() + 0.5f * pLArTPC->GetWidthZ());
     }
 
-    if (m_shouldRunRockMus_Xworkers)
-        std::cout << "building a columnar drift volume with boundaries X = (" << parentMinX << ", " << parentMaxX 
-                                                               << ") , Y = (" << parentMinY << ", " << parentMaxY 
-                                                               << ") , Z = (" << parentMinZ << ", " << parentMaxZ 
-                                                               << ")\n";
+    std::cout << "Creating worker instance " << name <<" with boundaries X = (" << parentMinX << ", " << parentMaxX 
+                                                                 << ") , Y = (" << parentMinY << ", " << parentMaxY 
+                                                                 << ") , Z = (" << parentMinZ << ", " << parentMaxZ 
+                                                                 << ")\n";
     PandoraApi::Geometry::LArTPC::Parameters larTPCParameters;
     larTPCParameters.m_larTPCVolumeId = id;
     larTPCParameters.m_centerX = 0.5f * (parentMaxX + parentMinX);
@@ -390,7 +390,7 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances()
+StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances(WorkerToLArTPCMap& workerToLArTPCMap)
 {
     // ATTN Used to be in the regular Initialize callback, but detector gap list cannot be extracted in client app before the first event
     if (m_workerInstancesInitialized)
@@ -431,6 +431,11 @@ StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances()
             m_crWorkerInstances.push_back(
               this->CreateWorkerInstance(submap, gapList, m_crSettingsFile, "CRWorkerInstance" + std::to_string(worker_id), worker_id));
             worker_id++;
+
+            // loop over the group of TPCs along the same XY 
+            // and fill the map worker <---> vector<TPCs>
+            for (const LArTPCMap::value_type &mapEntry: submap)
+              workerToLArTPCMap[worker_id].push_back(mapEntry.second); 
            }
         }
         else
@@ -440,6 +445,8 @@ StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances()
             const unsigned int volumeId(mapEntry.second->GetLArTPCVolumeId());
             m_crWorkerInstances.push_back(
                 this->CreateWorkerInstance(*(mapEntry.second), gapList, m_crSettingsFile, "CRWorkerInstance" + std::to_string(volumeId)));
+
+            workerToLArTPCMap[volumeId].push_back(mapEntry.second); 
           }
         }
 
