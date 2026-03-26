@@ -333,9 +333,11 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
     float parentMinZ(pFirstLArTPC->GetCenterZ() - 0.5f * pFirstLArTPC->GetWidthZ());
     float parentMaxZ(pFirstLArTPC->GetCenterZ() + 0.5f * pFirstLArTPC->GetWidthZ());
 
+    std::vector<int> lof_tpcs = {};
     for (const LArTPCMap::value_type &mapEntry : larTPCMap)
     {
         const LArTPC *const pLArTPC(mapEntry.second);
+        lof_tpcs.push_back(pLArTPC->GetLArTPCVolumeId());
         parentMinX = std::min(parentMinX, pLArTPC->GetCenterX() - 0.5f * pLArTPC->GetWidthX());
         parentMaxX = std::max(parentMaxX, pLArTPC->GetCenterX() + 0.5f * pLArTPC->GetWidthX());
         parentMinY = std::min(parentMinY, pLArTPC->GetCenterY() - 0.5f * pLArTPC->GetWidthY());
@@ -347,7 +349,12 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
     std::cout << "Creating worker instance " << name <<" with boundaries X = (" << parentMinX << ", " << parentMaxX 
                                                                  << ") , Y = (" << parentMinY << ", " << parentMaxY 
                                                                  << ") , Z = (" << parentMinZ << ", " << parentMaxZ 
-                                                                 << ")\n";
+                                                                 << ")";
+    std::cout << " worker's tpcs : ";
+    for (const int tpc_id : lof_tpcs)
+      std::cout << tpc_id <<",";
+    std::cout <<"\n";
+
     PandoraApi::Geometry::LArTPC::Parameters larTPCParameters;
     larTPCParameters.m_larTPCVolumeId = id;
     larTPCParameters.m_centerX = 0.5f * (parentMaxX + parentMinX);
@@ -430,12 +437,13 @@ StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances(WorkerToLArTPCMap& w
              // const auto& [x, y] = xy;
             m_crWorkerInstances.push_back(
               this->CreateWorkerInstance(submap, gapList, m_crSettingsFile, "CRWorkerInstance" + std::to_string(worker_id), worker_id));
-            worker_id++;
 
             // loop over the group of TPCs along the same XY 
             // and fill the map worker <---> vector<TPCs>
             for (const LArTPCMap::value_type &mapEntry: submap)
               workerToLArTPCMap[worker_id].push_back(mapEntry.second); 
+
+            worker_id++;
            }
         }
         else
