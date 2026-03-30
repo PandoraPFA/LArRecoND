@@ -20,6 +20,7 @@
 namespace lar_content
 {
 
+typedef std::unordered_map<unsigned int, std::vector<const pandora::LArTPC *>> WorkerToLArTPCMap;
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 /**
@@ -35,6 +36,14 @@ public:
 
 protected:
     pandora::StatusCode Run() override;
+    
+    /**
+     *  @brief  Run the cosmic-ray reconstruction worker instances
+     *
+     *  @param  volumeIdToHitListMap the volume id to hit list map
+     *  @param  workerToLArTPCMap the worker id to LArTPC list map
+     */
+    pandora::StatusCode RunCosmicRayReconstruction(const VolumeIdToHitListMap &volumeIdToHitListMap, WorkerToLArTPCMap& workerToLArTPCMap) const;
 
     /**
      *  @brief  Run cosmic-ray hit removal, freeing hits in ambiguous pfos for further processing
