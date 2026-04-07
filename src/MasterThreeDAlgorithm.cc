@@ -37,6 +37,11 @@ using namespace pandora;
 namespace lar_content
 {
 
+MasterThreeDAlgorithm::MasterThreeDAlgorithm() :
+    m_shouldRunRockMus_Xworkers(false)
+  {
+  }
+
 StatusCode MasterThreeDAlgorithm::Run()
 {
     std::cout << "Should run slicing? " << m_shouldRunSlicing << std::endl;
@@ -121,6 +126,69 @@ StatusCode MasterThreeDAlgorithm::RunCosmicRayReconstruction(const VolumeIdToHit
     return STATUS_CODE_SUCCESS;
 }
 
+//------------------------------------------------------------------------------------------------------------------------------------------
+StatusCode MasterThreeDAlgorithm::TagCosmicRayPfos(const PfoToFloatMap &stitchedPfosToX0Map, PfoList &clearCosmicRayPfos, PfoList &ambiguousPfos) const
+{
+    const PfoList *pRecreatedCRPfos(nullptr);
+    PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(this->GetPandora(), pRecreatedCRPfos));
+
+
+    PfoList nonStitchedParentCosmicRayPfos;
+    for (const Pfo *const pPfo : *pRecreatedCRPfos)
+    {
+        if (!pPfo->GetParentPfoList().empty())
+            continue;
+
+
+        PfoToFloatMap::const_iterator pfoToX0Iter = stitchedPfosToX0Map.find(pPfo);
+        const float x0Shift((pfoToX0Iter != stitchedPfosToX0Map.end()) ? pfoToX0Iter->second : 0.f);
+        PfoList &targetList((std::fabs(x0Shift) > m_inTimeMaxX0) ? clearCosmicRayPfos : nonStitchedParentCosmicRayPfos);
+        targetList.push_back(pPfo);
+    }
+
+
+    for (CosmicRayTaggingBaseTool *const pCosmicRayTaggingTool : m_cosmicRayTaggingToolVector)
+    {
+      if (auto *pRockMuonTaggingTool = dynamic_cast<RockMuonTaggingTool *>(pCosmicRayTaggingTool))
+      {
+        pRockMuonTaggingTool->FindAmbiguousPfos(nonStitchedParentCosmicRayPfos, ambiguousPfos, this);
+      }
+      else
+      {
+        std::cout << "Unable to cast CosmicRayTaggingBaseTool into RockMuonTaggingTool \n";
+      }
+    }
+
+
+    for (const Pfo *const pPfo : nonStitchedParentCosmicRayPfos)
+    {
+        const bool isClearCosmic(ambiguousPfos.end() == std::find(ambiguousPfos.begin(), ambiguousPfos.end(), pPfo));
+
+
+        if (isClearCosmic)
+            clearCosmicRayPfos.push_back(pPfo);
+    }
+
+
+    for (const Pfo *const pPfo : *pRecreatedCRPfos)
+    {
+        const bool isClearCosmic(ambiguousPfos.end() == std::find(ambiguousPfos.begin(), ambiguousPfos.end(), pPfo));
+        PandoraContentApi::ParticleFlowObject::Metadata metadata;
+        metadata.m_propertiesToAdd["IsClearCosmic"] = (isClearCosmic ? 1.f : 0.f);
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::ParticleFlowObject::AlterMetadata(*this, pPfo, metadata));
+    }
+
+
+    if (m_visualizeOverallRecoStatus)
+    {
+        PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &clearCosmicRayPfos, "ClearCRPfos", RED));
+        PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &ambiguousPfos, "AmbiguousCRPfos", BLUE));
+        PANDORA_MONITORING_API(ViewEvent(this->GetPandora()));
+    }
+
+
+    return STATUS_CODE_SUCCESS;
+}
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 StatusCode MasterThreeDAlgorithm::RunCosmicRayHitRemoval(const PfoList &ambiguousPfos) const
@@ -553,6 +621,8 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
 
 StatusCode MasterThreeDAlgorithm::ReadSettings(const pandora::TiXmlHandle xmlHandle)
 {
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunRockMus_Xworkers", m_shouldRunRockMus_Xworkers)); 
+    
     return MasterAlgorithm::ReadSettings(xmlHandle);
 }
 

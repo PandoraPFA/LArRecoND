@@ -15,6 +15,8 @@
 #include "larpandoracontent/LArControlFlow/MultiPandoraApi.h"
 #include "larpandoracontent/LArObjects/LArCaloHit.h"
 
+#include "RockMuonTaggingTool.h"
+
 #include <unordered_map>
 
 namespace lar_content
@@ -32,7 +34,7 @@ public:
     /**
      *  @brief  Default constructor
      */
-    MasterThreeDAlgorithm() = default;
+    MasterThreeDAlgorithm();
 
 protected:
     pandora::StatusCode Run() override;
@@ -51,6 +53,15 @@ protected:
      *  @param  ambiguousPfos the list of ambiguous cosmic-ray pfos
      */
     pandora::StatusCode RunCosmicRayHitRemoval(const pandora::PfoList &ambiguousPfos) const;
+
+    /**
+     *  @brief  Tag clear, unambiguous cosmic-ray pfos
+     *
+     *  @param  stitchedPfosToX0Map a map of cosmic-ray pfos that have been stitched between lar tpcs to the X0 shift
+     *  @param  clearCosmicRayPfos to receive the list of clear cosmic-ray pfos
+     *  @param  ambiguousPfos to receive the list of ambiguous cosmic-ray pfos for further analysis
+     */
+    pandora::StatusCode TagCosmicRayPfos(const PfoToFloatMap &stitchedPfosToX0Map, pandora::PfoList &clearCosmicRayPfos, pandora::PfoList &ambiguousPfos) const;
 
     /**
      *  @brief  Run the event slicing procedures, dividing available hits up into distinct 3D regions
@@ -116,6 +127,8 @@ protected:
     pandora::StatusCode GetVolumeIdToHitListMap(VolumeIdToHitListMap &volumeIdToHitListMap) const;
 
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle) override;
+
+    bool m_shouldRunRockMus_Xworkers;   ///< Whether to run rock muons reconstruction using a columnar X worker
 };
 
 } // namespace lar_content
