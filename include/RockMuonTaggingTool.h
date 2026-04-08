@@ -63,6 +63,6 @@ class RockMuonTaggingTool : public CosmicRayTaggingTool
     float m_marginY; ///< the minimum distance from the dector Y-face to define a fiducial volume for tagging
     float m_marginZ; ///< the minimum distance from the dector Z-face to define a fiducial volume for tagging
 };
-} // namespace lar_content
 
+} // namespace lar_cont::ent
 #endif // #ifndef LAR_ROCK_MUON_TAGGING_TOOL_H

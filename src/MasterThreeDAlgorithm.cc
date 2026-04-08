@@ -147,16 +147,9 @@ StatusCode MasterThreeDAlgorithm::TagCosmicRayPfos(const PfoToFloatMap &stitched
     }
 
 
-    for (CosmicRayTaggingBaseTool *const pCosmicRayTaggingTool : m_cosmicRayTaggingToolVector)
+    for (RockMuonTaggingTool *const pRockMuonTaggingTool : m_rockMuonTaggingToolVector)
     {
-      if (auto *pRockMuonTaggingTool = dynamic_cast<RockMuonTaggingTool *>(pCosmicRayTaggingTool))
-      {
-        pRockMuonTaggingTool->FindAmbiguousPfos(nonStitchedParentCosmicRayPfos, ambiguousPfos, this);
-      }
-      else
-      {
-        std::cout << "Unable to cast CosmicRayTaggingBaseTool into RockMuonTaggingTool \n";
-      }
+      pRockMuonTaggingTool->FindAmbiguousPfos(nonStitchedParentCosmicRayPfos, ambiguousPfos, this);
     }
 
 
@@ -622,6 +615,21 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
 StatusCode MasterThreeDAlgorithm::ReadSettings(const pandora::TiXmlHandle xmlHandle)
 {
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunRockMus_Xworkers", m_shouldRunRockMus_Xworkers)); 
+
+    if (m_shouldRunCosmicHitRemoval)
+    {
+      AlgorithmToolVector algorithmToolVector;
+      PANDORA_RETURN_RESULT_IF(
+            STATUS_CODE_SUCCESS, !=, XmlHelper::ProcessAlgorithmToolList(*this, xmlHandle, "RockMuonTaggingTools", algorithmToolVector));
+
+      for (AlgorithmTool *const pAlgorithmTool : algorithmToolVector)
+      {
+            RockMuonTaggingTool *const pRockMuonTaggingTool(dynamic_cast<RockMuonTaggingTool *>(pAlgorithmTool));
+            if (!pRockMuonTaggingTool)
+                return STATUS_CODE_INVALID_PARAMETER;
+            m_rockMuonTaggingToolVector.push_back(pRockMuonTaggingTool);
+      }
+    }
     
     return MasterAlgorithm::ReadSettings(xmlHandle);
 }

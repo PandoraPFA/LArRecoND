@@ -128,7 +128,10 @@ protected:
 
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle) override;
 
+    typedef std::vector<RockMuonTaggingTool*> RockMuonTaggingToolVector;
+
     bool m_shouldRunRockMus_Xworkers;   ///< Whether to run rock muons reconstruction using a columnar X worker
+    RockMuonTaggingToolVector m_rockMuonTaggingToolVector; ///< The cosmic-ray tagging tool vector
 };
 
 } // namespace lar_content

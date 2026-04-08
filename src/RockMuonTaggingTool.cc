@@ -18,13 +18,14 @@ namespace lar_content
 {
 
 RockMuonTaggingTool::RockMuonTaggingTool() :
-    m_tagRockMuons(true),
+    m_tagRockMuons(false),
     m_marginX(5.f), // [cm]
     m_marginY(5.f),
     m_marginZ(5.f)
   {
   }
 
+//------------------------------------------------------------------------------------------------------------------------------------------
 bool RockMuonTaggingTool::IsOutsideBox(const float x, const float y, const float z) const 
 {
   const float BoxXmin = m_face_Xa + m_marginX;
@@ -61,16 +62,21 @@ void RockMuonTaggingTool::CheckIfThroughgoing(const CRCandidateList &candidates,
 //------------------------------------------------------------------------------------------------------------------------------------------
 void RockMuonTaggingTool::TagRockMuons(const CRCandidateList &candidates, PfoToBoolMap &pfoToIsLikelyRockMuonMap, const PfoToBoolMap &pfoToIsThroughgoingMap) const
 {
+    int nof_tagged_rockmus = 0;
     for (const CRCandidate &candidate : candidates)
     {
 	bool likelyRockMuon = false;
 
         if(m_tagRockMuons && (pfoToIsThroughgoingMap.at(candidate.m_pPfo)))
+        {
           likelyRockMuon = true;
+          nof_tagged_rockmus++;
+        }
 
 	if (!pfoToIsLikelyRockMuonMap.insert(PfoToBoolMap::value_type(candidate.m_pPfo, likelyRockMuon)).second)
           throw StatusCodeException(STATUS_CODE_ALREADY_PRESENT);
     }
+    std::cout << "nof tagged rock muons : " << nof_tagged_rockmus << "\n";
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
