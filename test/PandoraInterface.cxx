@@ -14,8 +14,6 @@
 #include "TGeoMatrix.h"
 #include "TGeoShape.h"
 #include "TGeoVolume.h"
-#include <Objects/CartesianVector.h>
-#include <regex>
 
 #ifdef USE_EDEPSIM
 #include "TG4PrimaryVertex.h"
@@ -55,6 +53,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -102,7 +101,7 @@ int main(int argc, char *argv[])
             PandoraApi::SetLArTransformationPlugin(*pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ReadSettings(*pPrimaryPandora, parameters.m_settingsFile));
 
-        // INFO: Now tthat the geometry + transformation plugins are set up, we
+        // INFO: Now that the geometry + transformation plugins are set up, we
         // can create the detector gaps in Pandora based on the loaded geometry.
         LoadDetectorGaps(pPrimaryPandora);
 
