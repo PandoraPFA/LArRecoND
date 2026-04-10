@@ -1471,8 +1471,6 @@ void ProcessPostReco(const ParameterStruct &parameters)
                 CaloHitList showerStartCaloHitList;
                 CartesianVector hitProjectedPosition(0.f, 0.f, 0.f);
 
-                int caloHitIndex = 0;
-
                 showerStartCaloHitList.clear();
 
                 for (const CaloHit *const pShowerStartCaloHit3D : caloHitList)
@@ -1504,7 +1502,6 @@ void ProcessPostReco(const ParameterStruct &parameters)
                         showerStartCaloHitList.push_back(pShowerStartCaloHit3D);
                         chargeStartPoints += pShowerStartCaloHit3D->GetInputEnergy() *
                             LifetimeCorrectionFactor(posAnodes, showerStartCurrentHit.GetX(), parameters.fElectronLifetime, parameters.fElectronDriftSpeed);
-                        caloHitIndex++;
                     }
 
                     else
