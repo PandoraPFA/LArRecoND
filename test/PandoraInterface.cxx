@@ -428,7 +428,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             caloHitParameters.m_hitRegion = pandora::SINGLE_REGION;
             caloHitParameters.m_layer = 0;
             caloHitParameters.m_isInOuterSamplingLayer = false;
-            caloHitParameters.m_pParentAddress = (void *)(static_cast<uintptr_t>(++hitCounter));
+            caloHitParameters.m_pParentAddress = (void *)(static_cast<uintptr_t>(hitCounter));
             caloHitParameters.m_larTPCVolumeId = tpcID < 0 ? 0 : tpcID;
             caloHitParameters.m_daughterVolumeId = 0;
 
@@ -473,7 +473,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                 // U view
                 lar_content::LArCaloHitParameters caloHitPars_UView(caloHitParameters);
                 caloHitPars_UView.m_hitType = pandora::TPC_VIEW_U;
-                caloHitPars_UView.m_pParentAddress = (void *)(intptr_t(++hitCounter));
+                caloHitPars_UView.m_pParentAddress = (void *)(intptr_t(hitCounter));
                 const float upos_cm(pPrimaryPandora->GetPlugins()->GetLArTransformationPlugin()->YZtoU(y0_cm, z0_cm));
                 caloHitPars_UView.m_positionVector = pandora::CartesianVector(x0_cm, 0.f, upos_cm);
 
@@ -486,7 +486,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                 // V view
                 lar_content::LArCaloHitParameters caloHitPars_VView(caloHitParameters);
                 caloHitPars_VView.m_hitType = pandora::TPC_VIEW_V;
-                caloHitPars_VView.m_pParentAddress = (void *)(intptr_t(++hitCounter));
+                caloHitPars_VView.m_pParentAddress = (void *)(intptr_t(hitCounter));
                 const float vpos_cm(pPrimaryPandora->GetPlugins()->GetLArTransformationPlugin()->YZtoV(y0_cm, z0_cm));
                 caloHitPars_VView.m_positionVector = pandora::CartesianVector(x0_cm, 0.f, vpos_cm);
                 PANDORA_THROW_RESULT_IF(
@@ -497,7 +497,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                 // W view
                 lar_content::LArCaloHitParameters caloHitPars_WView(caloHitParameters);
                 caloHitPars_WView.m_hitType = pandora::TPC_VIEW_W;
-                caloHitPars_WView.m_pParentAddress = (void *)(intptr_t(++hitCounter));
+                caloHitPars_WView.m_pParentAddress = (void *)(intptr_t(hitCounter));
                 const float wpos_cm(pPrimaryPandora->GetPlugins()->GetLArTransformationPlugin()->YZtoW(y0_cm, z0_cm));
                 caloHitPars_WView.m_positionVector = pandora::CartesianVector(x0_cm, 0.f, wpos_cm);
 
@@ -507,6 +507,9 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                     PandoraApi::SetCaloHitToMCParticleRelationship(
                         *pPrimaryPandora, (void *)((intptr_t)hitCounter), (void *)((intptr_t)trackID), energyFrac);
             }
+
+            // Increment hit counter for unique Hit IDs
+            ++hitCounter;
 
         } // end space point loop
 
