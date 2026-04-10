@@ -486,6 +486,7 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
 
     const CaloHitList *pCaloHitList(nullptr);
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetList(*this, m_inputHitListName, pCaloHitList));
+    std::map<HitType, std::pair<unsigned int, unsigned int>> hitTypeToStatusMap;
 
     for (const CaloHit *const pCaloHit : *pCaloHitList)
     {
@@ -504,11 +505,18 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
                 (pCaloHit->GetPositionVector().GetX() <= (pLArTPC->GetCenterX() + 0.5f * pLArTPC->GetWidthX()))))
         {
             larTPCHitList.m_truncatedHitList.push_back(pCaloHit);
+            hitTypeToStatusMap[pCaloHit->GetHitType()].first++;
         }
         else
-            std::cout << "Hit of type " << pCaloHit->GetHitType() << " outside TPC " << volumeId << "? "
-                      << pCaloHit->GetPositionVector().GetX() << ", " << pLArTPC->GetCenterX() - 0.5f * pLArTPC->GetWidthX() << ", "
-                      << pLArTPC->GetCenterX() + 0.5f * pLArTPC->GetWidthX() << std::endl;
+            hitTypeToStatusMap[pCaloHit->GetHitType()].second++;
+    }
+
+    for (const auto &hitTypeToStatusMapEntry : hitTypeToStatusMap)
+    {
+        const HitType hitType(hitTypeToStatusMapEntry.first);
+        const unsigned int nInTimeHits(hitTypeToStatusMapEntry.second.first);
+        const unsigned int nOutOfTimeHits(hitTypeToStatusMapEntry.second.second);
+        std::cout << "Hit type " << hitType << ": " << nInTimeHits << " hits in TPC, " << nOutOfTimeHits << " hits outside of the TPC" << std::endl;
     }
 
     return STATUS_CODE_SUCCESS;
