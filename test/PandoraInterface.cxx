@@ -14,6 +14,7 @@
 #include "TGeoMatrix.h"
 #include "TGeoShape.h"
 #include "TGeoVolume.h"
+#include <regex>
 
 #ifdef USE_EDEPSIM
 #include "TG4PrimaryVertex.h"
@@ -361,6 +362,29 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             LArSPMC *larspmc = dynamic_cast<LArSPMC *>(larsp.get());
             CreateSPMCParticles(*larspmc, pPrimaryPandora, parameters);
         }
+
+        // And event level information...
+        int run{0};
+        int subrun{0};
+        const int event{larsp->m_event};
+
+        // INFO: Currently, the run + subrun fields are seemingly not set in the
+        // input ROOT files, so we can instead parse it from the input file
+        // name, if possible.
+        //
+        // This should pull out 12 from
+        // MiniProdN5p1_NDComplex_FHC.flow.full.sanddrift.0000012.FLOW.hdf5_hits.root
+        std::regex fileNameRegex(".*\\.(\\d+)\\.FLOW.*");
+        std::smatch matches;
+
+        if (std::regex_match(parameters.m_inputFileName, matches, fileNameRegex) && matches.size() > 1)
+        {
+            run = std::stoi(matches[1].str());
+            subrun = run;
+        }
+
+        std::cout << "Event info: run " << run << ", subrun " << subrun << ", event " << event << std::endl;
+        PandoraApi::SetEventInformation(*pPrimaryPandora, run, subrun, event);
 
         int hitCounter(0);
 
