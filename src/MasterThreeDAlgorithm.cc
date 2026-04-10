@@ -27,6 +27,7 @@
 #include "larpandoracontent/LArPlugins/LArRotationalTransformationPlugin.h"
 
 #include "larpandoracontent/LArUtility/PfoMopUpBaseAlgorithm.h"
+#include <larpandoracontent/LArControlFlow/MasterAlgorithm.h>
 
 #ifdef LIBTORCH_DL
 #include "larpandoradlcontent/LArDLContent.h"
@@ -46,19 +47,14 @@ StatusCode MasterThreeDAlgorithm::Run()
     if (!m_workerInstancesInitialized)
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->InitializeWorkerInstances());
 
-    if (m_passMCParticlesToWorkerInstances)
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->CopyMCParticles());
-
     PfoToFloatMap stitchedPfosToX0Map;
     VolumeIdToHitListMap volumeIdToHitListMap;
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->GetVolumeIdToHitListMap(volumeIdToHitListMap));
 
     if (m_shouldRunAllHitsCosmicReco)
     {
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayReconstruction(volumeIdToHitListMap));
-
         PfoToLArTPCMap pfoToLArTPCMap;
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RecreateCosmicRayPfos(pfoToLArTPCMap));
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayReconstructionThenRecreate(volumeIdToHitListMap, pfoToLArTPCMap));
 
         if (m_shouldRunStitching)
             PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->StitchCosmicRayPfos(pfoToLArTPCMap, stitchedPfosToX0Map));
@@ -76,6 +72,9 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     if (m_shouldRunNeutrinoRecoOption || m_shouldRunCosmicRecoOption)
     {
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->CopyMCParticles(m_pSliceNuWorkerInstance));
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->CopyMCParticles(m_pSliceCRWorkerInstance));
+
         SliceHypotheses nuSliceHypotheses, crSliceHypotheses;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunSliceReconstruction(sliceVector, nuSliceHypotheses, crSliceHypotheses));
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->SelectBestSliceHypotheses(nuSliceHypotheses, crSliceHypotheses));
@@ -83,6 +82,23 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     return STATUS_CODE_SUCCESS;
 }
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+StatusCode MasterThreeDAlgorithm::CopyMCParticles(const Pandora *pPandora) const
+{
+    if (!m_passMCParticlesToWorkerInstances)
+        return STATUS_CODE_SUCCESS;
+
+    const MCParticleList *pMCParticleList(nullptr);
+    PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetList(*this, m_inputMCParticleListName, pMCParticleList));
+    LArMCParticleFactory mcParticleFactory;
+
+    for (const MCParticle *const pMCParticle : *pMCParticleList)
+        PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Copy(pPandora, pMCParticle, &mcParticleFactory));
+
+    return STATUS_CODE_SUCCESS;
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 StatusCode MasterThreeDAlgorithm::RunCosmicRayHitRemoval(const PfoList &ambiguousPfos) const
@@ -126,6 +142,44 @@ StatusCode MasterThreeDAlgorithm::RunCosmicRayHitRemoval(const PfoList &ambiguou
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+StatusCode MasterThreeDAlgorithm::RunCosmicRayReconstructionThenRecreate(const VolumeIdToHitListMap &volumeIdToHitListMap, PfoToLArTPCMap &pfoToLArTPCMap) const
+{
+    unsigned int workerCounter(0);
+
+    for (const Pandora *const pCRWorker : m_crWorkerInstances)
+    {
+        const LArTPC &larTPC(pCRWorker->GetGeometry()->GetLArTPC());
+        VolumeIdToHitListMap::const_iterator iter(volumeIdToHitListMap.find(larTPC.GetLArTPCVolumeId()));
+
+        if (volumeIdToHitListMap.end() == iter)
+            continue;
+
+        for (const CaloHit *const pCaloHit : iter->second.m_allHitList)
+            PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Copy(pCRWorker, pCaloHit));
+
+        if (m_printOverallRecoStatus)
+            std::cout << "Running cosmic-ray reconstruction worker instance " << ++workerCounter << " of " << m_crWorkerInstances.size() << std::endl;
+
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->CopyMCParticles(pCRWorker));
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ProcessEvent(*pCRWorker));
+
+        const PfoList *pCRPfos(nullptr);
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(*pCRWorker, pCRPfos));
+
+        PfoList newPfoList;
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, MasterAlgorithm::Recreate(*pCRPfos, newPfoList));
+
+        for (const Pfo *const pNewPfo : newPfoList)
+            pfoToLArTPCMap[pNewPfo] = &larTPC;
+
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::Reset(*pCRWorker));
+    }
+
+    return STATUS_CODE_SUCCESS;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 StatusCode MasterThreeDAlgorithm::RunSlicing(const VolumeIdToHitListMap &volumeIdToHitListMap, SliceVector &sliceVector) const
 {
     std::cout << "There are " << volumeIdToHitListMap.size() << " volumes" << std::endl;
@@ -156,6 +210,7 @@ StatusCode MasterThreeDAlgorithm::RunSlicing(const VolumeIdToHitListMap &volumeI
             std::cout << "Running slicing worker instance" << std::endl;
 
         const PfoList *pSlicePfos(nullptr);
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->CopyMCParticles(m_pSlicingWorkerInstance));
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ProcessEvent(*m_pSlicingWorkerInstance));
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(*m_pSlicingWorkerInstance, pSlicePfos));
 
