@@ -148,20 +148,15 @@ StatusCode MasterThreeDAlgorithm::TagCosmicRayPfos(const PfoToFloatMap &stitched
 
 
     for (RockMuonTaggingTool *const pRockMuonTaggingTool : m_rockMuonTaggingToolVector)
-    {
       pRockMuonTaggingTool->FindAmbiguousPfos(nonStitchedParentCosmicRayPfos, ambiguousPfos, this);
-    }
-
 
     for (const Pfo *const pPfo : nonStitchedParentCosmicRayPfos)
     {
         const bool isClearCosmic(ambiguousPfos.end() == std::find(ambiguousPfos.begin(), ambiguousPfos.end(), pPfo));
 
-
         if (isClearCosmic)
             clearCosmicRayPfos.push_back(pPfo);
     }
-
 
     for (const Pfo *const pPfo : *pRecreatedCRPfos)
     {
@@ -170,7 +165,6 @@ StatusCode MasterThreeDAlgorithm::TagCosmicRayPfos(const PfoToFloatMap &stitched
         metadata.m_propertiesToAdd["IsClearCosmic"] = (isClearCosmic ? 1.f : 0.f);
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::ParticleFlowObject::AlterMetadata(*this, pPfo, metadata));
     }
-
 
     if (m_visualizeOverallRecoStatus)
     {

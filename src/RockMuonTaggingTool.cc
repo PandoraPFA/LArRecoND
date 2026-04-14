@@ -157,12 +157,17 @@ void RockMuonTaggingTool::FindAmbiguousPfos(const PfoList &parentCosmicRayPfos, 
 
     for (const ParticleFlowObject *const pPfo : parentCosmicRayPfos)
     {
-        if (!pfoToIsLikelyCRMuonMap.at(pPfo))
-            ambiguousPfos.push_back(pPfo);
+        const bool is_rock = pfoToIsLikelyRockMuonMap.at(pPfo); // dummy-proof (for me, basically) 
+        const bool is_cosmic = pfoToIsLikelyCRMuonMap.at(pPfo); 
 
         if(m_tagRockMuons)
         {
-          if (!pfoToIsLikelyRockMuonMap.at(pPfo))
+          if (!(is_rock || is_cosmic))
+            ambiguousPfos.push_back(pPfo);
+        }
+        else
+        {
+          if (!is_cosmic)
             ambiguousPfos.push_back(pPfo);
         }
     }
