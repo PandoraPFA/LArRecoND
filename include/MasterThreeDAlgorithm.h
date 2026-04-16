@@ -46,14 +46,7 @@ protected:
      *  @param  workerToLArTPCMap the worker id to LArTPC list map
      */
     pandora::StatusCode RunCosmicRayReconstruction(const VolumeIdToHitListMap &volumeIdToHitListMap, WorkerToLArTPCMap& workerToLArTPCMap) const;
-
-    /**
-     *  @brief  Run cosmic-ray hit removal, freeing hits in ambiguous pfos for further processing
-     *
-     *  @param  ambiguousPfos the list of ambiguous cosmic-ray pfos
-     */
-    pandora::StatusCode RunCosmicRayHitRemoval(const pandora::PfoList &ambiguousPfos) const;
-
+    
     /**
      *  @brief  Tag clear, unambiguous cosmic-ray pfos
      *
@@ -61,7 +54,15 @@ protected:
      *  @param  clearCosmicRayPfos to receive the list of clear cosmic-ray pfos
      *  @param  ambiguousPfos to receive the list of ambiguous cosmic-ray pfos for further analysis
      */
-    pandora::StatusCode TagCosmicRayPfos(const PfoToFloatMap &stitchedPfosToX0Map, pandora::PfoList &clearCosmicRayPfos, pandora::PfoList &ambiguousPfos) const;
+    pandora::StatusCode TagCosmicRayPfos(
+        const PfoToFloatMap &stitchedPfosToX0Map, pandora::PfoList &clearCosmicRayPfos, pandora::PfoList &ambiguousPfos) const override;
+
+    /**
+     *  @brief  Run cosmic-ray hit removal, freeing hits in ambiguous pfos for further processing
+     *
+     *  @param  ambiguousPfos the list of ambiguous cosmic-ray pfos
+     */
+    pandora::StatusCode RunCosmicRayHitRemoval(const pandora::PfoList &ambiguousPfos) const;
 
     /**
      *  @brief  Run the event slicing procedures, dividing available hits up into distinct 3D regions
@@ -131,6 +132,7 @@ protected:
     typedef std::vector<RockMuonTaggingTool*> RockMuonTaggingToolVector;
 
     bool m_shouldRunRockMus_Xworkers;   ///< Whether to run rock muons reconstruction using a columnar X worker
+    bool m_tagRockMuons;  ///< bool to activate tagging of rock muons
     RockMuonTaggingToolVector m_rockMuonTaggingToolVector; ///< The cosmic-ray tagging tool vector
 };
 

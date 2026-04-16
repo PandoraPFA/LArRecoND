@@ -38,7 +38,8 @@ namespace lar_content
 {
 
 MasterThreeDAlgorithm::MasterThreeDAlgorithm() :
-    m_shouldRunRockMus_Xworkers(false)
+    m_shouldRunRockMus_Xworkers(false),
+    m_tagRockMuons(false)
   {
   }
 
@@ -74,6 +75,7 @@ StatusCode MasterThreeDAlgorithm::Run()
     {
         PfoList clearCosmicRayPfos, ambiguousPfos;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->TagCosmicRayPfos(stitchedPfosToX0Map, clearCosmicRayPfos, ambiguousPfos));
+
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayHitRemoval(ambiguousPfos));
     }
 
@@ -90,6 +92,50 @@ StatusCode MasterThreeDAlgorithm::Run()
     return STATUS_CODE_SUCCESS;
 }
 
+//------------------------------------------------------------------------------------------------------------------------------------------
+StatusCode MasterThreeDAlgorithm::TagCosmicRayPfos(const PfoToFloatMap &stitchedPfosToX0Map, PfoList &clearCosmicRayPfos, PfoList &ambiguousPfos) const
+{
+
+  PfoList ambiguousPfos_wRock;
+  PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, MasterAlgorithm::TagCosmicRayPfos(stitchedPfosToX0Map, clearCosmicRayPfos, ambiguousPfos_wRock));
+  
+  if (!m_tagRockMuons)
+  {
+    for (const Pfo *const pPfo : ambiguousPfos_wRock)
+      ambiguousPfos.push_back(pPfo);
+
+    return STATUS_CODE_SUCCESS;
+  }
+  
+  
+  for (RockMuonTaggingTool *const pRockMuonTaggingTool : m_rockMuonTaggingToolVector)
+          pRockMuonTaggingTool->FindAmbiguousPfos(ambiguousPfos_wRock, ambiguousPfos, this);
+
+  // filter ambiguousPfos form rocks
+
+  const PfoList *pRecreatedCRPfos(nullptr);
+  PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(this->GetPandora(), pRecreatedCRPfos));
+
+  for (const Pfo *const pPfo : *pRecreatedCRPfos)
+  {
+        const bool isClearRock(ambiguousPfos.end() == std::find(ambiguousPfos.begin(), ambiguousPfos.end(), pPfo));
+        PandoraContentApi::ParticleFlowObject::Metadata metadata;
+        metadata.m_propertiesToAdd["IsClearCosmic"] = (isClearRock ? 1.f : 0.f); // TODO maybe decouple labels? isClearRock, good for now
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::ParticleFlowObject::AlterMetadata(*this, pPfo, metadata));
+
+        if(isClearRock)
+          clearCosmicRayPfos.push_back(pPfo);
+  }
+
+  if (m_visualizeOverallRecoStatus)
+  {
+     PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &clearCosmicRayPfos, "ClearCRPfos", RED));
+     PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &ambiguousPfos, "AmbiguousPfos", BLUE));
+     PANDORA_MONITORING_API(ViewEvent(this->GetPandora()));
+  }
+
+  return STATUS_CODE_SUCCESS;
+}
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 StatusCode MasterThreeDAlgorithm::RunCosmicRayReconstruction(const VolumeIdToHitListMap &volumeIdToHitListMap, WorkerToLArTPCMap& workerToLArTPCMap) const
@@ -127,57 +173,6 @@ StatusCode MasterThreeDAlgorithm::RunCosmicRayReconstruction(const VolumeIdToHit
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-StatusCode MasterThreeDAlgorithm::TagCosmicRayPfos(const PfoToFloatMap &stitchedPfosToX0Map, PfoList &clearCosmicRayPfos, PfoList &ambiguousPfos) const
-{
-    const PfoList *pRecreatedCRPfos(nullptr);
-    PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(this->GetPandora(), pRecreatedCRPfos));
-
-
-    PfoList nonStitchedParentCosmicRayPfos;
-    for (const Pfo *const pPfo : *pRecreatedCRPfos)
-    {
-        if (!pPfo->GetParentPfoList().empty())
-            continue;
-
-
-        PfoToFloatMap::const_iterator pfoToX0Iter = stitchedPfosToX0Map.find(pPfo);
-        const float x0Shift((pfoToX0Iter != stitchedPfosToX0Map.end()) ? pfoToX0Iter->second : 0.f);
-        PfoList &targetList((std::fabs(x0Shift) > m_inTimeMaxX0) ? clearCosmicRayPfos : nonStitchedParentCosmicRayPfos);
-        targetList.push_back(pPfo);
-    }
-
-
-    for (RockMuonTaggingTool *const pRockMuonTaggingTool : m_rockMuonTaggingToolVector)
-      pRockMuonTaggingTool->FindAmbiguousPfos(nonStitchedParentCosmicRayPfos, ambiguousPfos, this);
-
-    for (const Pfo *const pPfo : nonStitchedParentCosmicRayPfos)
-    {
-        const bool isClearCosmic(ambiguousPfos.end() == std::find(ambiguousPfos.begin(), ambiguousPfos.end(), pPfo));
-
-        if (isClearCosmic)
-            clearCosmicRayPfos.push_back(pPfo);
-    }
-
-    for (const Pfo *const pPfo : *pRecreatedCRPfos)
-    {
-        const bool isClearCosmic(ambiguousPfos.end() == std::find(ambiguousPfos.begin(), ambiguousPfos.end(), pPfo));
-        PandoraContentApi::ParticleFlowObject::Metadata metadata;
-        metadata.m_propertiesToAdd["IsClearCosmic"] = (isClearCosmic ? 1.f : 0.f);
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::ParticleFlowObject::AlterMetadata(*this, pPfo, metadata));
-    }
-
-    if (m_visualizeOverallRecoStatus)
-    {
-        PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &clearCosmicRayPfos, "ClearCRPfos", RED));
-        PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &ambiguousPfos, "AmbiguousCRPfos", BLUE));
-        PANDORA_MONITORING_API(ViewEvent(this->GetPandora()));
-    }
-
-
-    return STATUS_CODE_SUCCESS;
-}
-//------------------------------------------------------------------------------------------------------------------------------------------
-
 StatusCode MasterThreeDAlgorithm::RunCosmicRayHitRemoval(const PfoList &ambiguousPfos) const
 {
     PfoList allPfosToDelete;
@@ -609,6 +604,8 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
 StatusCode MasterThreeDAlgorithm::ReadSettings(const pandora::TiXmlHandle xmlHandle)
 {
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunRockMus_Xworkers", m_shouldRunRockMus_Xworkers)); 
+
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "TagRockMuons", m_tagRockMuons));
 
     if (m_shouldRunCosmicHitRemoval)
     {

@@ -19,6 +19,7 @@
         <NuSettingsFile>PandoraSettings_Neutrino_ThreeD_Cheated.xml</NuSettingsFile>
         <SlicingSettingsFile>PandoraSettings_Slicing_ThreeD_Cheated.xml</SlicingSettingsFile>
         <ShouldRunRockMus_Xworkers>true</ShouldRunRockMus_Xworkers>
+        <TagRockMuons>true</TagRockMuons>
         <StitchingTools>
           <tool type = "LArStitchingCosmicRayMerging">
             <ThreeDStitchingMode>true</ThreeDStitchingMode>
@@ -29,10 +30,13 @@
             <MinNCaloHits3D>10</MinNCaloHits3D>
           </tool>
         </StitchingTools>
+        <CosmicRayTaggingTools>
+            <tool type = "LArCosmicRayTagging">
+	      <CutMode>cautious</CutMode>
+	    </tool>
+        </CosmicRayTaggingTools>
 	<RockMuonTaggingTools>
 	  <tool type = "LArRockMuonTagging">
-	    <CutMode>cautious</CutMode>
-	    <TagRockMuons>true</TagRockMuons>
 	    <MarginX>5</MarginX>
 	    <MarginY>5</MarginY>
 	    <MarginZ>5</MarginZ>
