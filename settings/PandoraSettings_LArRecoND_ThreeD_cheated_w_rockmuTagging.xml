@@ -56,7 +56,7 @@
     </algorithm>
 
     <algorithm type = "LArHierarchyAnalysis">
-      <EventFileName>/exp/dune/app/users/ingratta/tests/evaluate_z_stitching_metrics_w_cheatingWorkflow_on_2x2_simu/CONVERTED/MiniRun6.4_1E19_RHC.flow.0000000.FLOW.hdf5_hits.root</EventFileName>
+      <EventFileName>/exp/dune/app/users/ingratta/tests/rockmu_tagging_efficiency_NDLAr/data/MiniProdN5p1_Flow2Root_April2026/MiniProdN5p1_NDComplex_FHC.flow2root.full.sanddrift.0000710.FLOW.hdf5_hits.root</EventFileName>
         <!-- <EventFileName>MicroProdN3p4_NDLAr_2E18_FHC.flow.geomfix.singles.nu.v251016.0000010.FLOW.hdf5_hits.root</EventFileName> -->
 	<EventTreeName>events</EventTreeName>
 	<EventLeafName>event</EventLeafName>
