@@ -394,7 +394,9 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             }
             else 
             {
-              tpcID = ioGroup2tcpIDMap_2x2[voxel_io_group];
+              // TODO : how do we handle this?
+              // tpcID = ioGroup2tcpIDMap_2x2[voxel_io_group];
+              tpcID = ioGroup2tcpIDMap_NDLAr(voxel_io_group);
             }
             lar_content::LArCaloHitParameters caloHitParameters;
             caloHitParameters.m_positionVector = voxelPos;
