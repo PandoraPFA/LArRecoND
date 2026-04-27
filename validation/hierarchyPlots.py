@@ -401,7 +401,7 @@ def plotMCHistos(pars):
     hMCFile = ROOT.TFile.Open(pars.histMCFileName, 'read')
 
     # Define plotting canvas
-    theCanvas = ROOT.TCanvas('theCanvas', '', 900, 700)
+    theCanvas = ROOT.TCanvas('theCanvas', '', 1350, 700)
     ROOT.gROOT.SetStyle('Plain')
     ROOT.gStyle.SetOptStat(0)
     theCanvas.UseCurrentStyle()
@@ -412,7 +412,7 @@ def plotMCHistos(pars):
     text.SetNDC(True)
 
     # All interactions: muons, protons, piplus and piminus
-    theCanvas.Divide(2,2)
+    theCanvas.Divide(3,2)
 
     # Hits efficiency
     maxNHits = 1.0e4
@@ -434,6 +434,14 @@ def plotMCHistos(pars):
     text.DrawLatex(0.775, 0.25, 'p')
 
     theCanvas.cd(3)
+    eHitsEff = hMCFile.Get('electron_HitsEff')
+    eHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    eHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
+    ROOT.gPad.SetLogx()
+    eHitsEff.Draw()
+    text.DrawLatex(0.775, 0.25, 'e')
+
+    theCanvas.cd(4)
     pipHitsEff = hMCFile.Get('piplus_HitsEff')
     pipHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
     pipHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
@@ -441,13 +449,21 @@ def plotMCHistos(pars):
     pipHitsEff.Draw()
     text.DrawLatex(0.775, 0.25, '#pi^{+}')
 
-    theCanvas.cd(4)
+    theCanvas.cd(5)
     pimHitsEff = hMCFile.Get('piminus_HitsEff')
     pimHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
     pimHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx()
     pimHitsEff.Draw()
     text.DrawLatex(0.775, 0.25, '#pi^{-}')
+
+    theCanvas.cd(6)
+    gHitsEff = hMCFile.Get('photon_HitsEff')
+    gHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    gHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
+    ROOT.gPad.SetLogx()
+    gHitsEff.Draw()
+    text.DrawLatex(0.775, 0.25, '#gamma')
 
     theCanvas.Print('hierarchy_allHitsEff.png')    
 
@@ -471,6 +487,14 @@ def plotMCHistos(pars):
     text.DrawLatex(0.775, 0.25, 'p')
 
     theCanvas.cd(3)
+    eMtmEff = hMCFile.Get('electron_MtmEff')
+    eMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    eMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
+    ROOT.gPad.SetLogx(0)
+    eMtmEff.Draw()
+    text.DrawLatex(0.775, 0.25, 'e')
+
+    theCanvas.cd(4)
     pipMtmEff = hMCFile.Get('piplus_MtmEff')
     pipMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
     pipMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
@@ -478,13 +502,21 @@ def plotMCHistos(pars):
     pipMtmEff.Draw()
     text.DrawLatex(0.775, 0.25, '#pi^{+}')
 
-    theCanvas.cd(4)
+    theCanvas.cd(5)
     pimMtmEff = hMCFile.Get('piminus_MtmEff')
     pimMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
     pimMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx(0)
     pimMtmEff.Draw()
     text.DrawLatex(0.775, 0.25, '#pi^{-}')
+
+    theCanvas.cd(6)
+    gMtmEff = hMCFile.Get('photon_MtmEff')
+    gMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    gMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
+    ROOT.gPad.SetLogx(0)
+    gMtmEff.Draw()
+    text.DrawLatex(0.775, 0.25, '#gamma')
 
     theCanvas.Print('hierarchy_allMtmEff.png')    
 
