@@ -15,6 +15,7 @@
 
 #include "TFile.h"
 #include "TTree.h"
+#include <algorithm>
 
 using namespace pandora;
 
@@ -107,7 +108,7 @@ StatusCode HierarchyAnalysisAlgorithm::Run()
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetCurrentList(*this, pMCParticleList));
     const PfoList *pPfoList(nullptr);
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetList(*this, m_pfoListName, pPfoList));
-
+    
     LArHierarchyHelper::FoldingParameters foldParameters;
     if (m_foldToPrimaries)
         foldParameters.m_foldToTier = true;
@@ -185,7 +186,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     // Slice & cluster IDs, and number of hits
     IntVector sliceIdVect, clusterIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect;
     // Cluster isShower, isRecoPrimary & reco PDG hypothesis, as well as the track score
-    IntVector isShowerVect, isRecoPrimaryVect, recoPDGVect;
+    IntVector isShowerVect, isClearRockOrCosmicVect, isRecoPrimaryVect, recoPDGVect;
     FloatVector trackScoreVect;
     // Reco neutrino vertex
     FloatVector nuVtxXVect, nuVtxYVect, nuVtxZVect;
@@ -341,6 +342,12 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 const int isShower = (trackScore >= m_minTrackScore) ? 0 : 1;
                 isShowerVect.emplace_back(isShower);
 
+                // is clear rock/cosmic
+                const auto &props = pPfo->GetPropertiesMap();
+                auto it = props.find("IsClearCosmic");
+                const int isClearRockOrCosmic = (it != props.end()) ? it->second : 0;
+                isClearRockOrCosmicVect.emplace_back(isClearRockOrCosmic);
+
                 // Set reco PDG hypothesis, e.g track = muon, shower = electron.
                 // Since all PFOs are tracks for now, this will always be muon
                 const int recoPDG = (isShower == 0) ? MU_MINUS : E_MINUS;
@@ -488,6 +495,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nVHits", &nVHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nWHits", &nWHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isShower", &isShowerVect));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isClearRockOrCosmic", &isClearRockOrCosmicVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "trackScore", &trackScoreVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "recoPDG", &recoPDGVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "isRecoPrimary", &isRecoPrimaryVect));

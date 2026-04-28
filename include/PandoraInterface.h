@@ -38,6 +38,18 @@ namespace lar_nd_reco
 typedef std::map<int, float> MCParticleEnergyMap;
 typedef std::vector<LArVoxel> LArVoxelList;
 
+std::map<int, int> ioGroup2tcpIDMap_2x2 = {
+      {1,7}, {2,6}, {3,5}, {4,4}, {5,3}, {6,2}, {7,1}, {8,0}
+    };
+
+auto ioGroup2tcpIDMap_NDLAr = [](int io_group)
+{ 
+  if (io_group % 2 == 0) // even 
+      return io_group / 2 - 1;
+  else 
+      return io_group / 2;
+};
+
 /**
  *  @brief  Parameters class
  */
@@ -83,6 +95,7 @@ public:
     bool m_shouldRunSlicing;            ///< Whether to slice events into separate regions for processing
     bool m_shouldRunNeutrinoRecoOption; ///< Whether to run neutrino reconstruction for each slice
     bool m_shouldRunCosmicRecoOption;   ///< Whether to run cosmic-ray reconstruction for each slice
+    bool m_shouldRunRockMus_Xworkers;   ///< Whether to run rock muons reconstruction using a columnar X worker
     bool m_shouldPerformSliceId;        ///< Whether to identify slices and select most appropriate pfos
     bool m_printOverallRecoStatus;      ///< Whether to print current operation status messages
 
@@ -123,6 +136,7 @@ inline Parameters::Parameters() :
     m_shouldRunSlicing(true),
     m_shouldRunNeutrinoRecoOption(true),
     m_shouldRunCosmicRecoOption(true),
+    m_shouldRunRockMus_Xworkers(true), 
     m_shouldPerformSliceId(true),
     m_printOverallRecoStatus(false),
     m_nEventsToSkip(0),

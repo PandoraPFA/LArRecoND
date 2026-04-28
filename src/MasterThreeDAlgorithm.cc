@@ -37,14 +37,21 @@ using namespace pandora;
 namespace lar_content
 {
 
+MasterThreeDAlgorithm::MasterThreeDAlgorithm() :
+    m_shouldRunRockMus_Xworkers(false),
+    m_tagRockMuons(false)
+  {
+  }
+
 StatusCode MasterThreeDAlgorithm::Run()
 {
     std::cout << "Should run slicing? " << m_shouldRunSlicing << std::endl;
 
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Reset());
 
+    WorkerToLArTPCMap workerToLArTPCMap;
     if (!m_workerInstancesInitialized)
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->InitializeWorkerInstances());
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->InitializeWorkerInstances(workerToLArTPCMap));
 
     if (m_passMCParticlesToWorkerInstances)
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->CopyMCParticles());
@@ -55,7 +62,7 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     if (m_shouldRunAllHitsCosmicReco)
     {
-        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayReconstruction(volumeIdToHitListMap));
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayReconstruction(volumeIdToHitListMap, workerToLArTPCMap));
 
         PfoToLArTPCMap pfoToLArTPCMap;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RecreateCosmicRayPfos(pfoToLArTPCMap));
@@ -68,6 +75,7 @@ StatusCode MasterThreeDAlgorithm::Run()
     {
         PfoList clearCosmicRayPfos, ambiguousPfos;
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->TagCosmicRayPfos(stitchedPfosToX0Map, clearCosmicRayPfos, ambiguousPfos));
+
         PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->RunCosmicRayHitRemoval(ambiguousPfos));
     }
 
@@ -83,8 +91,88 @@ StatusCode MasterThreeDAlgorithm::Run()
 
     return STATUS_CODE_SUCCESS;
 }
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+StatusCode MasterThreeDAlgorithm::TagCosmicRayPfos(const PfoToFloatMap &stitchedPfosToX0Map, PfoList &clearCosmicRayPfos, PfoList &ambiguousPfos) const
+{
+
+  PfoList ambiguousPfos_wRock;
+  PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, MasterAlgorithm::TagCosmicRayPfos(stitchedPfosToX0Map, clearCosmicRayPfos, ambiguousPfos_wRock));
+  
+  if (!m_tagRockMuons)
+  {
+    for (const Pfo *const pPfo : ambiguousPfos_wRock)
+      ambiguousPfos.push_back(pPfo);
+
+    return STATUS_CODE_SUCCESS;
+  }
+  
+  
+  for (RockMuonTaggingTool *const pRockMuonTaggingTool : m_rockMuonTaggingToolVector)
+          pRockMuonTaggingTool->FindAmbiguousPfos(ambiguousPfos_wRock, ambiguousPfos, this);
+
+  // filter ambiguousPfos form rocks
+
+  const PfoList *pRecreatedCRPfos(nullptr);
+  PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::GetCurrentPfoList(this->GetPandora(), pRecreatedCRPfos));
+
+  for (const Pfo *const pPfo : *pRecreatedCRPfos)
+  {
+        const bool isClearRock(ambiguousPfos.end() == std::find(ambiguousPfos.begin(), ambiguousPfos.end(), pPfo));
+        PandoraContentApi::ParticleFlowObject::Metadata metadata;
+        metadata.m_propertiesToAdd["IsClearCosmic"] = (isClearRock ? 1.f : 0.f); // TODO maybe decouple labels? isClearRock, good for now
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::ParticleFlowObject::AlterMetadata(*this, pPfo, metadata));
+
+        if(isClearRock)
+          clearCosmicRayPfos.push_back(pPfo);
+  }
+
+  if (m_visualizeOverallRecoStatus)
+  {
+     PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &clearCosmicRayPfos, "ClearCRPfos", RED));
+     PANDORA_MONITORING_API(VisualizeParticleFlowObjects(this->GetPandora(), &ambiguousPfos, "AmbiguousPfos", BLUE));
+     PANDORA_MONITORING_API(ViewEvent(this->GetPandora()));
+  }
+
+  return STATUS_CODE_SUCCESS;
+}
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+StatusCode MasterThreeDAlgorithm::RunCosmicRayReconstruction(const VolumeIdToHitListMap &volumeIdToHitListMap, WorkerToLArTPCMap& workerToLArTPCMap) const
+{
+    for (const Pandora *const pCRWorker : m_crWorkerInstances)
+    {
+        const LArTPC &worker_larTPC(pCRWorker->GetGeometry()->GetLArTPC());
+        const unsigned int worker_id = worker_larTPC.GetLArTPCVolumeId();
+        
+        // loop over worker's TPCs
+        for (const pandora::LArTPC * pLArTPC : workerToLArTPCMap[worker_id])
+        {
+          const unsigned int larTPC_id = (*pLArTPC).GetLArTPCVolumeId();
+
+          // get all TPC's hits
+          VolumeIdToHitListMap::const_iterator iter(volumeIdToHitListMap.find(larTPC_id));
+
+          if (volumeIdToHitListMap.end() == iter)
+            continue;
+
+          // copy hits into the worker
+          std::cout << "Copying " << iter->second.m_allHitList.size() << " hits from LArTPC " << larTPC_id << " to worker " << worker_id << "\n"; 
+          for (const CaloHit *const pCaloHit : iter->second.m_allHitList)
+            PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Copy(pCRWorker, pCaloHit));
+        }
+
+
+        if (m_printOverallRecoStatus)
+            std::cout << "Running cosmic-ray reconstruction worker instance " << worker_id << " of " << m_crWorkerInstances.size() << std::endl;
+
+        PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ProcessEvent(*pCRWorker));
+    }
+
+    return STATUS_CODE_SUCCESS;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
 StatusCode MasterThreeDAlgorithm::RunCosmicRayHitRemoval(const PfoList &ambiguousPfos) const
 {
     PfoList allPfosToDelete;
@@ -300,7 +388,7 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
-    const LArTPCMap &larTPCMap, const DetectorGapList &gapList, const std::string &settingsFile, const std::string &name) const
+    const LArTPCMap &larTPCMap, const DetectorGapList &gapList, const std::string &settingsFile, const std::string &name, const unsigned int id = 0) const
 {
     if (larTPCMap.empty())
     {
@@ -332,9 +420,11 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
     float parentMinZ(pFirstLArTPC->GetCenterZ() - 0.5f * pFirstLArTPC->GetWidthZ());
     float parentMaxZ(pFirstLArTPC->GetCenterZ() + 0.5f * pFirstLArTPC->GetWidthZ());
 
+    std::vector<int> lof_tpcs = {};
     for (const LArTPCMap::value_type &mapEntry : larTPCMap)
     {
         const LArTPC *const pLArTPC(mapEntry.second);
+        lof_tpcs.push_back(pLArTPC->GetLArTPCVolumeId());
         parentMinX = std::min(parentMinX, pLArTPC->GetCenterX() - 0.5f * pLArTPC->GetWidthX());
         parentMaxX = std::max(parentMaxX, pLArTPC->GetCenterX() + 0.5f * pLArTPC->GetWidthX());
         parentMinY = std::min(parentMinY, pLArTPC->GetCenterY() - 0.5f * pLArTPC->GetWidthY());
@@ -343,8 +433,17 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
         parentMaxZ = std::max(parentMaxZ, pLArTPC->GetCenterZ() + 0.5f * pLArTPC->GetWidthZ());
     }
 
+    std::cout << "Creating worker instance " << name <<" with boundaries X = (" << parentMinX << ", " << parentMaxX 
+                                                                 << ") , Y = (" << parentMinY << ", " << parentMaxY 
+                                                                 << ") , Z = (" << parentMinZ << ", " << parentMaxZ 
+                                                                 << ")";
+    std::cout << " worker's tpcs : ";
+    for (const int tpc_id : lof_tpcs)
+      std::cout << tpc_id <<",";
+    std::cout <<"\n";
+
     PandoraApi::Geometry::LArTPC::Parameters larTPCParameters;
-    larTPCParameters.m_larTPCVolumeId = 0;
+    larTPCParameters.m_larTPCVolumeId = id;
     larTPCParameters.m_centerX = 0.5f * (parentMaxX + parentMinX);
     larTPCParameters.m_centerY = 0.5f * (parentMaxY + parentMinY);
     larTPCParameters.m_centerZ = 0.5f * (parentMaxZ + parentMinZ);
@@ -385,7 +484,7 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances()
+StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances(WorkerToLArTPCMap& workerToLArTPCMap)
 {
     // ATTN Used to be in the regular Initialize callback, but detector gap list cannot be extracted in client app before the first event
     if (m_workerInstancesInitialized)
@@ -396,11 +495,54 @@ StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances()
         const LArTPCMap &larTPCMap(this->GetPandora().GetGeometry()->GetLArTPCMap());
         const DetectorGapList &gapList(this->GetPandora().GetGeometry()->GetDetectorGapList());
 
-        for (const LArTPCMap::value_type &mapEntry : larTPCMap)
-        {
+        if (m_shouldRunRockMus_Xworkers)
+        { // group TPCs that share the same XY coordinates in a unique worker instance 
+           std::map<std::pair<float, float>, LArTPCMap> XYgrouped;
+           for (const LArTPCMap::value_type &mapEntry : larTPCMap)
+           {
+             const LArTPC& tpc(*(mapEntry.second));
+             auto key = std::make_pair(tpc.GetCenterX(), tpc.GetCenterY());
+             auto it = XYgrouped.find(key);
+
+             if (it != XYgrouped.end())
+             {
+                LArTPCMap& tpcMap = it->second;
+                unsigned int current_max_id = tpcMap.empty() ? 0 : tpcMap.rbegin()->first + 1; 
+                XYgrouped[key].emplace(current_max_id, &tpc);
+             }
+             else
+             {
+               XYgrouped[key].emplace(0, &tpc);
+             }
+           }
+           // now that we have grouped drift volumes along xy in a map
+           // (x, y) <------> (drift_volume_1, drift_volume_2, ...)
+           // create a worker instance for each group
+           unsigned int worker_id = 0;
+           for (const auto& [xy, submap] : XYgrouped)
+           {
+             // const auto& [x, y] = xy;
+            m_crWorkerInstances.push_back(
+              this->CreateWorkerInstance(submap, gapList, m_crSettingsFile, "CRWorkerInstance" + std::to_string(worker_id), worker_id));
+
+            // loop over the group of TPCs along the same XY 
+            // and fill the map worker <---> vector<TPCs>
+            for (const LArTPCMap::value_type &mapEntry: submap)
+              workerToLArTPCMap[worker_id].push_back(mapEntry.second); 
+
+            worker_id++;
+           }
+        }
+        else
+        { // dafault: crate 1 worker instance per drift volume
+          for (const LArTPCMap::value_type &mapEntry : larTPCMap)
+          {
             const unsigned int volumeId(mapEntry.second->GetLArTPCVolumeId());
             m_crWorkerInstances.push_back(
                 this->CreateWorkerInstance(*(mapEntry.second), gapList, m_crSettingsFile, "CRWorkerInstance" + std::to_string(volumeId)));
+
+            workerToLArTPCMap[volumeId].push_back(mapEntry.second); 
+          }
         }
 
         if (m_shouldRunSlicing)
@@ -461,6 +603,25 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
 
 StatusCode MasterThreeDAlgorithm::ReadSettings(const pandora::TiXmlHandle xmlHandle)
 {
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "ShouldRunRockMus_Xworkers", m_shouldRunRockMus_Xworkers)); 
+
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "TagRockMuons", m_tagRockMuons));
+
+    if (m_shouldRunCosmicHitRemoval)
+    {
+      AlgorithmToolVector algorithmToolVector;
+      PANDORA_RETURN_RESULT_IF(
+            STATUS_CODE_SUCCESS, !=, XmlHelper::ProcessAlgorithmToolList(*this, xmlHandle, "RockMuonTaggingTools", algorithmToolVector));
+
+      for (AlgorithmTool *const pAlgorithmTool : algorithmToolVector)
+      {
+            RockMuonTaggingTool *const pRockMuonTaggingTool(dynamic_cast<RockMuonTaggingTool *>(pAlgorithmTool));
+            if (!pRockMuonTaggingTool)
+                return STATUS_CODE_INVALID_PARAMETER;
+            m_rockMuonTaggingToolVector.push_back(pRockMuonTaggingTool);
+      }
+    }
+    
     return MasterAlgorithm::ReadSettings(xmlHandle);
 }
 

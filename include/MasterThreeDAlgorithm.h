@@ -15,11 +15,14 @@
 #include "larpandoracontent/LArControlFlow/MultiPandoraApi.h"
 #include "larpandoracontent/LArObjects/LArCaloHit.h"
 
+#include "RockMuonTaggingTool.h"
+
 #include <unordered_map>
 
 namespace lar_content
 {
 
+typedef std::unordered_map<unsigned int, std::vector<const pandora::LArTPC *>> WorkerToLArTPCMap;
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 /**
@@ -31,10 +34,28 @@ public:
     /**
      *  @brief  Default constructor
      */
-    MasterThreeDAlgorithm() = default;
+    MasterThreeDAlgorithm();
 
 protected:
     pandora::StatusCode Run() override;
+    
+    /**
+     *  @brief  Run the cosmic-ray reconstruction worker instances
+     *
+     *  @param  volumeIdToHitListMap the volume id to hit list map
+     *  @param  workerToLArTPCMap the worker id to LArTPC list map
+     */
+    pandora::StatusCode RunCosmicRayReconstruction(const VolumeIdToHitListMap &volumeIdToHitListMap, WorkerToLArTPCMap& workerToLArTPCMap) const;
+    
+    /**
+     *  @brief  Tag clear, unambiguous cosmic-ray pfos
+     *
+     *  @param  stitchedPfosToX0Map a map of cosmic-ray pfos that have been stitched between lar tpcs to the X0 shift
+     *  @param  clearCosmicRayPfos to receive the list of clear cosmic-ray pfos
+     *  @param  ambiguousPfos to receive the list of ambiguous cosmic-ray pfos for further analysis
+     */
+    pandora::StatusCode TagCosmicRayPfos(
+        const PfoToFloatMap &stitchedPfosToX0Map, pandora::PfoList &clearCosmicRayPfos, pandora::PfoList &ambiguousPfos) const override;
 
     /**
      *  @brief  Run cosmic-ray hit removal, freeing hits in ambiguous pfos for further processing
@@ -83,16 +104,19 @@ protected:
      *  @param  gapList the gap list
      *  @param  settingsFile the pandora settings file
      *  @param  name the pandora instance name
+     *  @param  id for the created worker instance (i.e. larTPCParameters.m_larTPCVolumeId)   
      *
      *  @return the address of the pandora instance
      */
     const pandora::Pandora *CreateWorkerInstance(const pandora::LArTPCMap &larTPCMap, const pandora::DetectorGapList &gapList,
-        const std::string &settingsFile, const std::string &name) const;
+        const std::string &settingsFile, const std::string &name, const unsigned int id) const;
 
     /**
      *  @brief  Initialize pandora worker instances
+     *
+     *  @param workerToLArTPCMap to map each worker instance to the list of TPCs it acts on
      */
-    pandora::StatusCode InitializeWorkerInstances();
+    pandora::StatusCode InitializeWorkerInstances(WorkerToLArTPCMap& workerToLArTPCMap);
 
     /**
      *  @brief  Get the mapping from lar tpc volume id to lists of all hits, and truncated hits
@@ -104,6 +128,12 @@ protected:
     pandora::StatusCode GetVolumeIdToHitListMap(VolumeIdToHitListMap &volumeIdToHitListMap) const;
 
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle) override;
+
+    typedef std::vector<RockMuonTaggingTool*> RockMuonTaggingToolVector;
+
+    bool m_shouldRunRockMus_Xworkers;   ///< Whether to run rock muons reconstruction using a columnar X worker
+    bool m_tagRockMuons;  ///< bool to activate tagging of rock muons
+    RockMuonTaggingToolVector m_rockMuonTaggingToolVector; ///< The cosmic-ray tagging tool vector
 };
 
 } // namespace lar_content
