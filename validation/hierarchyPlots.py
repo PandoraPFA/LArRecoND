@@ -27,6 +27,10 @@ class parameters(object):
         self.minPurity = 0.5
         self.minNSharedHits = 5
 
+        # Max number of hits & momentum (GeV/c)
+        self.maxNHits = 1.0e4
+        self.maxMtm = 5.0
+
         # List of particles
         self.pdgList = [(11, 'electron'), (13, 'muon'), (22, 'photon'),
                         (211, 'piplus'), (-211, 'piminus'), (2212, 'proton')]
@@ -143,7 +147,7 @@ def defineMCHistos(pars):
         hHitsAll = ROOT.TH1F('{0}_HitsAll'.format(pLabel), '', nHitBins, hitsBinning)
         hHitsAll.SetDirectory(0)
         hHitsAll.GetXaxis().SetTitle('Number of Hits')
-        hHitsAll.GetYaxis().SetTitle('Number of Events')
+        hHitsAll.GetYaxis().SetTitle('Number of Candidates')
         
         hHitsEff = ROOT.TH1F('{0}_HitsEff'.format(pLabel), '', nHitBins, hitsBinning)
         hHitsEff.SetDirectory(0)
@@ -154,7 +158,7 @@ def defineMCHistos(pars):
         hMtmAll = ROOT.TH1F('{0}_MtmAll'.format(pLabel), '', nMtmBins, mtmBinning)
         hMtmAll.SetDirectory(0)
         hMtmAll.GetXaxis().SetTitle('True Momentum [GeV]')
-        hMtmAll.GetYaxis().SetTitle('Number of Events')
+        hMtmAll.GetYaxis().SetTitle('Number of Candidates')
 
         hMtmEff = ROOT.TH1F('{0}_MtmEff'.format(pLabel), '', nMtmBins, mtmBinning)
         hMtmEff.SetDirectory(0)
@@ -180,28 +184,28 @@ def defineMCHistos(pars):
     return histMCMap
 
 
-def defineVtxHistos(pars):
+def defineVtxHistos(pars, label = 'all'):
 
     # Define primary vertex histograms for all interactions
-    hVtxDX = ROOT.TH1F('allVtxDX', '', 100, -5.0, 5.0)
+    hVtxDX = ROOT.TH1F('{0}VtxDX'.format(label), '', 100, -5.0, 5.0)
     hVtxDX.SetDirectory(0)
     hVtxDX.GetXaxis().SetTitle('Vertex #DeltaX [cm]')
-    hVtxDX.GetYaxis().SetTitle('Number of Events')
+    hVtxDX.GetYaxis().SetTitle('Number of Candidates')
 
-    hVtxDY = ROOT.TH1F('allVtxDY', '', 100, -5.0, 5.0)
+    hVtxDY = ROOT.TH1F('{0}VtxDY'.format(label), '', 100, -5.0, 5.0)
     hVtxDY.SetDirectory(0)
     hVtxDY.GetXaxis().SetTitle('Vertex #DeltaY [cm]')
-    hVtxDY.GetYaxis().SetTitle('Number of Events')
+    hVtxDY.GetYaxis().SetTitle('Number of Candidates')
 
-    hVtxDZ = ROOT.TH1F('allVtxDZ', '', 100, -5.0, 5.0)
+    hVtxDZ = ROOT.TH1F('{0}VtxDZ'.format(label), '', 100, -5.0, 5.0)
     hVtxDZ.SetDirectory(0)
     hVtxDZ.GetXaxis().SetTitle('Vertex #DeltaZ [cm]')
-    hVtxDZ.GetYaxis().SetTitle('Number of Events')
+    hVtxDZ.GetYaxis().SetTitle('Number of Candidates')
 
-    hVtxDR = ROOT.TH1F('allVtxDR', '', 100, 0.0, 5.0)
+    hVtxDR = ROOT.TH1F('{0}VtxDR'.format(label), '', 100, 0.0, 5.0)
     hVtxDR.SetDirectory(0)
     hVtxDR.GetXaxis().SetTitle('Vertex #DeltaR [cm]')
-    hVtxDR.GetYaxis().SetTitle('Number of Events')
+    hVtxDR.GetYaxis().SetTitle('Number of Candidates')
 
     # Object storing the list of histograms
     hVtxList = histoVtxList(hVtxDX, hVtxDY, hVtxDZ, hVtxDR)
@@ -254,7 +258,7 @@ def createMCHistos(pars):
 
         mcMtm = getattr(mcTree, 'mcMtm')
         nMatches = getattr(mcTree, 'nMatches')
-        
+
         hMtmAll = hList.mtmAll
         hMtmAll.Fill(mcMtm)
 
@@ -334,7 +338,10 @@ def createMCHistos(pars):
 def createVtxHistos(pars):
     
     # Event vertex histograms
-    hVtxList = defineVtxHistos(pars)
+    hAllVtxList = defineVtxHistos(pars, 'all')
+    # Positive and negative drift directions
+    hPosVtxList = defineVtxHistos(pars, 'pos')
+    hNegVtxList = defineVtxHistos(pars, 'neg')
 
     # Open event hierarchy file
     evtFile = ROOT.TFile.Open(pars.evtFileName, 'read')
@@ -356,19 +363,58 @@ def createVtxHistos(pars):
         vtxDz = getattr(evtTree, 'vtxDz')
         vtxDr = getattr(evtTree, 'vtxDr')
 
-        hVtxList.hVtxDX.Fill(vtxDx)
-        hVtxList.hVtxDY.Fill(vtxDy)
-        hVtxList.hVtxDZ.Fill(vtxDz)
-        hVtxList.hVtxDR.Fill(vtxDr)
+        # Plot vertex residuals for both drift directions. Assume drift (cathode to anode) module boundaries
+        # anode - cathode - cathode - anode etc. are roughly between -350 cm to 350 cm in x every 50cm:
+        # e.g neg drift dir -350 to -300, -250 to -200, -150 to -100, -50 to 0, 50 to 100, 150 to 200, 250 to 300
+        # positive drift direction will be the other ranges -300 to -250, -200 to -150, etc
+        # Neighbouring cathodes are placed next to each other
+        trueVtxX = getattr(evtTree, 'trueVtxX')
+
+        # Group drift direction within anode/cathode boundaries
+        if (abs(trueVtxX) <= 350) :
+            if (trueVtxX <= -300
+                or (trueVtxX >= -250 and trueVtxX <= -200)
+                or (trueVtxX >= -150 and trueVtxX <= -100)
+                or (trueVtxX >= -50 and trueVtxX <= 0)
+                or (trueVtxX >= 50 and trueVtxX <= 100)
+                or (trueVtxX >= 150 and trueVtxX <= 200)
+                or (trueVtxX >= 250 and trueVtxX < 300)):
+                # Negative drift
+                hNegVtxList.hVtxDX.Fill(vtxDx)
+                hNegVtxList.hVtxDY.Fill(vtxDy)
+                hNegVtxList.hVtxDZ.Fill(vtxDz)
+                hNegVtxList.hVtxDR.Fill(vtxDr)
+            else:
+                # Positive drift
+                hPosVtxList.hVtxDX.Fill(vtxDx)
+                hPosVtxList.hVtxDY.Fill(vtxDy)
+                hPosVtxList.hVtxDZ.Fill(vtxDz)
+                hPosVtxList.hVtxDR.Fill(vtxDr)
+
+        hAllVtxList.hVtxDX.Fill(vtxDx)
+        hAllVtxList.hVtxDY.Fill(vtxDy)
+        hAllVtxList.hVtxDZ.Fill(vtxDz)
+        hAllVtxList.hVtxDR.Fill(vtxDr)
 
     # Write out histograms
     print('Creating {0}'.format(pars.histEvtFileName))
     hEvtOutFile = ROOT.TFile.Open(pars.histEvtFileName, 'recreate')
     hEvtOutFile.cd()
-    hVtxList.hVtxDX.Write()
-    hVtxList.hVtxDY.Write()
-    hVtxList.hVtxDZ.Write()
-    hVtxList.hVtxDR.Write()
+
+    hNegVtxList.hVtxDX.Write()
+    hNegVtxList.hVtxDY.Write()
+    hNegVtxList.hVtxDZ.Write()
+    hNegVtxList.hVtxDR.Write()
+
+    hPosVtxList.hVtxDX.Write()
+    hPosVtxList.hVtxDY.Write()
+    hPosVtxList.hVtxDZ.Write()
+    hPosVtxList.hVtxDR.Write()
+
+    hAllVtxList.hVtxDX.Write()
+    hAllVtxList.hVtxDY.Write()
+    hAllVtxList.hVtxDZ.Write()
+    hAllVtxList.hVtxDR.Write()
 
     # Close files
     hEvtOutFile.Close()
@@ -415,11 +461,9 @@ def plotMCHistos(pars):
     theCanvas.Divide(3,2)
 
     # Hits efficiency
-    maxNHits = 1.0e4
-
     theCanvas.cd(1)
     muHitsEff = hMCFile.Get('muon_HitsEff')
-    muHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    muHitsEff.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
     muHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx()
     muHitsEff.Draw()
@@ -427,7 +471,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(2)
     pHitsEff = hMCFile.Get('proton_HitsEff')
-    pHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    pHitsEff.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
     pHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx()
     pHitsEff.Draw()
@@ -435,7 +479,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(3)
     eHitsEff = hMCFile.Get('electron_HitsEff')
-    eHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    eHitsEff.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
     eHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx()
     eHitsEff.Draw()
@@ -443,7 +487,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(4)
     pipHitsEff = hMCFile.Get('piplus_HitsEff')
-    pipHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    pipHitsEff.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
     pipHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx()
     pipHitsEff.Draw()
@@ -451,7 +495,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(5)
     pimHitsEff = hMCFile.Get('piminus_HitsEff')
-    pimHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    pimHitsEff.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
     pimHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx()
     pimHitsEff.Draw()
@@ -459,7 +503,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(6)
     gHitsEff = hMCFile.Get('photon_HitsEff')
-    gHitsEff.GetXaxis().SetRangeUser(0.0, maxNHits)
+    gHitsEff.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
     gHitsEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx()
     gHitsEff.Draw()
@@ -467,12 +511,55 @@ def plotMCHistos(pars):
 
     theCanvas.Print('hierarchy_allHitsEff.png')    
 
-    # Momentum efficiency
-    maxMtm = 5.0
+    # Hit populations (efficiency denominators)
+    theCanvas.cd(1)
+    muHitsAll = hMCFile.Get('muon_HitsAll')
+    muHitsAll.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
+    ROOT.gPad.SetLogx()
+    muHitsAll.Draw()
+    text.DrawLatex(0.5, 0.3, '#mu')
 
+    theCanvas.cd(2)
+    pHitsAll = hMCFile.Get('proton_HitsAll')
+    pHitsAll.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
+    ROOT.gPad.SetLogx()
+    pHitsAll.Draw()
+    text.DrawLatex(0.5, 0.3, 'p')
+
+    theCanvas.cd(3)
+    eHitsAll = hMCFile.Get('electron_HitsAll')
+    eHitsAll.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
+    ROOT.gPad.SetLogx()
+    eHitsAll.Draw()
+    text.DrawLatex(0.5, 0.3, 'e')
+
+    theCanvas.cd(4)
+    pipHitsAll = hMCFile.Get('piplus_HitsAll')
+    pipHitsAll.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
+    ROOT.gPad.SetLogx()
+    pipHitsAll.Draw()
+    text.DrawLatex(0.5, 0.3, '#pi^{+}')
+
+    theCanvas.cd(5)
+    pimHitsAll = hMCFile.Get('piminus_HitsAll')
+    pimHitsAll.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
+    ROOT.gPad.SetLogx()
+    pimHitsAll.Draw()
+    text.DrawLatex(0.5, 0.3, '#pi^{-}')
+
+    theCanvas.cd(6)
+    gHitsAll = hMCFile.Get('photon_HitsAll')
+    gHitsAll.GetXaxis().SetRangeUser(0.0, pars.maxNHits)
+    ROOT.gPad.SetLogx()
+    gHitsAll.Draw()
+    text.DrawLatex(0.5, 0.3, '#gamma')
+
+    theCanvas.Print('hierarchy_allHits.png')
+
+    # Momentum efficiency
     theCanvas.cd(1)
     muMtmEff = hMCFile.Get('muon_MtmEff')
-    muMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    muMtmEff.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
     muMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx(0)
     muMtmEff.Draw()
@@ -480,7 +567,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(2)
     pMtmEff = hMCFile.Get('proton_MtmEff')
-    pMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    pMtmEff.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
     pMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx(0)
     pMtmEff.Draw()
@@ -488,7 +575,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(3)
     eMtmEff = hMCFile.Get('electron_MtmEff')
-    eMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    eMtmEff.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
     eMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx(0)
     eMtmEff.Draw()
@@ -496,7 +583,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(4)
     pipMtmEff = hMCFile.Get('piplus_MtmEff')
-    pipMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    pipMtmEff.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
     pipMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx(0)
     pipMtmEff.Draw()
@@ -504,7 +591,7 @@ def plotMCHistos(pars):
 
     theCanvas.cd(5)
     pimMtmEff = hMCFile.Get('piminus_MtmEff')
-    pimMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    pimMtmEff.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
     pimMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx(0)
     pimMtmEff.Draw()
@@ -512,13 +599,58 @@ def plotMCHistos(pars):
 
     theCanvas.cd(6)
     gMtmEff = hMCFile.Get('photon_MtmEff')
-    gMtmEff.GetXaxis().SetRangeUser(0.0, maxMtm)
+    gMtmEff.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
     gMtmEff.GetYaxis().SetRangeUser(0.0, 1.01)
     ROOT.gPad.SetLogx(0)
     gMtmEff.Draw()
     text.DrawLatex(0.775, 0.25, '#gamma')
 
     theCanvas.Print('hierarchy_allMtmEff.png')    
+
+    # Momentum populations (efficiency denominator)
+    theCanvas.cd(1)
+    muMtmAll = hMCFile.Get('muon_MtmAll')
+    muMtmAll.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
+    ROOT.gPad.SetLogx(0)
+    muMtmAll.Draw()
+    text.DrawLatex(0.775, 0.25, '#mu')
+
+    theCanvas.cd(2)
+    pMtmAll = hMCFile.Get('proton_MtmAll')
+    pMtmAll.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
+    ROOT.gPad.SetLogx(0)
+    pMtmAll.Draw()
+    text.DrawLatex(0.775, 0.25, 'p')
+
+    theCanvas.cd(3)
+    eMtmAll = hMCFile.Get('electron_MtmAll')
+    eMtmAll.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
+    ROOT.gPad.SetLogx(0)
+    eMtmAll.Draw()
+    text.DrawLatex(0.775, 0.25, 'e')
+
+    theCanvas.cd(4)
+    pipMtmAll = hMCFile.Get('piplus_MtmAll')
+    pipMtmAll.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
+    ROOT.gPad.SetLogx(0)
+    pipMtmAll.Draw()
+    text.DrawLatex(0.775, 0.25, '#pi^{+}')
+
+    theCanvas.cd(5)
+    pimMtmAll = hMCFile.Get('piminus_MtmAll')
+    pimMtmAll.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
+    ROOT.gPad.SetLogx(0)
+    pimMtmAll.Draw()
+    text.DrawLatex(0.775, 0.25, '#pi^{-}')
+
+    theCanvas.cd(6)
+    gMtmAll = hMCFile.Get('photon_MtmAll')
+    gMtmAll.GetXaxis().SetRangeUser(0.0, pars.maxMtm)
+    ROOT.gPad.SetLogx(0)
+    gMtmAll.Draw()
+    text.DrawLatex(0.775, 0.25, '#gamma')
+
+    theCanvas.Print('hierarchy_allMtm.png')
 
     # Close the histogram MC file
     hMCFile.Close()
@@ -572,6 +704,44 @@ def plotVtxHistos(pars):
     ROOT.gPad.Update()
 
     theCanvas.Print('hierarchy_allVtx.png')
+
+    # Negative drift direction vertex residuals
+    theCanvas.cd(1)
+    vtxDX = hEvtFile.Get('negVtxDX')
+    vtxDX.Draw()
+
+    theCanvas.cd(2)
+    vtxDY = hEvtFile.Get('negVtxDY')
+    vtxDY.Draw()
+
+    theCanvas.cd(3)
+    vtxDZ = hEvtFile.Get('negVtxDZ')
+    vtxDZ.Draw()
+
+    theCanvas.cd(4)
+    vtxDR = hEvtFile.Get('negVtxDR')
+    vtxDR.Draw()
+
+    theCanvas.Print('hierarchy_negVtx.png')
+
+    # Positive drift direction vertex residuals
+    theCanvas.cd(1)
+    vtxDX = hEvtFile.Get('posVtxDX')
+    vtxDX.Draw()
+
+    theCanvas.cd(2)
+    vtxDY = hEvtFile.Get('posVtxDY')
+    vtxDY.Draw()
+
+    theCanvas.cd(3)
+    vtxDZ = hEvtFile.Get('posVtxDZ')
+    vtxDZ.Draw()
+
+    theCanvas.cd(4)
+    vtxDR = hEvtFile.Get('posVtxDR')
+    vtxDR.Draw()
+
+    theCanvas.Print('hierarchy_posVtx.png')
 
     # Clost the histogram event file
     hEvtFile.Close()
