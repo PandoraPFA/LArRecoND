@@ -336,6 +336,27 @@ void LoadDetectorGaps(const pandora::Pandora *const pPrimaryPandora)
     extractUnique(minZs);
     extractUnique(maxZs);
 
+    // Utility lambda to create a 2D LineGap
+    auto createLineGap = [&](const pandora::HitType view, const float startX, const float endX, const float startZ, const float endZ) {
+        PandoraApi::Geometry::LineGap::Parameters lineParams;
+        lineParams.m_lineGapType = view == pandora::TPC_VIEW_U ? LineGapType::TPC_WIRE_GAP_VIEW_U :
+                                    view == pandora::TPC_VIEW_V ? LineGapType::TPC_WIRE_GAP_VIEW_V :
+                                    view == pandora::TPC_VIEW_W ? LineGapType::TPC_WIRE_GAP_VIEW_W :
+                                                                    LineGapType::TPC_DRIFT_GAP;
+        lineParams.m_lineStartX = std::min(startX, endX);
+        lineParams.m_lineEndX = std::max(startX, endX);
+        lineParams.m_lineStartZ = std::min(startZ, endZ);
+        lineParams.m_lineEndZ = std::max(startZ, endZ);
+
+        try {
+            PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::Geometry::LineGap::Create(*pPrimaryPandora, lineParams));
+        } catch (...) {
+            std::cout << "LoadDetectorGaps - unable to create LineGap for view " << view << std::endl;
+        }
+    };
+
+
+
     // Utility lambda to crate a 3D Box Gap
     auto createBoxGap = [&](const float x1, const float x2, const float y1, const float y2, const float z1, const float z2)
     {
@@ -354,7 +375,13 @@ void LoadDetectorGaps(const pandora::Pandora *const pPrimaryPandora)
             std::cout << "LoadDetectorGaps - unable to create detector gap, insufficient or invalid information supplied" << std::endl;
         }
 
-        // TODO: Add in 2D projection code here!
+        // Project gap into U, V, and W LineGaps
+        const auto uCorners = {pTrans->YZtoU(y1,z1), pTrans->YZtoU(y1,z2), pTrans->YZtoU(y2,z1), pTrans->YZtoU(y2,z2)};
+        const auto vCorners = {pTrans->YZtoV(y1,z1), pTrans->YZtoV(y1,z2), pTrans->YZtoV(y2,z1), pTrans->YZtoV(y2,z2)};
+        const auto wCorners = {pTrans->YZtoW(y1,z1), pTrans->YZtoW(y1,z2), pTrans->YZtoW(y2,z1), pTrans->YZtoW(y2,z2)};
+        createLineGap(pandora::TPC_VIEW_U, x1, x2, std::min(uCorners), std::max(uCorners));
+        createLineGap(pandora::TPC_VIEW_V, x1, x2, std::min(vCorners), std::max(vCorners));
+        createLineGap(pandora::TPC_VIEW_W, x1, x2, std::min(wCorners), std::max(wCorners));
     };
 
     // INFO: Build the gaps in 2 steps:
