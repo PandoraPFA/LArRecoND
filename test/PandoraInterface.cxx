@@ -358,7 +358,7 @@ void LoadDetectorGaps(const pandora::Pandora *const pPrimaryPandora)
 
 
     // Utility lambda to crate a 3D Box Gap
-    auto createBoxGap = [&](const float x1, const float x2, const float y1, const float y2, const float z1, const float z2)
+    auto createBoxGap = [&](const float x1, const float x2, const float y1, const float y2, const float z1, const float z2, const bool inductionGaps = false)
     {
         PandoraApi::Geometry::BoxGap::Parameters gapParameters;
         gapParameters.m_vertex = CartesianVector(x1, y1, z1);
@@ -375,13 +375,16 @@ void LoadDetectorGaps(const pandora::Pandora *const pPrimaryPandora)
             std::cout << "LoadDetectorGaps - unable to create detector gap, insufficient or invalid information supplied" << std::endl;
         }
 
-        // Project gap into U, V, and W LineGaps
+        // Project gap into W & UV if asked for.
+        const auto wCorners = {pTrans->YZtoW(y1,z1), pTrans->YZtoW(y1,z2), pTrans->YZtoW(y2,z1), pTrans->YZtoW(y2,z2)};
+        createLineGap(pandora::TPC_VIEW_W, x1, x2, std::min(wCorners), std::max(wCorners));
+
+        if (!inductionGaps) return;
+
         const auto uCorners = {pTrans->YZtoU(y1,z1), pTrans->YZtoU(y1,z2), pTrans->YZtoU(y2,z1), pTrans->YZtoU(y2,z2)};
         const auto vCorners = {pTrans->YZtoV(y1,z1), pTrans->YZtoV(y1,z2), pTrans->YZtoV(y2,z1), pTrans->YZtoV(y2,z2)};
-        const auto wCorners = {pTrans->YZtoW(y1,z1), pTrans->YZtoW(y1,z2), pTrans->YZtoW(y2,z1), pTrans->YZtoW(y2,z2)};
         createLineGap(pandora::TPC_VIEW_U, x1, x2, std::min(uCorners), std::max(uCorners));
         createLineGap(pandora::TPC_VIEW_V, x1, x2, std::min(vCorners), std::max(vCorners));
-        createLineGap(pandora::TPC_VIEW_W, x1, x2, std::min(wCorners), std::max(wCorners));
     };
 
     // INFO: Build the gaps in 2 steps:
@@ -398,7 +401,7 @@ void LoadDetectorGaps(const pandora::Pandora *const pPrimaryPandora)
         if (gapWidth < 0.f || gapWidth > 30.f)
             continue;
 
-        createBoxGap(minXs[i], maxXs[i + 1], globalMinY, globalMaxY, globalMinZ, globalMaxZ);
+        createBoxGap(minXs[i], maxXs[i + 1], globalMinY, globalMaxY, globalMinZ, globalMaxZ, true);
     }
 
     // Then, segmented Z gaps.
@@ -411,7 +414,7 @@ void LoadDetectorGaps(const pandora::Pandora *const pPrimaryPandora)
             continue;
 
         for (size_t ix = 0; ix < minXs.size(); ++ix)
-            createBoxGap(minXs[ix], maxXs[ix], globalMinY, globalMaxY, minZs[iz + 1], maxZs[iz]);
+            createBoxGap(minXs[ix], maxXs[ix], globalMinY, globalMaxY, minZs[iz + 1], maxZs[iz], false);
     }
 
     std::cout << "PandoraInterface::LoadDetectorGaps - created " << pPrimaryPandora->GetGeometry()->GetDetectorGapList().size()
