@@ -253,9 +253,6 @@ void MakePandoraTPC(const pandora::Pandora *const pPrimaryPandora, const Paramet
         geoparameters.m_isDriftInPositiveX = tpcNumber % 2;
 
         geom.AddTPC(centreX - dx, centreX + dx, centreY - dy, centreY + dy, centreZ - dz, centreZ + dz, tpcNumber);
-
-        std::cout << "Creating TPC: " << centreX - dx << ", " << centreX + dx << ", " << centreY - dy << ", " << centreY + dy << ", "
-                  << centreZ - dz << ", " << centreZ + dz << std::endl;
     }
     catch (const pandora::StatusCodeException &)
     {

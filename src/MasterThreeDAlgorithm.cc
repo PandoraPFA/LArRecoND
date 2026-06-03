@@ -40,8 +40,6 @@ namespace lar_content
 
 StatusCode MasterThreeDAlgorithm::Run()
 {
-    std::cout << "Should run slicing? " << m_shouldRunSlicing << std::endl;
-
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->Reset());
 
     if (!m_workerInstancesInitialized)
@@ -182,10 +180,8 @@ StatusCode MasterThreeDAlgorithm::RunCosmicRayReconstructionThenRecreate(const V
 
 StatusCode MasterThreeDAlgorithm::RunSlicing(const VolumeIdToHitListMap &volumeIdToHitListMap, SliceVector &sliceVector) const
 {
-    std::cout << "There are " << volumeIdToHitListMap.size() << " volumes" << std::endl;
     for (const VolumeIdToHitListMap::value_type &mapEntry : volumeIdToHitListMap)
     {
-        std::cout << "- Volume has " << mapEntry.second.m_allHitList.size() << " hits" << std::endl;
         for (const CaloHit *const pCaloHit : (m_shouldRemoveOutOfTimeHits ? mapEntry.second.m_truncatedHitList : mapEntry.second.m_allHitList))
         {
             if (!PandoraContentApi::IsAvailable(*this, pCaloHit))
@@ -511,12 +507,15 @@ StatusCode MasterThreeDAlgorithm::GetVolumeIdToHitListMap(VolumeIdToHitListMap &
             hitTypeToStatusMap[pCaloHit->GetHitType()].second++;
     }
 
-    for (const auto &hitTypeToStatusMapEntry : hitTypeToStatusMap)
+    if (m_printOverallRecoStatus)
     {
-        const HitType hitType(hitTypeToStatusMapEntry.first);
-        const unsigned int nInTimeHits(hitTypeToStatusMapEntry.second.first);
-        const unsigned int nOutOfTimeHits(hitTypeToStatusMapEntry.second.second);
-        std::cout << "Hit type " << hitType << ": " << nInTimeHits << " hits in TPC, " << nOutOfTimeHits << " hits outside of the TPC" << std::endl;
+        for (const auto &hitTypeToStatusMapEntry : hitTypeToStatusMap)
+        {
+            const HitType hitType(hitTypeToStatusMapEntry.first);
+            const unsigned int nInTimeHits(hitTypeToStatusMapEntry.second.first);
+            const unsigned int nOutOfTimeHits(hitTypeToStatusMapEntry.second.second);
+            std::cout << "Hit type " << hitType << ": " << nInTimeHits << " hits in TPC, " << nOutOfTimeHits << " hits outside of the TPC" << std::endl;
+        }
     }
 
     return STATUS_CODE_SUCCESS;
