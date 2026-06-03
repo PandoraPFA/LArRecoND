@@ -35,8 +35,6 @@ pandora::StatusCode PfoThreeDHitAssignmentAlgorithm::Run()
     if (PandoraContentApi::GetSettings(*this)->ShouldDisplayAlgorithmInfo())
         std::cout << "----> Running Algorithm: " << this->GetInstanceName() << ", " << this->GetType() << std::endl;
 
-    std::cout << "Running 3D hit assignment" << std::endl;
-
     const CaloHitList *pCaloHits3D{nullptr};
     PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetList(*this, m_inputCaloHitList3DName, pCaloHits3D));
 

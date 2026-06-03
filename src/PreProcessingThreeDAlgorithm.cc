@@ -80,7 +80,12 @@ StatusCode PreProcessingThreeDAlgorithm::Run()
 void PreProcessingThreeDAlgorithm::ProcessCaloHits()
 {
     const CaloHitList *pCaloHitList(nullptr);
-    PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::GetList(*this, m_inputCaloHitListName, pCaloHitList));
+
+    if (PandoraContentApi::GetList(*this, m_inputCaloHitListName, pCaloHitList) != STATUS_CODE_SUCCESS)
+    {
+        std::cout << "PreProcessingThreeDAlgorithm: No calo hit list found with name: " << m_inputCaloHitListName << ", skipping!" << std::endl;
+        return;
+    }
 
     if (pCaloHitList->empty())
         return;
@@ -203,6 +208,7 @@ void PreProcessingThreeDAlgorithm::GetFilteredCaloHitList(const CaloHitList &inp
     kdTree.build(hitKDNode2DList, hitsBoundingRegion2D);
 
     // Remove hits that are in the same physical location!
+    int removedHitsCounter(0);
     for (const CaloHit *const pCaloHit1 : inputList)
     {
         bool isUnique(true);
@@ -235,15 +241,13 @@ void PreProcessingThreeDAlgorithm::GetFilteredCaloHitList(const CaloHitList &inp
         }
 
         if (isUnique)
-        {
             outputList.push_back(pCaloHit1);
-        }
         else
-        {
-            if (PandoraContentApi::GetSettings(*this)->ShouldDisplayAlgorithmInfo())
-                std::cout << "PreProcessingThreeDAlgorithm: found two hits in same location, will remove lowest pulse height" << std::endl;
-        }
+            removedHitsCounter++;
     }
+
+    if (removedHitsCounter > 0 && PandoraContentApi::GetSettings(*this)->ShouldDisplayAlgorithmInfo())
+        std::cout << "PreProcessingThreeDAlgorithm: removed " << removedHitsCounter << " hits that were in the same location as another hit" << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
