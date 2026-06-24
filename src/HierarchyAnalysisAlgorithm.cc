@@ -273,13 +273,6 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
                 // Increment clusterId
                 clusterId++;
 
-                // Save ID of cluster parent. If parent list is empty, set to -1
-                //const pandora::PfoList &parentPfoList = pPfo->GetParentPfoList();
-                //if (!parentPfoList.empty())
-                //{
-                //    const pandora::ParticleFlowObject *const pParentPfo = parentPfoList.front();
-                //}
-
                 // Find first and last cluster hit points
                 CartesianVector first(max, max, max), last(max, max, max);
                 LArClusterHelper::GetExtremalCoordinates(pCluster3D, first, last);
@@ -484,7 +477,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
         } // Reco nodes
     } // Root PFOs
 
-
+    //Save parent pfo Ids
     for (const ParticleFlowObject *const pPfo : clusterPfoVect)
     {
         int clusterParentId{-1};
