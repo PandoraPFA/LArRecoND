@@ -183,7 +183,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     // For storing various reconstructed PFO quantities in the given event
     int sliceId{-1};
     // Slice & cluster IDs, and number of hits
-    IntVector sliceIdVect, clusterIdVect, clusterParentIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect;
+    IntVector sliceIdVect, clusterIdVect, nClusterParentsVect , clusterParentIdVect, n3DHitsVect, nUHitsVect, nVHitsVect, nWHitsVect;
     // Cluster isShower, isRecoPrimary & reco PDG hypothesis, as well as the track score
     IntVector isShowerVect, isRecoPrimaryVect, recoPDGVect;
     FloatVector trackScoreVect;
@@ -480,8 +480,9 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     //Save parent pfo Ids
     for (const ParticleFlowObject *const pPfo : clusterPfoVect)
     {
-        int clusterParentId{-1};
+        int clusterParentId{-1}, nClusterParents{-1};
         const PfoList &parentPfoList = pPfo->GetParentPfoList();
+        nClusterParents = parentPfoList.size();
 
         if (!parentPfoList.empty())
         {
@@ -492,6 +493,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
         }
 
         clusterParentIdVect.emplace_back(clusterParentId);
+        nClusterParentsVect.emplace_back(nClusterParents);
     }
 
     // Fill ROOT ntuple
@@ -509,6 +511,7 @@ void HierarchyAnalysisAlgorithm::EventAnalysisOutput(const LArHierarchyHelper::M
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nuVtxZ", &nuVtxZVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "clusterId", &clusterIdVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "clusterParentId", &clusterParentIdVect));
+    PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nClusterParents", &nClusterParentsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "n3DHits", &n3DHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nUHits", &nUHitsVect));
     PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_analysisTreeName.c_str(), "nVHits", &nVHitsVect));
