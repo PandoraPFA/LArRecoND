@@ -1,7 +1,7 @@
 <pandora>
     <!-- GLOBAL SETTINGS -->
     <IsMonitoringEnabled>false</IsMonitoringEnabled>
-    <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
+    <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
     <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
     <!-- ALGORITHM SETTINGS -->
@@ -26,13 +26,13 @@
     <!---->
         <!-- Use 3D hits to make the 2D clusters -->
     <algorithm type = "LArSimpleClusterCreationThreeD">
-        <!-- <InputCaloHitListNameU>CaloHitListU</InputCaloHitListNameU> -->
-        <!-- <InputCaloHitListNameV>CaloHitListV</InputCaloHitListNameV> -->
-        <!-- <InputCaloHitListNameW>CaloHitListW</InputCaloHitListNameW> -->
+        <InputCaloHitListNameU>CaloHitListU</InputCaloHitListNameU>
+        <InputCaloHitListNameV>CaloHitListV</InputCaloHitListNameV>
+        <InputCaloHitListNameW>CaloHitListW</InputCaloHitListNameW>
         <InputCaloHitListName3D>CaloHitList3D</InputCaloHitListName3D>
-        <!-- <OutputClusterListNameU>ClustersU</OutputClusterListNameU> -->
-        <!-- <OutputClusterListNameV>ClustersV</OutputClusterListNameV> -->
-        <!-- <OutputClusterListNameW>ClustersW</OutputClusterListNameW> -->
+        <OutputClusterListNameU>ClustersU</OutputClusterListNameU>
+        <OutputClusterListNameV>ClustersV</OutputClusterListNameV>
+        <OutputClusterListNameW>ClustersW</OutputClusterListNameW>
         <OutputClusterListName3D>Clusters3D</OutputClusterListName3D>
     </algorithm>
 
@@ -100,6 +100,8 @@
 
     <!-- ThreeDTrackAlgorithms -->
     <algorithm type = "LArThreeDTransverseTracks">
+        <!--adding this to reduce execution time, preserving physics performances (hopefully???)--> 
+        <NMaxTensorToolRepeats>100</NMaxTensorToolRepeats>
         <InputClusterListNameU>ClustersU</InputClusterListNameU>
         <InputClusterListNameV>ClustersV</InputClusterListNameV>
         <InputClusterListNameW>ClustersW</InputClusterListNameW>
@@ -126,6 +128,8 @@
     <!-- </algorithm> -->
 
     <algorithm type = "LArThreeDLongitudinalTracks">
+        <!--adding this to reduce execution time, preserving physics performances (hopefully???)--> 
+        <NMaxTensorToolRepeats>100</NMaxTensorToolRepeats>
         <InputClusterListNameU>ClustersU</InputClusterListNameU>
         <InputClusterListNameV>ClustersV</InputClusterListNameV>
         <InputClusterListNameW>ClustersW</InputClusterListNameW>
@@ -143,6 +147,8 @@
     <!-- </algorithm> -->
 
     <algorithm type = "LArThreeDTrackFragments">
+        <!--adding this to reduce execution time, preserving physics performances (hopefully???)--> 
+        <NMaxTensorToolRepeats>100</NMaxTensorToolRepeats>
         <MinClusterLength>10.</MinClusterLength>
         <InputClusterListNameU>ClustersU</InputClusterListNameU>
         <InputClusterListNameV>ClustersV</InputClusterListNameV>
@@ -268,6 +274,8 @@
 
     <!-- ThreeDRemnantAlgorithms -->
     <algorithm type = "LArThreeDRemnants">
+        <!--adding this to reduce execution time, preserving physics performances (hopefully???)--> 
+        <NMaxTensorToolRepeats>100</NMaxTensorToolRepeats>
         <MinClusterCaloHits>5</MinClusterCaloHits>
         <InputClusterListNameU>ClustersU</InputClusterListNameU>
         <InputClusterListNameV>ClustersV</InputClusterListNameV>
