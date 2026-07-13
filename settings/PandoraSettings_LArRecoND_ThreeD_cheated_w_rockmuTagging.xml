@@ -56,10 +56,10 @@
     </algorithm>
 
     <!-- Gianfranco comment : debugging algorithm  -->
-    <algorithm type = "LArPrintCurrentPfoInfo">
-      <InputStageName>LArMasterThreeD</InputStageName>
-      <InputPfoListNames>RecreatedPfos</InputPfoListNames>
-    </algorithm>
+    <!-- <algorithm type = "LArPrintCurrentPfoInfo"> -->
+    <!--   <InputStageName>LArMasterThreeD</InputStageName> -->
+    <!--   <InputPfoListNames>RecreatedPfos</InputPfoListNames> -->
+    <!-- </algorithm> -->
 
     <algorithm type = "LArHierarchyAnalysis">
       <EventFileName>/exp/dune/app/users/ingratta/tests/rockmu_tagging_efficiency_NDLAr/data/MiniProdN5p1_Flow2Root_April2026/CONVERTED/MiniProdN5p1_NDComplex_FHC.flow2root.full.sanddrift.0000710.FLOW.hdf5_hits.root</EventFileName>
