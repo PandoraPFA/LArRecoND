@@ -15,7 +15,7 @@
     </algorithm>
 
     <algorithm type = "LArMasterThreeD">
-        <CRSettingsFile>PandoraSettings_Cosmic_Standard_ThreeD_cheated.xml</CRSettingsFile>
+        <CRSettingsFile>PandoraSettings_Cosmic_Standard_ThreeD.xml</CRSettingsFile>
         <NuSettingsFile>PandoraSettings_Neutrino_ThreeD_Cheated.xml</NuSettingsFile>
         <SlicingSettingsFile>PandoraSettings_Slicing_ThreeD_Cheated.xml</SlicingSettingsFile>
         <ShouldRunRockMus_Xworkers>true</ShouldRunRockMus_Xworkers>
@@ -55,6 +55,12 @@
         <ShouldRemoveOutOfTimeHits>false</ShouldRemoveOutOfTimeHits>
     </algorithm>
 
+    <!-- Gianfranco comment : debugging algorithm  -->
+    <algorithm type = "LArPrintCurrentPfoInfo">
+      <InputStageName>LArMasterThreeD</InputStageName>
+      <InputPfoListNames>RecreatedPfos</InputPfoListNames>
+    </algorithm>
+
     <algorithm type = "LArHierarchyAnalysis">
       <EventFileName>/exp/dune/app/users/ingratta/tests/rockmu_tagging_efficiency_NDLAr/data/MiniProdN5p1_Flow2Root_April2026/CONVERTED/MiniProdN5p1_NDComplex_FHC.flow2root.full.sanddrift.0000710.FLOW.hdf5_hits.root</EventFileName>
         <!-- <EventFileName>MicroProdN3p4_NDLAr_2E18_FHC.flow.geomfix.singles.nu.v251016.0000010.FLOW.hdf5_hits.root</EventFileName> -->
@@ -73,9 +79,9 @@
 	<PfoListName>RecreatedPfos</PfoListName>
         <AnalysisFileName>LArRecoND.root</AnalysisFileName>
         <AnalysisTreeName>LArRecoND</AnalysisTreeName>
-        <FoldToPrimaries>false</FoldToPrimaries>
+        <FoldToPrimaries>true</FoldToPrimaries>
         <FoldToLeadingShowers>false</FoldToLeadingShowers>
-	<FoldDynamic>true</FoldDynamic>
+	<FoldDynamic>false</FoldDynamic>
         <MinPurity>0.5</MinPurity>
         <MinCompleteness>0.1</MinCompleteness>
         <MinRecoHits>15</MinRecoHits>
