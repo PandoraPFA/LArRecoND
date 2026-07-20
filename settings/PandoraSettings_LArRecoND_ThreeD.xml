@@ -23,7 +23,7 @@
 
     <algorithm type = "LArMasterThreeD">
         <CRSettingsFile>PandoraSettings_Cosmic_Standard.xml</CRSettingsFile>
-        <NuSettingsFile>PandoraSettings_Neutrino_ThreeD.xml</NuSettingsFile>
+        <NuSettingsFile>PandoraSettings_Neutrino_ThreeD_Cheated.xml</NuSettingsFile>
         <SlicingSettingsFile>PandoraSettings_Slicing_ThreeD.xml</SlicingSettingsFile>
         <StitchingTools>
             <tool type = "LArStitchingCosmicRayMerging"><ThreeDStitchingMode>true</ThreeDStitchingMode></tool>
@@ -36,6 +36,8 @@
             <tool type = "LArSimpleNeutrinoId"/>
         </SliceIdTools>
         <InputHitListName>Input</InputHitListName>
+        <InputMCParticleListName>Input</InputMCParticleListName>
+        <PassMCParticlesToWorkerInstances>true</PassMCParticlesToWorkerInstances>
         <RecreatedPfoListName>RecreatedPfos</RecreatedPfoListName>
         <RecreatedClusterListName>RecreatedClusters</RecreatedClusterListName>
         <RecreatedVertexListName>RecreatedVertices</RecreatedVertexListName>
@@ -103,6 +105,23 @@
         <MinRecoGoodViews>2</MinRecoGoodViews>
         <RemoveRecoNeutrons>true</RemoveRecoNeutrons>
 	<SelectRecoHits>true</SelectRecoHits>
+    </algorithm>
+
+<!--Hierarchy Monitoring Algorithm for visulaization-->
+    <algorithm type = "LArHierarchyMonitoring">
+        <CaloHitListName>CaloHitList2D</CaloHitListName>
+        <PfoListName>RecreatedPfos</PfoListName>
+        <VisualizeMC>true</VisualizeMC>
+        <VisualizeReco>true</VisualizeReco>
+        <VisualizeDistinct>true</VisualizeDistinct>
+        <PerformMatching>true</PerformMatching>
+        <CollectionOnly>false</CollectionOnly>
+        <FoldToPrimaries>true</FoldToPrimaries>
+        <FoldToLeadingShowers>false</FoldToLeadingShowers>
+        <FoldDynamic>false</FoldDynamic>
+        <MinPurity>0.5</MinPurity>
+        <MinCompleteness>0.1</MinCompleteness>
+        <MinMatchCompleteness>0.1</MinMatchCompleteness>
     </algorithm>
 
 <!-- Use old single neutrino event validation
