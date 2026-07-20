@@ -24,7 +24,7 @@
     <!-- 2D neutrino reconstruction, U View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitListU</InputCaloHitListName>
@@ -36,7 +36,7 @@
     <!-- 2D neutrino reconstruction, V View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitListV</InputCaloHitListName>
@@ -48,7 +48,7 @@
     <!-- 2D neutrino reconstruction, W View -->
     <algorithm type = "LArClusteringParent">
         <algorithm type = "LArCheatingClusterCreation" description = "ClusterFormation">
-            <CollapseToPrimaryMCParticles>false</CollapseToPrimaryMCParticles>
+            <CollapseToPrimaryMCParticles>true</CollapseToPrimaryMCParticles>
             <MCParticleListName>Input</MCParticleListName>
         </algorithm>
         <InputCaloHitListName>CaloHitListW</InputCaloHitListName>
