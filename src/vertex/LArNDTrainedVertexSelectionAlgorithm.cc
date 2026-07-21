@@ -854,7 +854,6 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateFinalVertexScoreList(const
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-//------------------------------------------------------------------------------------------------------------------------------------------
 
 StatusCode DUNE_ND_TrainedVertexSelectionAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
 {

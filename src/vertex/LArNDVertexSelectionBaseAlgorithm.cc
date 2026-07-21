@@ -19,6 +19,13 @@ using namespace pandora;
 namespace lar_content
 {
 
+DUNE_ND_VertexSelectionBaseAlgorithm::DUNE_ND_VertexSelectionBaseAlgorithm() :
+    m_maxOnHitDisplacement(1.f),
+    m_isEmptyViewAcceptable(true),
+    m_minVertexAcceptableViews(3)
+{
+}
+
 void DUNE_ND_VertexSelectionBaseAlgorithm::FilterVertexList(const VertexList *const pInputVertexList, HitKDTree2D &kdTreeU, HitKDTree2D &kdTreeV,
     HitKDTree2D &kdTreeW, VertexVector &filteredVertices) const
 {
@@ -42,6 +49,8 @@ void DUNE_ND_VertexSelectionBaseAlgorithm::FilterVertexList(const VertexList *co
     std::sort(filteredVertices.begin(), filteredVertices.end(), SortByVertexZPosition);
 }
 
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 float DUNE_ND_VertexSelectionBaseAlgorithm::GetVertexEnergy(const pandora::Vertex *const pVertex, const KDTreeMap &kdTreeMap) const
 {
     float totalEnergy(0.f);
@@ -57,5 +66,35 @@ float DUNE_ND_VertexSelectionBaseAlgorithm::GetVertexEnergy(const pandora::Verte
 
     return totalEnergy;
 }
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+bool DUNE_ND_VertexSelectionBaseAlgorithm::IsVertexOnHit(const Vertex *const pVertex, const HitType hitType, HitKDTree2D &kdTree) const
+{
+    const CartesianVector vertexPosition2D(LArGeometryHelper::ProjectPosition(this->GetPandora(), pVertex->GetPosition(), hitType));
+    KDTreeBox searchRegionHits = build_2d_kd_search_region(vertexPosition2D, m_maxOnHitDisplacement, m_maxOnHitDisplacement);
+
+    HitKDNode2DList found;
+    kdTree.search(searchRegionHits, found);
+
+    return (!found.empty());
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+bool DUNE_ND_VertexSelectionBaseAlgorithm::SortByVertexZPosition(const pandora::Vertex *const pLhs, const pandora::Vertex *const pRhs)
+{
+    const CartesianVector deltaPosition(pRhs->GetPosition() - pLhs->GetPosition());
+
+    if (std::fabs(deltaPosition.GetZ()) > std::numeric_limits<float>::epsilon())
+        return (deltaPosition.GetZ() > std::numeric_limits<float>::epsilon());
+
+    if (std::fabs(deltaPosition.GetX()) > std::numeric_limits<float>::epsilon())
+        return (deltaPosition.GetX() > std::numeric_limits<float>::epsilon());
+
+    // ATTN No way to distinguish between vertices if still have a tie in y coordinate
+    return (deltaPosition.GetY() > std::numeric_limits<float>::epsilon());
+}
+
 
 } // namespace lar_content

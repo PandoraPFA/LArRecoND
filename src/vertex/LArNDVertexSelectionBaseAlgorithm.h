@@ -20,7 +20,24 @@ namespace lar_content
  */
 class DUNE_ND_VertexSelectionBaseAlgorithm : public VertexSelectionBaseAlgorithm
 {
+public:
+    /**
+     *  @brief  Default constructor
+     */
+    DUNE_ND_VertexSelectionBaseAlgorithm();
+
 protected:
+    /**
+     *  @brief  Whether the vertex lies on a hit in the specified view
+     *
+     *  @param  pVertex the address of the vertex
+     *  @param  hitType the relevant hit type
+     *  @param  kdTree the relevant kd tree
+     *
+     *  @return boolean
+     */
+    bool IsVertexOnHit(const pandora::Vertex *const pVertex, const pandora::HitType hitType, HitKDTree2D &kdTree) const;
+
     /**
      *  @brief  Filter the input list of vertices to obtain a reduced number of vertex candidates
      *
@@ -41,7 +58,24 @@ protected:
      *
      *  @return the summed vertex energy
      */
-    float GetVertexEnergy(const pandora::Vertex *const pVertex, const KDTreeMap &kdTreeMap) const override;
+    float GetVertexEnergy(const pandora::Vertex *const pVertex, const KDTreeMap &kdTreeMap) const;
+
+    /**
+     *  @brief  Sort vertices by increasing z position
+     *
+     *  @param  pLhs address of the lhs vertex
+     *  @param  pRhs address of the rhs vertex
+     *
+     *  @return whether lhs should precedes rhs
+     */
+    static bool SortByVertexZPosition(const pandora::Vertex *const pLhs, const pandora::Vertex *const pRhs);
+
+private:
+    float m_maxOnHitDisplacement;               ///< Max hit-vertex displacement for declaring vertex to lie on a hit in each view
+
+    bool m_isEmptyViewAcceptable;               ///< Whether views entirely empty of hits are classed as 'acceptable' for candidate filtration
+    unsigned int m_minVertexAcceptableViews;    ///< The minimum number of views in which a candidate must sit on/near a hit or in a gap (or view can be empty)
+
 };
 
 } // namespace lar_content
