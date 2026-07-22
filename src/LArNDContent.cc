@@ -47,8 +47,8 @@
     d("LArCandidateVertexCreationThreeD",       CandidateVertexCreationThreeDAlgorithm)                                            \
     d("LArHierarchyAnalysis",                   HierarchyAnalysisAlgorithm)                                                        \
     d("LArCheatingRockMuonRemoval",             CheatingRockMuonRemovalAlgorithm)                                                  \
-    d("LArNDBdtVertexSelection",                DUNE_ND_BdtVertexSelectionAlgorithm)                                               \
-    d("LArNDSvmVertexSelection",                DUNE_ND_SvmVertexSelectionAlgorithm)
+    d("LArNDBdtVertexSelection",                LArNDBdtVertexSelectionAlgorithm)                                               \
+    d("LArNDSvmVertexSelection",                LArNDSvmVertexSelectionAlgorithm)
 
 #define LAR_ND_ALGORITHM_TOOL_LIST(d)                                                                                              \
     d("LArEventSlicingThreeD",                  EventSlicingThreeDTool)                                                            \

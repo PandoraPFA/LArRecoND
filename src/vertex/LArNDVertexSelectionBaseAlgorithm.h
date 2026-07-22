@@ -5,8 +5,8 @@
  *
  *  $Log: $
  */
-#ifndef LAR_DUNE_ND_VERTEX_SELECTION_BASE_ALGORITHM_H
-#define LAR_DUNE_ND_VERTEX_SELECTION_BASE_ALGORITHM_H 1
+#ifndef LAR_LArNDVERTEX_SELECTION_BASE_ALGORITHM_H
+#define LAR_LArNDVERTEX_SELECTION_BASE_ALGORITHM_H 1
 
 #include "larpandoracontent/LArVertex/VertexSelectionBaseAlgorithm.h"
 
@@ -18,13 +18,13 @@ namespace lar_content
 /**
  *  @brief  VertexSelectionBaseAlgorithm class
  */
-class DUNE_ND_VertexSelectionBaseAlgorithm : public VertexSelectionBaseAlgorithm
+class LArNDVertexSelectionBaseAlgorithm : public VertexSelectionBaseAlgorithm
 {
 public:
     /**
      *  @brief  Default constructor
      */
-    DUNE_ND_VertexSelectionBaseAlgorithm();
+    LArNDVertexSelectionBaseAlgorithm();
 
 protected:
     /**
@@ -80,4 +80,4 @@ private:
 
 } // namespace lar_content
 
-#endif // #ifndef LAR_DUNE_ND_VERTEX_SELECTION_BASE_ALGORITHM_H
+#endif // #ifndef LAR_LArNDVERTEX_SELECTION_BASE_ALGORITHM_H

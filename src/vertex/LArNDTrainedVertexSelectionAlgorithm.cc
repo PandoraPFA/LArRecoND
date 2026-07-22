@@ -1,5 +1,5 @@
 /**
- *  @file   larpandoracontent/LArVertex/DUNE_ND_TrainedVertexSelectionAlgorithm.cc
+ *  @file   larpandoracontent/LArVertex/LArNDTrainedVertexSelectionAlgorithm.cc
  *
  *  @brief  Implementation of the trained vertex selection algorithm class.
  *
@@ -33,8 +33,8 @@ using namespace pandora;
 namespace lar_content
 {
 
-DUNE_ND_TrainedVertexSelectionAlgorithm::DUNE_ND_TrainedVertexSelectionAlgorithm() :
-    DUNE_ND_VertexSelectionBaseAlgorithm(),
+LArNDTrainedVertexSelectionAlgorithm::LArNDTrainedVertexSelectionAlgorithm() :
+    LArNDVertexSelectionBaseAlgorithm(),
     m_trainingSetMode(false),
     m_allowClassifyDuringTraining(false),
     m_mcVertexXCorrection(0.f),
@@ -62,7 +62,7 @@ DUNE_ND_TrainedVertexSelectionAlgorithm::DUNE_ND_TrainedVertexSelectionAlgorithm
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::CalculateShowerClusterList(const ClusterList &inputClusterList, ShowerClusterList &showerClusterList) const
+void LArNDTrainedVertexSelectionAlgorithm::CalculateShowerClusterList(const ClusterList &inputClusterList, ShowerClusterList &showerClusterList) const
 {
     ClusterEndPointsMap clusterEndPointsMap;
     ClusterList showerLikeClusters;
@@ -116,7 +116,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::CalculateShowerClusterList(const C
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::GetShowerLikeClusterEndPoints(
+void LArNDTrainedVertexSelectionAlgorithm::GetShowerLikeClusterEndPoints(
     const ClusterList &clusterList, ClusterList &showerLikeClusters, ClusterEndPointsMap &clusterEndPointsMap) const
 {
     for (const Cluster *const pCluster : clusterList)
@@ -143,7 +143,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::GetShowerLikeClusterEndPoints(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateKdTree(const ClusterList &clusterList, HitKDTree2D &kdTree, HitToClusterMap &hitToClusterMap) const
+void LArNDTrainedVertexSelectionAlgorithm::PopulateKdTree(const ClusterList &clusterList, HitKDTree2D &kdTree, HitToClusterMap &hitToClusterMap) const
 {
     CaloHitList allCaloHits;
 
@@ -164,7 +164,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateKdTree(const ClusterList &
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-bool DUNE_ND_TrainedVertexSelectionAlgorithm::AddClusterToShower(const ClusterEndPointsMap &clusterEndPointsMap,
+bool LArNDTrainedVertexSelectionAlgorithm::AddClusterToShower(const ClusterEndPointsMap &clusterEndPointsMap,
     ClusterList &availableShowerLikeClusters, const Cluster *const pCluster, ClusterList &showerCluster) const
 {
     const auto existingEndPointsIter(clusterEndPointsMap.find(pCluster));
@@ -202,7 +202,7 @@ bool DUNE_ND_TrainedVertexSelectionAlgorithm::AddClusterToShower(const ClusterEn
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-bool DUNE_ND_TrainedVertexSelectionAlgorithm::AddClusterToShower(HitKDTree2D &kdTree, const HitToClusterMap &hitToClusterMap,
+bool LArNDTrainedVertexSelectionAlgorithm::AddClusterToShower(HitKDTree2D &kdTree, const HitToClusterMap &hitToClusterMap,
     ClusterList &availableShowerLikeClusters, const Cluster *const pCluster, ClusterList &showerCluster) const
 {
     ClusterSet nearbyClusters;
@@ -237,7 +237,7 @@ bool DUNE_ND_TrainedVertexSelectionAlgorithm::AddClusterToShower(HitKDTree2D &kd
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-typename DUNE_ND_TrainedVertexSelectionAlgorithm::EventFeatureInfo DUNE_ND_TrainedVertexSelectionAlgorithm::CalculateEventFeatures(
+typename LArNDTrainedVertexSelectionAlgorithm::EventFeatureInfo LArNDTrainedVertexSelectionAlgorithm::CalculateEventFeatures(
     const ClusterList &clusterListU, const ClusterList &clusterListV, const ClusterList &clusterListW, const VertexVector &vertexVector) const
 {
     float eventEnergy(0.f);
@@ -267,7 +267,7 @@ typename DUNE_ND_TrainedVertexSelectionAlgorithm::EventFeatureInfo DUNE_ND_Train
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::IncrementShoweryParameters(
+void LArNDTrainedVertexSelectionAlgorithm::IncrementShoweryParameters(
     const ClusterList &clusterList, unsigned int &nShoweryHits, unsigned int &nHits, float &eventEnergy) const
 {
     for (const Cluster *const pCluster : clusterList)
@@ -282,14 +282,14 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::IncrementShoweryParameters(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline bool DUNE_ND_TrainedVertexSelectionAlgorithm::IsClusterShowerLike(const Cluster *const pCluster) const
+inline bool LArNDTrainedVertexSelectionAlgorithm::IsClusterShowerLike(const Cluster *const pCluster) const
 {
     return (pCluster->GetParticleId() == E_MINUS && LArClusterHelper::GetLength(pCluster) < m_minShowerSpineLength);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::GetLegacyEventShapeFeatures(const ClusterList &clusterList, float &eventVolume, float &longitudinality) const
+void LArNDTrainedVertexSelectionAlgorithm::GetLegacyEventShapeFeatures(const ClusterList &clusterList, float &eventVolume, float &longitudinality) const
 {
     InputFloat xMin, yMin, zMin, xMax, yMax, zMax;
 
@@ -329,7 +329,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::GetLegacyEventShapeFeatures(const 
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::GetEventShapeFeatures(const ClusterListMap &clusterListMap, float &eventArea, float &longitudinality) const
+void LArNDTrainedVertexSelectionAlgorithm::GetEventShapeFeatures(const ClusterListMap &clusterListMap, float &eventArea, float &longitudinality) const
 {
     float xSpanU(0.f), zSpanU(0.f), xSpanV(0.f), zSpanV(0.f), xSpanW(0.f), zSpanW(0.f);
 
@@ -349,7 +349,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::GetEventShapeFeatures(const Cluste
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::Get2DSpan(const ClusterList &clusterList, float &xSpan, float &zSpan) const
+void LArNDTrainedVertexSelectionAlgorithm::Get2DSpan(const ClusterList &clusterList, float &xSpan, float &zSpan) const
 {
     FloatVector xPositions, zPositions;
 
@@ -387,7 +387,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::Get2DSpan(const ClusterList &clust
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline void DUNE_ND_TrainedVertexSelectionAlgorithm::UpdateSpanCoordinate(
+inline void LArNDTrainedVertexSelectionAlgorithm::UpdateSpanCoordinate(
     const float minPositionCoord, const float maxPositionCoord, InputFloat &minCoord, InputFloat &maxCoord) const
 {
     if (!minCoord.IsInitialized() || minPositionCoord < minCoord.Get())
@@ -399,7 +399,7 @@ inline void DUNE_ND_TrainedVertexSelectionAlgorithm::UpdateSpanCoordinate(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline float DUNE_ND_TrainedVertexSelectionAlgorithm::GetCoordinateSpan(const InputFloat &minCoord, const InputFloat &maxCoord) const
+inline float LArNDTrainedVertexSelectionAlgorithm::GetCoordinateSpan(const InputFloat &minCoord, const InputFloat &maxCoord) const
 {
     if (minCoord.IsInitialized() && maxCoord.IsInitialized())
         return std::fabs(maxCoord.Get() - minCoord.Get());
@@ -409,7 +409,7 @@ inline float DUNE_ND_TrainedVertexSelectionAlgorithm::GetCoordinateSpan(const In
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::AddEventFeaturesToVector(const EventFeatureInfo &eventFeatureInfo, LArMvaHelper::MvaFeatureVector &featureVector) const
+void LArNDTrainedVertexSelectionAlgorithm::AddEventFeaturesToVector(const EventFeatureInfo &eventFeatureInfo, LArMvaHelper::MvaFeatureVector &featureVector) const
 {
     featureVector.push_back(static_cast<double>(eventFeatureInfo.m_eventShoweryness));
     featureVector.push_back(static_cast<double>(eventFeatureInfo.m_eventEnergy));
@@ -425,7 +425,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::AddEventFeaturesToVector(const Eve
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateVertexFeatureInfoMap(const BeamConstants &beamConstants, const ClusterListMap &clusterListMap,
+void LArNDTrainedVertexSelectionAlgorithm::PopulateVertexFeatureInfoMap(const BeamConstants &beamConstants, const ClusterListMap &clusterListMap,
     const SlidingFitDataListMap &slidingFitDataListMap, const ShowerClusterListMap &showerClusterListMap, const KDTreeMap &kdTreeMap,
     const Vertex *const pVertex, VertexFeatureInfoMap &vertexFeatureInfoMap) const
 {
@@ -479,7 +479,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateVertexFeatureInfoMap(const
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateInitialScoreList(
+void LArNDTrainedVertexSelectionAlgorithm::PopulateInitialScoreList(
     VertexFeatureInfoMap &vertexFeatureInfoMap, const Vertex *const pVertex, VertexScoreList &initialScoreList) const
 {
     VertexFeatureInfo vertexFeatureInfo = vertexFeatureInfoMap.at(pVertex);
@@ -495,7 +495,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateInitialScoreList(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::GetBestRegionVertices(VertexScoreList &initialScoreList, VertexVector &bestRegionVertices) const
+void LArNDTrainedVertexSelectionAlgorithm::GetBestRegionVertices(VertexScoreList &initialScoreList, VertexVector &bestRegionVertices) const
 {
     std::sort(initialScoreList.begin(), initialScoreList.end());
 
@@ -528,7 +528,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::GetBestRegionVertices(VertexScoreL
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::ProduceTrainingSets(const VertexVector &vertexVector, const VertexVector &bestRegionVertices,
+void LArNDTrainedVertexSelectionAlgorithm::ProduceTrainingSets(const VertexVector &vertexVector, const VertexVector &bestRegionVertices,
     VertexFeatureInfoMap &vertexFeatureInfoMap, const LArMvaHelper::MvaFeatureVector &eventFeatureList, const KDTreeMap &kdTreeMap) const
 {
     if (vertexVector.empty())
@@ -568,7 +568,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::ProduceTrainingSets(const VertexVe
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::CalculateRPhiScores(
+void LArNDTrainedVertexSelectionAlgorithm::CalculateRPhiScores(
     VertexVector &vertexVector, VertexFeatureInfoMap &vertexFeatureInfoMap, const KDTreeMap &kdTreeMap) const
 {
     float bestFastScore(-std::numeric_limits<float>::max());
@@ -591,7 +591,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::CalculateRPhiScores(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-std::string DUNE_ND_TrainedVertexSelectionAlgorithm::GetInteractionType() const
+std::string LArNDTrainedVertexSelectionAlgorithm::GetInteractionType() const
 {
     // Extract input collections
     const MCParticleList *pMCParticleList(nullptr);
@@ -625,7 +625,7 @@ std::string DUNE_ND_TrainedVertexSelectionAlgorithm::GetInteractionType() const
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-const pandora::Vertex *DUNE_ND_TrainedVertexSelectionAlgorithm::ProduceTrainingExamples(const VertexVector &vertexVector,
+const pandora::Vertex *LArNDTrainedVertexSelectionAlgorithm::ProduceTrainingExamples(const VertexVector &vertexVector,
     const VertexFeatureInfoMap &vertexFeatureInfoMap, std::bernoulli_distribution &coinFlip, std::mt19937 &generator,
     const std::string &interactionType, const std::string &trainingOutputFile, const LArMvaHelper::MvaFeatureVector &eventFeatureList,
     const KDTreeMap &kdTreeMap, const float maxRadius, const bool useRPhi) const
@@ -685,7 +685,7 @@ const pandora::Vertex *DUNE_ND_TrainedVertexSelectionAlgorithm::ProduceTrainingE
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::GetSharedFeatures(
+void LArNDTrainedVertexSelectionAlgorithm::GetSharedFeatures(
     const Vertex *const pVertex1, const Vertex *const pVertex2, const KDTreeMap &kdTreeMap, float &separation, float &axisHits) const
 {
     separation = (pVertex1->GetPosition() - pVertex2->GetPosition()).GetMagnitude();
@@ -704,7 +704,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::GetSharedFeatures(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::IncrementSharedAxisValues(
+void LArNDTrainedVertexSelectionAlgorithm::IncrementSharedAxisValues(
     const CartesianVector pos1, const CartesianVector pos2, HitKDTree2D &kdTree, float &axisHits) const
 {
     if (pos1 == pos2)
@@ -744,7 +744,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::IncrementSharedAxisValues(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-bool DUNE_ND_TrainedVertexSelectionAlgorithm::IsHitInBox(const CartesianVector &hitPos, const CartesianVector &point1,
+bool LArNDTrainedVertexSelectionAlgorithm::IsHitInBox(const CartesianVector &hitPos, const CartesianVector &point1,
     const CartesianVector &point2, const CartesianVector &point3, const CartesianVector &point4) const
 {
     bool b1 = std::signbit(((point2 - point1).GetCrossProduct(point2 - hitPos)).GetY());
@@ -761,7 +761,7 @@ bool DUNE_ND_TrainedVertexSelectionAlgorithm::IsHitInBox(const CartesianVector &
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::GetBestVertex(const VertexVector &vertexVector, const Vertex *&pBestVertex, float &bestVertexDr) const
+void LArNDTrainedVertexSelectionAlgorithm::GetBestVertex(const VertexVector &vertexVector, const Vertex *&pBestVertex, float &bestVertexDr) const
 {
     // Extract input collections
     const MCParticleList *pMCParticleList(nullptr);
@@ -804,7 +804,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::GetBestVertex(const VertexVector &
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::AddVertexFeaturesToVector(
+void LArNDTrainedVertexSelectionAlgorithm::AddVertexFeaturesToVector(
     const VertexFeatureInfo &vertexFeatureInfo, LArMvaHelper::MvaFeatureVector &featureVector, const bool useRPhi) const
 {
     if (this->IsBeamModeOn())
@@ -826,7 +826,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::AddVertexFeaturesToVector(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::AddSharedFeaturesToVector(
+void LArNDTrainedVertexSelectionAlgorithm::AddSharedFeaturesToVector(
     const VertexSharedFeatureInfo &vertexSharedFeatureInfo, LArMvaHelper::MvaFeatureVector &featureVector) const
 {
     featureVector.push_back(static_cast<double>(vertexSharedFeatureInfo.m_separation));
@@ -835,7 +835,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::AddSharedFeaturesToVector(
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateFinalVertexScoreList(const VertexFeatureInfoMap &vertexFeatureInfoMap,
+void LArNDTrainedVertexSelectionAlgorithm::PopulateFinalVertexScoreList(const VertexFeatureInfoMap &vertexFeatureInfoMap,
     const Vertex *const pFavouriteVertex, const VertexVector &vertexVector, VertexScoreList &finalVertexScoreList) const
 {
     if (pFavouriteVertex)
@@ -855,7 +855,7 @@ void DUNE_ND_TrainedVertexSelectionAlgorithm::PopulateFinalVertexScoreList(const
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-StatusCode DUNE_ND_TrainedVertexSelectionAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
+StatusCode LArNDTrainedVertexSelectionAlgorithm::ReadSettings(const TiXmlHandle xmlHandle)
 {
     AlgorithmToolVector algorithmToolVector;
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::ProcessAlgorithmToolList(*this, xmlHandle, "FeatureTools", algorithmToolVector));
@@ -879,7 +879,7 @@ StatusCode DUNE_ND_TrainedVertexSelectionAlgorithm::ReadSettings(const TiXmlHand
 
     if (m_trainingSetMode && (m_trainingOutputFileRegion.empty() || m_trainingOutputFileVertex.empty()))
     {
-        std::cout << "DUNE_ND_TrainedVertexSelectionAlgorithm: TrainingOutputFileRegion and TrainingOutputFileVertex are required for training set "
+        std::cout << "LArNDTrainedVertexSelectionAlgorithm: TrainingOutputFileRegion and TrainingOutputFileVertex are required for training set "
                   << "mode" << std::endl;
         return STATUS_CODE_INVALID_PARAMETER;
     }
@@ -891,7 +891,7 @@ StatusCode DUNE_ND_TrainedVertexSelectionAlgorithm::ReadSettings(const TiXmlHand
 
     if (m_trainingSetMode && (m_mcParticleListName.empty() || m_caloHitListName.empty()))
     {
-        std::cout << "DUNE_ND_TrainedVertexSelectionAlgorithm: MCParticleListName and CaloHitListName are required for training set mode" << std::endl;
+        std::cout << "LArNDTrainedVertexSelectionAlgorithm: MCParticleListName and CaloHitListName are required for training set mode" << std::endl;
         return STATUS_CODE_INVALID_PARAMETER;
     }
 
@@ -952,10 +952,10 @@ StatusCode DUNE_ND_TrainedVertexSelectionAlgorithm::ReadSettings(const TiXmlHand
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle, "LegacyVariables", m_legacyVariables));
 
     if (m_trainingSetMode && m_legacyEventShapes)
-        std::cout << "DUNE_ND_TrainedVertexSelectionAlgorithm: WARNING -- Producing training sample using incorrect legacy event shapes, consider turning LegacyEventShapes off"
+        std::cout << "LArNDTrainedVertexSelectionAlgorithm: WARNING -- Producing training sample using incorrect legacy event shapes, consider turning LegacyEventShapes off"
                   << std::endl;
 
-    return DUNE_ND_VertexSelectionBaseAlgorithm::ReadSettings(xmlHandle);
+    return LArNDVertexSelectionBaseAlgorithm::ReadSettings(xmlHandle);
 }
 
 } // namespace lar_content

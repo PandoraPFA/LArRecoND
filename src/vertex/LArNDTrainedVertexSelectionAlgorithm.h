@@ -5,8 +5,8 @@
  *
  *  $Log: $
  */
-#ifndef LAR_DUNE_ND_TRAINED_VERTEX_SELECTION_ALGORITHM_H
-#define LAR_DUNE_ND_TRAINED_VERTEX_SELECTION_ALGORITHM_H 1
+#ifndef LAR_LArNDTRAINED_VERTEX_SELECTION_ALGORITHM_H
+#define LAR_LArNDTRAINED_VERTEX_SELECTION_ALGORITHM_H 1
 
 #include "Api/PandoraContentApi.h"
 
@@ -33,7 +33,7 @@ class KDTreeNodeInfoT;
 /**
  *  @brief  TrainedVertexSelectionAlgorithm class
  */
-class DUNE_ND_TrainedVertexSelectionAlgorithm : public DUNE_ND_VertexSelectionBaseAlgorithm
+class LArNDTrainedVertexSelectionAlgorithm : public LArNDVertexSelectionBaseAlgorithm
 {
 public:
     /**
@@ -125,7 +125,7 @@ public:
     /**
      *  @brief  Default constructor
      */
-    DUNE_ND_TrainedVertexSelectionAlgorithm();
+    LArNDTrainedVertexSelectionAlgorithm();
 
 protected:
     typedef std::pair<pandora::CartesianVector, pandora::CartesianVector> ClusterEndPoints;
@@ -484,7 +484,7 @@ protected:
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline DUNE_ND_TrainedVertexSelectionAlgorithm::VertexFeatureInfo::VertexFeatureInfo(const float beamDeweighting, const float rPhiFeature, const float energyKick,
+inline LArNDTrainedVertexSelectionAlgorithm::VertexFeatureInfo::VertexFeatureInfo(const float beamDeweighting, const float rPhiFeature, const float energyKick,
     const float localAsymmetry, const float globalAsymmetry, const float showerAsymmetry, const float dEdxAsymmetry, const float vertexEnergy) :
     m_beamDeweighting(beamDeweighting),
     m_rPhiFeature(rPhiFeature),
@@ -499,7 +499,7 @@ inline DUNE_ND_TrainedVertexSelectionAlgorithm::VertexFeatureInfo::VertexFeature
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline DUNE_ND_TrainedVertexSelectionAlgorithm::EventFeatureInfo::EventFeatureInfo(const float eventShoweryness, const float eventEnergy,
+inline LArNDTrainedVertexSelectionAlgorithm::EventFeatureInfo::EventFeatureInfo(const float eventShoweryness, const float eventEnergy,
     const float eventArea, const float longitudinality, const unsigned int nHits, const unsigned int nClusters, const unsigned int nCandidates) :
     m_eventShoweryness(eventShoweryness),
     m_eventEnergy(eventEnergy),
@@ -513,7 +513,7 @@ inline DUNE_ND_TrainedVertexSelectionAlgorithm::EventFeatureInfo::EventFeatureIn
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-inline DUNE_ND_TrainedVertexSelectionAlgorithm::VertexSharedFeatureInfo::VertexSharedFeatureInfo(const float separation, const float axisHits) :
+inline LArNDTrainedVertexSelectionAlgorithm::VertexSharedFeatureInfo::VertexSharedFeatureInfo(const float separation, const float axisHits) :
     m_separation(separation),
     m_axisHits(axisHits)
 {

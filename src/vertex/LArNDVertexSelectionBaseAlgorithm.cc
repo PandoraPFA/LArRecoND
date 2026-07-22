@@ -19,14 +19,14 @@ using namespace pandora;
 namespace lar_content
 {
 
-DUNE_ND_VertexSelectionBaseAlgorithm::DUNE_ND_VertexSelectionBaseAlgorithm() :
+LArNDVertexSelectionBaseAlgorithm::LArNDVertexSelectionBaseAlgorithm() :
     m_maxOnHitDisplacement(1.f),
     m_isEmptyViewAcceptable(true),
     m_minVertexAcceptableViews(3)
 {
 }
 
-void DUNE_ND_VertexSelectionBaseAlgorithm::FilterVertexList(const VertexList *const pInputVertexList, HitKDTree2D &kdTreeU, HitKDTree2D &kdTreeV,
+void LArNDVertexSelectionBaseAlgorithm::FilterVertexList(const VertexList *const pInputVertexList, HitKDTree2D &kdTreeU, HitKDTree2D &kdTreeV,
     HitKDTree2D &kdTreeW, VertexVector &filteredVertices) const
 {
     for (const Vertex *const pVertex : *pInputVertexList)
@@ -51,7 +51,7 @@ void DUNE_ND_VertexSelectionBaseAlgorithm::FilterVertexList(const VertexList *co
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-float DUNE_ND_VertexSelectionBaseAlgorithm::GetVertexEnergy(const pandora::Vertex *const pVertex, const KDTreeMap &kdTreeMap) const
+float LArNDVertexSelectionBaseAlgorithm::GetVertexEnergy(const pandora::Vertex *const pVertex, const KDTreeMap &kdTreeMap) const
 {
     float totalEnergy(0.f);
 
@@ -69,7 +69,7 @@ float DUNE_ND_VertexSelectionBaseAlgorithm::GetVertexEnergy(const pandora::Verte
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-bool DUNE_ND_VertexSelectionBaseAlgorithm::IsVertexOnHit(const Vertex *const pVertex, const HitType hitType, HitKDTree2D &kdTree) const
+bool LArNDVertexSelectionBaseAlgorithm::IsVertexOnHit(const Vertex *const pVertex, const HitType hitType, HitKDTree2D &kdTree) const
 {
     const CartesianVector vertexPosition2D(LArGeometryHelper::ProjectPosition(this->GetPandora(), pVertex->GetPosition(), hitType));
     KDTreeBox searchRegionHits = build_2d_kd_search_region(vertexPosition2D, m_maxOnHitDisplacement, m_maxOnHitDisplacement);
@@ -82,7 +82,7 @@ bool DUNE_ND_VertexSelectionBaseAlgorithm::IsVertexOnHit(const Vertex *const pVe
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-bool DUNE_ND_VertexSelectionBaseAlgorithm::SortByVertexZPosition(const pandora::Vertex *const pLhs, const pandora::Vertex *const pRhs)
+bool LArNDVertexSelectionBaseAlgorithm::SortByVertexZPosition(const pandora::Vertex *const pLhs, const pandora::Vertex *const pRhs)
 {
     const CartesianVector deltaPosition(pRhs->GetPosition() - pLhs->GetPosition());
 
