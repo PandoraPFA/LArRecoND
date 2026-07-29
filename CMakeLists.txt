@@ -51,6 +51,9 @@ if(PANDORA_MONITORING)
 
     list(APPEND CMAKE_MODULE_PATH "$ENV{ROOTSYS}/etc/cmake/")
     find_package(ROOT 6.18.04 REQUIRED COMPONENTS Eve Geom RGL EG)
+
+    # By marking ROOT includes as system headers, we suppress any warnings from them.
+    include_directories(SYSTEM ${ROOT_INCLUDE_DIRS})
 endif()
 
 if(USE_EDEPSIM)
