@@ -37,9 +37,9 @@ bool RockMuonTaggingTool::IsOutsideBox(const float x, const float y, const float
   const float BoxZmin = m_face_Zu + m_marginZ;
   const float BoxZmax = m_face_Zd - m_marginZ;
 
-  bool IsOutRangeX = (x < BoxXmin || x > BoxXmax);
-  bool IsOutRangeY = (y < BoxYmin || y > BoxYmax);
-  bool IsOutRangeZ = (z < BoxZmin || z > BoxZmax);
+  const bool IsOutRangeX = (x < BoxXmin || x > BoxXmax);
+  const bool IsOutRangeY = (y < BoxYmin || y > BoxYmax);
+  const bool IsOutRangeZ = (z < BoxZmin || z > BoxZmax);
 
   return (IsOutRangeZ || IsOutRangeY || IsOutRangeX);
 }
@@ -106,9 +106,9 @@ void RockMuonTaggingTool::FindAmbiguousPfos(const PfoList &parentCosmicRayPfos, 
         // Note: 0 is a placeholder for pfoSliceId (unused in CheckIfThroughGoing).
         // CRCandidate is used (instead of pfo) because it runs sliding and gives track start/stop.
 
-        const bool is_thorughgoing = this->CheckIfThroughgoing(candidate);
+        const bool is_throughgoing = this->CheckIfThroughgoing(candidate);
         
-        if(!is_thorughgoing)
+        if(!is_throughgoing)
         {
           // clean this clear rock mu from ambiguousPfos
           ambiguousPfos.push_back(pPfo);

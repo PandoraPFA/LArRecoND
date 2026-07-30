@@ -14,6 +14,13 @@
         <CurrentCaloHitListReplacement>CaloHitList2D</CurrentCaloHitListReplacement>
     </algorithm>
 
+    <!-- Gianfranco comment : debugging algorithm  -->
+    <algorithm type = "LArPrintCurrentPfoInfo">
+      <InputStageName>LArPreProcessingThreeD</InputStageName>
+      <MCParticleListNames>Input</MCParticleListNames>
+      <!-- <InputHitListName>Input</InputHitListName> -->
+    </algorithm>
+
     <algorithm type = "LArMasterThreeD">
         <CRSettingsFile>PandoraSettings_Cosmic_Standard_ThreeD.xml</CRSettingsFile>
         <NuSettingsFile>PandoraSettings_Neutrino_ThreeD_Cheated.xml</NuSettingsFile>
@@ -62,8 +69,7 @@
     <!-- </algorithm> -->
 
     <algorithm type = "LArHierarchyAnalysis">
-      <EventFileName>/exp/dune/app/users/ingratta/tests/rockmu_tagging_efficiency_NDLAr/data/MiniProdN5p1_Flow2Root_April2026/CONVERTED/MiniProdN5p1_NDComplex_FHC.flow2root.full.sanddrift.0000710.FLOW.hdf5_hits.root</EventFileName>
-        <!-- <EventFileName>MicroProdN3p4_NDLAr_2E18_FHC.flow.geomfix.singles.nu.v251016.0000010.FLOW.hdf5_hits.root</EventFileName> -->
+        <EventFileName>LArRecoNDInput.root</EventFileName>
 	<EventTreeName>events</EventTreeName>
 	<EventLeafName>event</EventLeafName>
 	<RunLeafName>run</RunLeafName>

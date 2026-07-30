@@ -38,6 +38,15 @@ namespace lar_nd_reco
 typedef std::map<int, float> MCParticleEnergyMap;
 typedef std::vector<LArVoxel> LArVoxelList;
 
+// The io_group identifies the hit's readout drift volume.
+// Since the hit timing (t0) is currently unavailable,
+// reconstructed hit positions may be shifted across the
+// cathode into the neighboring drift volume, leading to an
+// incorrect TPC assignment if based solely on the hit
+// coordinates. As a readout-level quantity, io_group always
+// identifies the correct drift volume. The current io_group-to-TPC
+// mapping is empirical and hard-coded.
+//
 std::map<int, int> ioGroup2tcpIDMap_2x2 = {
       {1,7}, {2,6}, {3,5}, {4,4}, {5,3}, {6,2}, {7,1}, {8,0}
     };

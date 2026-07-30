@@ -496,27 +496,37 @@ StatusCode MasterThreeDAlgorithm::InitializeWorkerInstances(WorkerToLArTPCMap& w
         const DetectorGapList &gapList(this->GetPandora().GetGeometry()->GetDetectorGapList());
 
         if (m_shouldRunRockMus_Xworkers)
-        { // group TPCs that share the same XY coordinates in a unique worker instance 
+        { 
+          // Group TPCs (proxy for drift volumes here) that share the same XY coordinates 
+          // in a unique "columnar" worker instance.
+          // In the next lines, a map with the following structure is created: 
+          // (x0, y0) <---> (0: drift_volume_z0, 1: drift_volume_z1, ...)
+          // (x1, y1) <---> (0: drift_volume_z0, 1: drift_volume_z1, ...)
+          // where (x, y) represents the shared coordinates of drift volumes in the same column.
+
            std::map<std::pair<float, float>, LArTPCMap> XYgrouped;
+           const unsigned int FIRST_TPC_ID = 0;
            for (const LArTPCMap::value_type &mapEntry : larTPCMap)
            {
              const LArTPC& tpc(*(mapEntry.second));
-             auto key = std::make_pair(tpc.GetCenterX(), tpc.GetCenterY());
-             auto it = XYgrouped.find(key);
+             auto key_xy = std::make_pair(tpc.GetCenterX(), tpc.GetCenterY());
+             auto it_tpcMap = XYgrouped.find(key_xy);
 
-             if (it != XYgrouped.end())
+             if (it_tpcMap != XYgrouped.end())
              {
-                LArTPCMap& tpcMap = it->second;
-                unsigned int current_max_id = tpcMap.empty() ? 0 : tpcMap.rbegin()->first + 1; 
-                XYgrouped[key].emplace(current_max_id, &tpc);
+                // get the current group of tpcs correspondint to key_xy
+                LArTPCMap& tpcMap = it_tpcMap->second; 
+                // get the tpc id of the most recent added tpc - the newest tpc 
+                // id is the most recent + 1
+                unsigned int current_max_id = tpcMap.empty() ? FIRST_TPC_ID : tpcMap.rbegin()->first + 1; 
+                XYgrouped[key_xy].emplace(current_max_id, &tpc);
              }
-             else
+             else // new column of tpcs
              {
-               XYgrouped[key].emplace(0, &tpc);
+               XYgrouped[key_xy].emplace(FIRST_TPC_ID, &tpc);
              }
            }
            // now that we have grouped drift volumes along xy in a map
-           // (x, y) <------> (drift_volume_1, drift_volume_2, ...)
            // create a worker instance for each group
            unsigned int worker_id = 0;
            for (const auto& [xy, submap] : XYgrouped)

@@ -384,20 +384,24 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             const pandora::CartesianVector voxelPos(voxelX, voxelY, voxelZ);
             const float MipE{0.00075};
             const float voxelMipEquivalentE = voxelE / MipE;
+
             // TEMPORARY COMMENT: if we read the tpcID from input voxel_io_group
             // do we actually need to keep the 'geom' input? For now use it as 
             // fallback option in case voxel_io_group for any reason in null
             int tpcID = -1; 
-            if (voxel_io_group < 0)
+            if ((70 == geom.m_TPCs.size()) && (voxel_io_group >= 0)) // NDLAr
+            {
+              tpcID = ioGroup2tcpIDMap_NDLAr(voxel_io_group);
+            } 
+            else if ((4 == geom.m_TPCs.size()) && (voxel_io_group >= 0)) // 2x2 
+            {
+              tpcID = ioGroup2tcpIDMap_2x2[voxel_io_group];
+            } 
+            else 
             {
               tpcID = geom.GetTPCNumber(voxelPos);
             }
-            else 
-            {
-              // TODO : how do we handle this?
-              // tpcID = ioGroup2tcpIDMap_2x2[voxel_io_group];
-              tpcID = ioGroup2tcpIDMap_NDLAr(voxel_io_group);
-            }
+
             lar_content::LArCaloHitParameters caloHitParameters;
             caloHitParameters.m_positionVector = voxelPos;
             caloHitParameters.m_expectedDirection = pandora::CartesianVector(0.f, 0.f, 1.f);

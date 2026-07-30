@@ -359,7 +359,7 @@
         <PfoListNames>MuonParticles3D DeltaRayParticles3D</PfoListNames>
         <VertexListNames>CRVertices3D</VertexListNames>
         <ClusterListNames>ClustersU ClustersV ClustersW MuonClusters3D DeltaRayClusters3D</ClusterListNames>
-        <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D</CaloHitListNames>
+        <CaloHitListNames>CaloHitListU CaloHitListV CaloHitListW CaloHitList2D CaloHitList3D</CaloHitListNames>
         <CurrentPfoListReplacement>MuonParticles3D</CurrentPfoListReplacement>
     </algorithm>
 
