@@ -71,6 +71,7 @@ public:
     std::vector<int> *m_nVHits = nullptr;
     std::vector<int> *m_nWHits = nullptr;
     std::vector<int> *m_isShower = nullptr;
+    std::vector<int> *m_isClearRockOrCosmic = nullptr;
     std::vector<float> *m_trackScore = nullptr;
     std::vector<int> *m_recoPDG = nullptr;
     std::vector<int> *m_isRecoPrimary = nullptr;
@@ -144,6 +145,7 @@ public:
     TBranch *m_b_nVHits = nullptr;
     TBranch *m_b_nWHits = nullptr;
     TBranch *m_b_isShower = nullptr;
+    TBranch *m_b_isClearRockOrCosmic = nullptr;
     TBranch *m_b_trackScore = nullptr;
     TBranch *m_b_recoPDG = nullptr;
     TBranch *m_b_isRecoPrimary = nullptr;
@@ -270,6 +272,7 @@ void LArRecoNDFormat::Init(TTree *tree)
     m_fChain->SetBranchAddress("nVHits", &m_nVHits, &m_b_nVHits);
     m_fChain->SetBranchAddress("nWHits", &m_nWHits, &m_b_nWHits);
     m_fChain->SetBranchAddress("isShower", &m_isShower, &m_b_isShower);
+    m_fChain->SetBranchAddress("isClearRockOrCosmic", &m_isClearRockOrCosmic, &m_b_isClearRockOrCosmic);
     m_fChain->SetBranchAddress("trackScore", &m_trackScore, &m_b_trackScore);
     m_fChain->SetBranchAddress("recoPDG", &m_recoPDG, &m_b_recoPDG);
     m_fChain->SetBranchAddress("isRecoPrimary", &m_isRecoPrimary, &m_b_isRecoPrimary);

@@ -50,7 +50,8 @@
     d("LArEventSlicingThreeD",                  EventSlicingThreeDTool)                                                            \
     d("LArCheatingEventSlicingThreeD",          CheatingEventSlicingThreeDTool)                                                    \
     d("LArCheatingStitching",                   CheatingStitchingTool)                                                             \
-    d("LArCheatingRockMuonTagging",             CheatingRockMuonTaggingTool)
+    d("LArCheatingRockMuonTagging",             CheatingRockMuonTaggingTool)                                                       \
+    d("LArRockMuonTagging",             RockMuonTaggingTool)
 
 #define FACTORY Factory
 

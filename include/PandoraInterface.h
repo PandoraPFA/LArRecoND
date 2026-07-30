@@ -38,6 +38,27 @@ namespace lar_nd_reco
 typedef std::map<int, float> MCParticleEnergyMap;
 typedef std::vector<LArVoxel> LArVoxelList;
 
+// The io_group identifies the hit's readout drift volume.
+// Since the hit timing (t0) is currently unavailable,
+// reconstructed hit positions may be shifted across the
+// cathode into the neighboring drift volume, leading to an
+// incorrect TPC assignment if based solely on the hit
+// coordinates. As a readout-level quantity, io_group always
+// identifies the correct drift volume. The current io_group-to-TPC
+// mapping is empirical and hard-coded.
+//
+std::map<int, int> ioGroup2tcpIDMap_2x2 = {
+      {1,7}, {2,6}, {3,5}, {4,4}, {5,3}, {6,2}, {7,1}, {8,0}
+    };
+
+auto ioGroup2tcpIDMap_NDLAr = [](int io_group)
+{ 
+  if (io_group % 2 == 0) // even 
+      return io_group / 2 - 1;
+  else 
+      return io_group / 2;
+};
+
 /**
  *  @brief  Parameters class
  */
@@ -83,6 +104,7 @@ public:
     bool m_shouldRunSlicing;            ///< Whether to slice events into separate regions for processing
     bool m_shouldRunNeutrinoRecoOption; ///< Whether to run neutrino reconstruction for each slice
     bool m_shouldRunCosmicRecoOption;   ///< Whether to run cosmic-ray reconstruction for each slice
+    bool m_shouldRunRockMus_Xworkers;   ///< Whether to run rock muons reconstruction using a columnar X worker
     bool m_shouldPerformSliceId;        ///< Whether to identify slices and select most appropriate pfos
     bool m_printOverallRecoStatus;      ///< Whether to print current operation status messages
 
@@ -123,6 +145,7 @@ inline Parameters::Parameters() :
     m_shouldRunSlicing(true),
     m_shouldRunNeutrinoRecoOption(true),
     m_shouldRunCosmicRecoOption(true),
+    m_shouldRunRockMus_Xworkers(true), 
     m_shouldPerformSliceId(true),
     m_printOverallRecoStatus(false),
     m_nEventsToSkip(0),

@@ -325,6 +325,7 @@ private:
     std::vector<int> m_out_nVHits;
     std::vector<int> m_out_nWHits;
     std::vector<int> m_out_isShower;
+    std::vector<int> m_out_isClearRockOrCosmic;
     std::vector<float> m_out_trackScore;
     std::vector<int> m_out_recoPDG;
     std::vector<int> m_out_isRecoPrimary;
@@ -497,6 +498,7 @@ NDRecoOutputData::NDRecoOutputData(const std::string filename)
     m_treeOut->Branch("nVHits", &m_out_nVHits);
     m_treeOut->Branch("nWHits", &m_out_nWHits);
     m_treeOut->Branch("isShower", &m_out_isShower);
+    m_treeOut->Branch("isClearRockOrCosmic", &m_out_isClearRockOrCosmic);
     m_treeOut->Branch("trackScore", &m_out_trackScore);
     m_treeOut->Branch("recoPDG", &m_out_recoPDG);
     m_treeOut->Branch("isRecoPrimary", &m_out_isRecoPrimary);
@@ -632,6 +634,7 @@ void NDRecoOutputData::ClearData()
     m_out_nVHits.clear();
     m_out_nWHits.clear();
     m_out_isShower.clear();
+    m_out_isClearRockOrCosmic.clear();
     m_out_trackScore.clear();
     m_out_recoPDG.clear();
     m_out_isRecoPrimary.clear();
@@ -813,6 +816,7 @@ void NDRecoOutputData::FillBasicBranches(const std::unique_ptr<LArRecoNDFormat> 
     m_out_nVHits.insert(m_out_nVHits.end(), inputSpill->m_nVHits->begin(), inputSpill->m_nVHits->end());
     m_out_nWHits.insert(m_out_nWHits.end(), inputSpill->m_nWHits->begin(), inputSpill->m_nWHits->end());
     m_out_isShower.insert(m_out_isShower.end(), inputSpill->m_isShower->begin(), inputSpill->m_isShower->end());
+    m_out_isClearRockOrCosmic.insert(m_out_isClearRockOrCosmic.end(), inputSpill->m_isClearRockOrCosmic->begin(), inputSpill->m_isClearRockOrCosmic->end());
     m_out_trackScore.insert(m_out_trackScore.end(), inputSpill->m_trackScore->begin(), inputSpill->m_trackScore->end());
     m_out_recoPDG.insert(m_out_recoPDG.end(), inputSpill->m_recoPDG->begin(), inputSpill->m_recoPDG->end());
     m_out_isRecoPrimary.insert(m_out_isRecoPrimary.end(), inputSpill->m_isRecoPrimary->begin(), inputSpill->m_isRecoPrimary->end());
