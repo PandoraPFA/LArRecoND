@@ -53,6 +53,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -99,6 +100,10 @@ int main(int argc, char *argv[])
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=,
             PandoraApi::SetLArTransformationPlugin(*pPrimaryPandora, new lar_content::LArRotationalTransformationPlugin));
         PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::ReadSettings(*pPrimaryPandora, parameters.m_settingsFile));
+
+        // INFO: Now that the geometry + transformation plugins are set up, we
+        // can create the detector gaps in Pandora based on the loaded geometry.
+        LoadDetectorGaps(pPrimaryPandora);
 
         ProcessEvents(parameters, pPrimaryPandora, simpleGeom);
     }
@@ -275,6 +280,149 @@ void MakePandoraTPC(const pandora::Pandora *const pPrimaryPandora, const Paramet
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+void LoadDetectorGaps(const pandora::Pandora *const pPrimaryPandora)
+{
+    if (pPrimaryPandora->GetGeometry()->GetLArTPCMap().empty())
+    {
+        std::cout << "PandoraInterface::LoadDetectorGaps - no TPCs found in geometry, cannot create detector gaps" << std::endl;
+        return;
+    }
+
+    if (!pPrimaryPandora->GetGeometry()->GetDetectorGapList().empty())
+    {
+        std::cout << "PandoraInterface::LoadDetectorGaps - Detector gaps already exist in geometry, not adding any more" << std::endl;
+        return;
+    }
+
+    // Find the absolute bounds of the global detector, along with the unique X & Z boundaries.
+    float globalMinX(std::numeric_limits<float>::max());
+    float globalMaxX(std::numeric_limits<float>::lowest());
+    float globalMinY(std::numeric_limits<float>::max());
+    float globalMaxY(std::numeric_limits<float>::lowest());
+    float globalMinZ(std::numeric_limits<float>::max());
+    float globalMaxZ(std::numeric_limits<float>::lowest());
+
+    std::vector<float> minXs, maxXs, minZs, maxZs;
+
+    const auto &larTPCMap = pPrimaryPandora->GetGeometry()->GetLArTPCMap();
+    for (const auto &[id, larTPC] : larTPCMap)
+    {
+        const float halfX(0.5 * larTPC->GetWidthX());
+        const float halfY(0.5 * larTPC->GetWidthY());
+        const float halfZ(0.5 * larTPC->GetWidthZ());
+
+        minXs.push_back(larTPC->GetCenterX() - halfX);
+        maxXs.push_back(larTPC->GetCenterX() + halfX);
+        minZs.push_back(larTPC->GetCenterZ() - halfZ);
+        maxZs.push_back(larTPC->GetCenterZ() + halfZ);
+
+        globalMinX = std::min(globalMinX, larTPC->GetCenterX() - halfX);
+        globalMaxX = std::max(globalMaxX, larTPC->GetCenterX() + halfX);
+        globalMinY = std::min(globalMinY, larTPC->GetCenterY() - halfY);
+        globalMaxY = std::max(globalMaxY, larTPC->GetCenterY() + halfY);
+        globalMinZ = std::min(globalMinZ, larTPC->GetCenterZ() - halfZ);
+        globalMaxZ = std::max(globalMaxZ, larTPC->GetCenterZ() + halfZ);
+    }
+
+    // Sort and remove duplicated, within some tolerance.
+    auto extractUnique = [](std::vector<float> &vec)
+    {
+        std::sort(vec.begin(), vec.end());
+        vec.erase(std::unique(vec.begin(), vec.end(), [](float a, float b) { return std::fabs(a - b) < 0.1f; }), vec.end());
+    };
+
+    extractUnique(minXs);
+    extractUnique(maxXs);
+    extractUnique(minZs);
+    extractUnique(maxZs);
+
+    // Utility lambda to create a 2D LineGap
+    auto createLineGap = [&](const pandora::HitType view, const float startX, const float endX, const float startZ, const float endZ) {
+        PandoraApi::Geometry::LineGap::Parameters lineParams;
+        lineParams.m_lineGapType = view == pandora::TPC_VIEW_U ? LineGapType::TPC_WIRE_GAP_VIEW_U :
+                                    view == pandora::TPC_VIEW_V ? LineGapType::TPC_WIRE_GAP_VIEW_V :
+                                    view == pandora::TPC_VIEW_W ? LineGapType::TPC_WIRE_GAP_VIEW_W :
+                                                                    LineGapType::TPC_DRIFT_GAP;
+        lineParams.m_lineStartX = std::min(startX, endX);
+        lineParams.m_lineEndX = std::max(startX, endX);
+        lineParams.m_lineStartZ = std::min(startZ, endZ);
+        lineParams.m_lineEndZ = std::max(startZ, endZ);
+
+        try {
+            PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::Geometry::LineGap::Create(*pPrimaryPandora, lineParams));
+        } catch (...) {
+            std::cout << "LoadDetectorGaps - unable to create LineGap for view " << view << std::endl;
+        }
+    };
+
+
+
+    // Utility lambda to crate a 3D Box Gap
+    auto createBoxGap = [&](const float x1, const float x2, const float y1, const float y2, const float z1, const float z2, const bool inductionGaps = false)
+    {
+        PandoraApi::Geometry::BoxGap::Parameters gapParameters;
+        gapParameters.m_vertex = CartesianVector(x1, y1, z1);
+        gapParameters.m_side1 = CartesianVector(x2 - x1, 0.f, 0.f);
+        gapParameters.m_side2 = CartesianVector(0.f, y2 - y1, 0.f);
+        gapParameters.m_side3 = CartesianVector(0.f, 0.f, z2 - z1);
+
+        try
+        {
+            PANDORA_THROW_RESULT_IF(pandora::STATUS_CODE_SUCCESS, !=, PandoraApi::Geometry::BoxGap::Create(*pPrimaryPandora, gapParameters));
+        }
+        catch (...)
+        {
+            std::cout << "LoadDetectorGaps - unable to create detector gap, insufficient or invalid information supplied" << std::endl;
+        }
+
+        // Project gap into W & UV if asked for.
+        const auto wCorners = {pTrans->YZtoW(y1,z1), pTrans->YZtoW(y1,z2), pTrans->YZtoW(y2,z1), pTrans->YZtoW(y2,z2)};
+        createLineGap(pandora::TPC_VIEW_W, x1, x2, std::min(wCorners), std::max(wCorners));
+
+        if (!inductionGaps) return;
+
+        const auto uCorners = {pTrans->YZtoU(y1,z1), pTrans->YZtoU(y1,z2), pTrans->YZtoU(y2,z1), pTrans->YZtoU(y2,z2)};
+        const auto vCorners = {pTrans->YZtoV(y1,z1), pTrans->YZtoV(y1,z2), pTrans->YZtoV(y2,z1), pTrans->YZtoV(y2,z2)};
+        createLineGap(pandora::TPC_VIEW_U, x1, x2, std::min(uCorners), std::max(uCorners));
+        createLineGap(pandora::TPC_VIEW_V, x1, x2, std::min(vCorners), std::max(vCorners));
+    };
+
+    // INFO: Build the gaps in 2 steps:
+    //       1) Gaps that go the full length in X
+    //       2) Gaps that segment Z, to prevent overlaps.
+    for (size_t i = 0; i < maxXs.size() && i + 1 < minXs.size(); ++i)
+    {
+        const float gapWidth(minXs[i + 1] - maxXs[i]);
+
+        // Skip negative gaps or giant gaps.
+        //
+        // TODO: Make max gap size configurable. Its mostly to avoid "Look there
+        // is a gap between TPCs 1 and 3!"....but its because TPC 2 is there.
+        if (gapWidth < 0.f || gapWidth > 30.f)
+            continue;
+
+        createBoxGap(minXs[i], maxXs[i + 1], globalMinY, globalMaxY, globalMinZ, globalMaxZ, true);
+    }
+
+    // Then, segmented Z gaps.
+    for (size_t iz = 0; iz < maxZs.size() && iz + 1 < minZs.size(); ++iz)
+    {
+        const float gapWidth(minZs[iz + 1] - maxZs[iz]);
+
+        // Skip negative gaps or giant gaps.
+        if (gapWidth < 0.f || gapWidth > 30.f)
+            continue;
+
+        for (size_t ix = 0; ix < minXs.size(); ++ix)
+            createBoxGap(minXs[ix], maxXs[ix], globalMinY, globalMaxY, minZs[iz + 1], maxZs[iz], false);
+    }
+
+    std::cout << "PandoraInterface::LoadDetectorGaps - created " << pPrimaryPandora->GetGeometry()->GetDetectorGapList().size()
+              << " detector gaps" << std::endl;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 void ProcessEvents(const Parameters &parameters, const Pandora *const pPrimaryPandora, const LArNDGeomSimple &geom)
 {
     if (parameters.m_dataFormat == Parameters::LArNDFormat::EDepSim)
@@ -362,6 +510,29 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             CreateSPMCParticles(*larspmc, pPrimaryPandora, parameters);
         }
 
+        // And event level information...
+        int run{0};
+        int subrun{0};
+        const int event{larsp->m_event};
+
+        // INFO: Currently, the run + subrun fields are seemingly not set in the
+        // input ROOT files, so we can instead parse it from the input file
+        // name, if possible.
+        //
+        // This should pull out 12 from
+        // MiniProdN5p1_NDComplex_FHC.flow.full.sanddrift.0000012.FLOW.hdf5_hits.root
+        std::regex fileNameRegex(".*\\.(\\d+)\\.FLOW.*");
+        std::smatch matches;
+
+        if (std::regex_match(parameters.m_inputFileName, matches, fileNameRegex) && matches.size() > 1)
+        {
+            run = std::stoi(matches[1].str());
+            subrun = run;
+        }
+
+        std::cout << "Event info: run " << run << ", subrun " << subrun << ", event " << event << std::endl;
+        PandoraApi::SetEventInformation(*pPrimaryPandora, run, subrun, event);
+
         int hitCounter(0);
 
         // Loop over the space points and make them into caloHits
@@ -404,7 +575,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
             caloHitParameters.m_hitRegion = pandora::SINGLE_REGION;
             caloHitParameters.m_layer = 0;
             caloHitParameters.m_isInOuterSamplingLayer = false;
-            caloHitParameters.m_pParentAddress = (void *)(static_cast<uintptr_t>(++hitCounter));
+            caloHitParameters.m_pParentAddress = (void *)(static_cast<uintptr_t>(hitCounter));
             caloHitParameters.m_larTPCVolumeId = tpcID < 0 ? 0 : tpcID;
             caloHitParameters.m_daughterVolumeId = 0;
 
@@ -449,7 +620,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                 // U view
                 lar_content::LArCaloHitParameters caloHitPars_UView(caloHitParameters);
                 caloHitPars_UView.m_hitType = pandora::TPC_VIEW_U;
-                caloHitPars_UView.m_pParentAddress = (void *)(intptr_t(++hitCounter));
+                caloHitPars_UView.m_pParentAddress = (void *)(intptr_t(hitCounter));
                 const float upos_cm(pPrimaryPandora->GetPlugins()->GetLArTransformationPlugin()->YZtoU(y0_cm, z0_cm));
                 caloHitPars_UView.m_positionVector = pandora::CartesianVector(x0_cm, 0.f, upos_cm);
 
@@ -462,7 +633,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                 // V view
                 lar_content::LArCaloHitParameters caloHitPars_VView(caloHitParameters);
                 caloHitPars_VView.m_hitType = pandora::TPC_VIEW_V;
-                caloHitPars_VView.m_pParentAddress = (void *)(intptr_t(++hitCounter));
+                caloHitPars_VView.m_pParentAddress = (void *)(intptr_t(hitCounter));
                 const float vpos_cm(pPrimaryPandora->GetPlugins()->GetLArTransformationPlugin()->YZtoV(y0_cm, z0_cm));
                 caloHitPars_VView.m_positionVector = pandora::CartesianVector(x0_cm, 0.f, vpos_cm);
                 PANDORA_THROW_RESULT_IF(
@@ -473,7 +644,7 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                 // W view
                 lar_content::LArCaloHitParameters caloHitPars_WView(caloHitParameters);
                 caloHitPars_WView.m_hitType = pandora::TPC_VIEW_W;
-                caloHitPars_WView.m_pParentAddress = (void *)(intptr_t(++hitCounter));
+                caloHitPars_WView.m_pParentAddress = (void *)(intptr_t(hitCounter));
                 const float wpos_cm(pPrimaryPandora->GetPlugins()->GetLArTransformationPlugin()->YZtoW(y0_cm, z0_cm));
                 caloHitPars_WView.m_positionVector = pandora::CartesianVector(x0_cm, 0.f, wpos_cm);
 
@@ -483,6 +654,9 @@ void ProcessSPEvents(const Parameters &parameters, const Pandora *const pPrimary
                     PandoraApi::SetCaloHitToMCParticleRelationship(
                         *pPrimaryPandora, (void *)((intptr_t)hitCounter), (void *)((intptr_t)trackID), energyFrac);
             }
+
+            // Increment hit counter for unique Hit IDs
+            ++hitCounter;
 
         } // end space point loop
 
@@ -690,7 +864,7 @@ void ProcessEDepSimEvents(const Parameters &parameters, const Pandora *const pPr
         // Loop over (EDep) hits, which are stored in the hit segment detectors.
         // Only process hits from the detector we are interested in
         for (TG4HitSegmentDetectors::iterator detector = pEDepSimEvent->SegmentDetectors.begin();
-             detector != pEDepSimEvent->SegmentDetectors.end(); ++detector)
+            detector != pEDepSimEvent->SegmentDetectors.end(); ++detector)
         {
             if (detector->first.find(parameters.m_sensitiveDetName) == std::string::npos)
             {
