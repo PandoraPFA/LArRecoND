@@ -60,7 +60,7 @@ RunWithError cd build
 RunWithError cmake \
     "${CMAKE_COMMON_ARGS[@]}" \
     -DCMAKE_MODULE_PATH="$PANDORA_PROJECT_DIR/PandoraPFA/cmakemodules;$ROOTSYS/etc/cmake" \
-    -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib64/cmake/PandoraSDK \
+    -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib/cmake/PandoraSDK \
     ..
 
 RunWithError make -j4 install
@@ -102,8 +102,8 @@ RunWithError cmake \
     "${CMAKE_COMMON_ARGS[@]}" \
     -DPANDORA_MONITORING=ON \
     -DPANDORA_LIBTORCH=ON \
-    -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib64/cmake/PandoraSDK \
-    -DPandoraMonitoring_DIR=$PANDORA_PROJECT_DIR/PandoraMonitoring/build/install/lib64/cmake/PandoraMonitoring \
+    -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib/cmake/PandoraSDK \
+    -DPandoraMonitoring_DIR=$PANDORA_PROJECT_DIR/PandoraMonitoring/build/install/lib/cmake/PandoraMonitoring \
     -DTorch_DIR=${TORCH_CMAKE_DIR} \
     ..
 RunWithError make -j4 install
@@ -117,10 +117,10 @@ RunWithError cmake \
     "${CMAKE_COMMON_ARGS[@]}" \
     -DPANDORA_MONITORING=ON \
     -DPANDORA_LIBTORCH=ON \
-    -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib64/cmake/PandoraSDK \
-    -DPandoraMonitoring_DIR=$PANDORA_PROJECT_DIR/PandoraMonitoring/build/install/lib64/cmake/PandoraMonitoring \
-    -DLArContent_DIR=$PANDORA_PROJECT_DIR/LArContent/build/install/lib64/cmake/LArContent \
-    -DLArDLContent_DIR=$PANDORA_PROJECT_DIR/LArContent/build/install/lib64/cmake/LArDLContent \
+    -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib/cmake/PandoraSDK \
+    -DPandoraMonitoring_DIR=$PANDORA_PROJECT_DIR/PandoraMonitoring/build/install/lib/cmake/PandoraMonitoring \
+    -DLArContent_DIR=$PANDORA_PROJECT_DIR/LArContent/build/install/lib/cmake/LArContent \
+    -DLArDLContent_DIR=$PANDORA_PROJECT_DIR/LArContent/build/install/lib/cmake/LArDLContent \
     -DTorch_DIR=${TORCH_CMAKE_DIR} ..
 RunWithError make -j4 install
 
