@@ -41,7 +41,6 @@ jobs:
       CXX: ${{ matrix.compiler.cpp }}
       ROOT_URL: "https://root.cern/download/root_v6.36.04.Linux-ubuntu24.04-x86_64-gcc13.3.tar.gz"
       TORCH_URL: "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.1.1%2Bcpu.zip"
-      EIGEN_URL: "https://gitlab.com/libeigen/eigen/-/archive/3.3.5/eigen-3.3.5.tar.gz"
 
     steps:
       - name: Checkout LArRecoND Repository
@@ -55,7 +54,6 @@ jobs:
         with:
           root-url: ${{ env.ROOT_URL }}
           torch-url: ${{ env.TORCH_URL }}
-          eigen-url: ${{ env.EIGEN_URL }}
 
       - name: Build Pandora Software Stack
         uses: ./.github/actions/build-pandora
