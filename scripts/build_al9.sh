@@ -24,6 +24,16 @@ PANDORA_MONITORING_VERSION=${PANDORA_MONITORING_VERSION:-"v05-00-00"}
 PANDORA_LAR_CONTENT_VERSION=${PANDORA_LAR_CONTENT_VERSION:-"v05_02_01"}
 PANDORA_LAR_MLDATA_VERSION=${PANDORA_LAR_MLDATA_VERSION:-"v05-02-01"}
 
+# Use consistent build/install settings across all Pandora packages.
+CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-"Release"}
+CMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR:-"lib"}
+CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX:-"install"}
+CMAKE_COMMON_ARGS=(
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
+    -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+)
+
 # PandoraPFA (cmake setup and .clang-format file)
 RunWithError cd $PANDORA_PROJECT_DIR
 RunWithError git clone https://github.com/PandoraPFA/PandoraPFA.git
@@ -37,7 +47,7 @@ RunWithError cd PandoraSDK
 RunWithError git checkout $PANDORA_SDK_VERSION
 RunWithError mkdir build
 RunWithError cd build
-RunWithError cmake -DCMAKE_MODULE_PATH=$PANDORA_PROJECT_DIR/PandoraPFA/cmakemodules ..
+RunWithError cmake "${CMAKE_COMMON_ARGS[@]}" -DCMAKE_MODULE_PATH=$PANDORA_PROJECT_DIR/PandoraPFA/cmakemodules ..
 RunWithError make -j4 install
 
 # PandoraMonitoring
@@ -48,6 +58,7 @@ RunWithError git checkout $PANDORA_MONITORING_VERSION
 RunWithError mkdir build
 RunWithError cd build
 RunWithError cmake \
+    "${CMAKE_COMMON_ARGS[@]}" \
     -DCMAKE_MODULE_PATH="$PANDORA_PROJECT_DIR/PandoraPFA/cmakemodules;$ROOTSYS/etc/cmake" \
     -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib64/cmake/PandoraSDK \
     ..
@@ -88,6 +99,7 @@ else
 fi
 
 RunWithError cmake \
+    "${CMAKE_COMMON_ARGS[@]}" \
     -DPANDORA_MONITORING=ON \
     -DPANDORA_LIBTORCH=ON \
     -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib64/cmake/PandoraSDK \
@@ -102,6 +114,7 @@ RunWithError cd LArRecoND
 RunWithError mkdir build
 RunWithError cd build
 RunWithError cmake \
+    "${CMAKE_COMMON_ARGS[@]}" \
     -DPANDORA_MONITORING=ON \
     -DPANDORA_LIBTORCH=ON \
     -DPandoraSDK_DIR=$PANDORA_PROJECT_DIR/PandoraSDK/build/install/lib64/cmake/PandoraSDK \
