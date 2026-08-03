@@ -573,23 +573,17 @@ const HierarchyAnalysisAlgorithm::RecoMCMatch HierarchyAnalysisAlgorithm::GetRec
 {
     int nSharedHits{0};
     float completeness{0.f}, purity{0.f};
-    bool foundMatch{false};
 
     const MCParticle *pRootNu{nullptr}, *pLeadingMC{nullptr};
 
     // Loop over the root (neutrino) MC particles
     for (const MCParticle *const pMCRoot : rootMCParticles)
     {
-        if (foundMatch)
-            break;
-
         // Loop over the possible matches
         const LArHierarchyHelper::MCMatchesVector &matches{matchInfo.GetMatches(pMCRoot)};
 
         for (const LArHierarchyHelper::MCMatches &match : matches)
         {
-            if (foundMatch)
-                break;
             // MC node
             const LArHierarchyHelper::MCHierarchy::Node *pMCNode{match.GetMC()};
 
@@ -599,13 +593,6 @@ const HierarchyAnalysisAlgorithm::RecoMCMatch HierarchyAnalysisAlgorithm::GetRec
             // See if the current recoNode is in the reco matches vector
             if (std::find(nodeVector.begin(), nodeVector.end(), pRecoNode) != nodeVector.end())
             {
-                foundMatch = true;
-
-                // Parent neutrino
-                pRootNu = pMCRoot;
-                // Best matched leading MC particle
-                pLeadingMC = pMCNode->GetLeadingMCParticle();
-
                 // The MC matching uses nodes which can have more than 1 folded particle/PFO.
                 // The PFO passed to this function will be part of the matched reco node
                 // once the code reaches here, but this reco node can have more than 1 PFO via folding.
@@ -640,12 +627,16 @@ const HierarchyAnalysisAlgorithm::RecoMCMatch HierarchyAnalysisAlgorithm::GetRec
                 CaloHitVector intersection;
                 std::set_intersection(mcHits.begin(), mcHits.end(), selectedPfoHits.begin(), selectedPfoHits.end(), std::back_inserter(intersection));
 
-                nSharedHits = intersection.size();
-                completeness = (mcHits.size() > 0) ? nSharedHits / static_cast<float>(mcHits.size()) : 0.0;
-                purity = (selectedPfoHits.size() > 0) ? nSharedHits / static_cast<float>(selectedPfoHits.size()) : 0.0;
+                const int currentSharedHits = intersection.size();
 
-                break;
-
+                if (currentSharedHits > nSharedHits)
+                {
+                    nSharedHits = currentSharedHits;
+                    completeness = (mcHits.size() > 0) ? nSharedHits / static_cast<float>(mcHits.size()) : 0.0;
+                    purity = (selectedPfoHits.size() > 0) ? nSharedHits / static_cast<float>(selectedPfoHits.size()) : 0.0;
+                    pRootNu = pMCRoot;
+                    pLeadingMC = pMCNode->GetLeadingMCParticle();
+                }
             } // Find recoNode
         } // Match loop
     } // Root MC particles
