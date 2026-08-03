@@ -290,18 +290,6 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
             lineGapParameters.m_lineEndZ = pLineGap->GetLineEndZ();
             PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::Geometry::LineGap::Create(*pPandora, lineGapParameters));
         }
-
-        const BoxGap *const pBoxGap(dynamic_cast<const BoxGap *>(pGap));
-        if (pBoxGap)
-        {
-            PandoraApi::Geometry::BoxGap::Parameters boxGapParameters;
-            boxGapParameters.m_side1 = pBoxGap->GetSide1();
-            boxGapParameters.m_side2 = pBoxGap->GetSide2();
-            boxGapParameters.m_side3 = pBoxGap->GetSide3();
-            boxGapParameters.m_vertex = pBoxGap->GetVertex();
-
-            PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::Geometry::BoxGap::Create(*pPandora, boxGapParameters));
-        }
     }
 
     // Configuration
@@ -387,18 +375,6 @@ const Pandora *MasterThreeDAlgorithm::CreateWorkerInstance(
             lineGapParameters.m_lineStartZ = pLineGap->GetLineStartZ();
             lineGapParameters.m_lineEndZ = pLineGap->GetLineEndZ();
             PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::Geometry::LineGap::Create(*pPandora, lineGapParameters));
-        }
-
-        const BoxGap *const pBoxGap(dynamic_cast<const BoxGap *>(pGap));
-        if (pBoxGap)
-        {
-            PandoraApi::Geometry::BoxGap::Parameters boxGapParameters;
-            boxGapParameters.m_side1 = pBoxGap->GetSide1();
-            boxGapParameters.m_side2 = pBoxGap->GetSide2();
-            boxGapParameters.m_side3 = pBoxGap->GetSide3();
-            boxGapParameters.m_vertex = pBoxGap->GetVertex();
-
-            PANDORA_THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraApi::Geometry::BoxGap::Create(*pPandora, boxGapParameters));
         }
     }
 
